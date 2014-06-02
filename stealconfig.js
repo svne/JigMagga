@@ -25,6 +25,9 @@ steal.config({
         "steal-types/sass/sass.js" : {
             ignore : true
         },
+        "steal-types/less/less.js" : {
+            ignore : true
+        },
         "steal-types/po/po.js" : {
             ignore : true
         }

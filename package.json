@@ -1,0 +1,33 @@
+{
+    "name": "JigMagga",
+    "description": "Replaces doneJS (JavascriptMVC) with a widget (jig) based page system that works with config-files",
+    "version": "0.1.0",
+    "private": true,
+    "author": {
+        "name": "yd. yourdelivery GmbH",
+        "email": "naie@lieferando.de",
+        "web": "http://www.lieferando.de/"
+    },
+    "contributors": [
+        {
+            "name": "Jens Naie",
+            "email": "naie@lieferando.de"
+        },
+        {
+            "name": "Toni Meuschke",
+            "email": "meuschke@lieferando.de"
+        }
+    ],
+    "devDependencies": {
+        "bower": "1.2.8",
+        "grunt": "~0.4.1",
+        "grunt-cli": "^0.1.13"
+    },
+    "licenses": [
+        {
+            "type": "MIT",
+            "url": "http://opensource.org/licenses/mit-license.php"
+        }
+    ],
+    "main": "home"
+}

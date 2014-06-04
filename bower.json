@@ -1,0 +1,18 @@
+{
+    "name": "JigMagga",
+    "main": "home.js",
+    "ignore": ["jig", "core", "steal-types"],
+    "version": "0.1.0",
+    "devDependencies": {
+        "qunit": "~1.12.0",
+        "funcunit": "2.0.4"
+    },
+    "dependencies": {
+        "steal": "0.1.0",
+        "canjs": "2.0.7",
+        "jquery": "1.10.2",
+        "jquery": "2.0.3",
+        "jquerypp": "1.0.1",
+        "jStorage": "0.4.8"
+    }
+}

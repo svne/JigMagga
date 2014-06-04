@@ -1,9 +1,9 @@
-steal('can/control',
-    'yd/core/jQuery/ui/jquery.ui.1.9.1.effect.js',
+steal('core/control',
+    'jquery/dom/animate',
     function () {
         "use strict";
 
-        can.Control.extend('Yd.Selectbox',
+        can.Control.extend('can.Jig.Selectbox',
             /** @Static */
             {
                 defaults: {}
@@ -24,7 +24,7 @@ steal('can/control',
                         for (var i = 0, len = object.length; i < len; i++) {
                             html += '<li data-value="' + object[i].value + '" >' + object[i].text + '</li>';
                         }
-                        this.element.find('.yd-select-list').html(html);
+                        this.element.find('.jm-select-list').html(html);
                         this._setSelected(object[0].value, object[0].text);
                     }
                 },
@@ -33,7 +33,7 @@ steal('can/control',
                 },
                 getElements: function () {
                     var elements = [];
-                    this.element.find('.yd-select-list li').each(function (i, v) {
+                    this.element.find('.jm-select-list li').each(function (i, v) {
                         v = $(v);
                         elements.push({
                             value: v.data('value'),
@@ -43,7 +43,7 @@ steal('can/control',
                     return elements;
                 },
                 openSelect: function (el) {
-                    var selectList = el.children('.yd-select-list'),
+                    var selectList = el.children('.jm-select-list'),
                         selectListH = selectList.children().length * selectList.children().outerHeight(),
                         selectListNewH,
                         top = 0,
@@ -75,7 +75,7 @@ steal('can/control',
                     el.addClass('active');
                 },
                 closeSelect: function (el) {
-                    var selectList = el.children('.yd-select-list');
+                    var selectList = el.children('.jm-select-list');
                     selectList.children().each(function () {
                         $(this).animate({
                             top: 0
@@ -100,12 +100,12 @@ steal('can/control',
                         this.openSelect(el);
                     }
                 },
-                ".yd-select-list li click": function (el, ev) {
+                ".jm-select-list li click": function (el, ev) {
                     this._setSelected(el.data('value'), el.text());
                 },
                 _setSelected: function (value, text) {
                     this.element.data('value', value);
-                    this.element.children('.yd-select-label').text(text);
+                    this.element.children('.jm-select-label').text(text);
                     this.element.trigger('change', [value, text]);
                 },
                 "{window} click": function (el, ev) {

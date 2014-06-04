@@ -1,7 +1,7 @@
 steal('steal/instrument', function () {
     var oldIgnoreFn = steal.instrument.utils.shouldIgnore;
 
-    steal.instrument.ydStart =  function (config) {
+    steal.instrument.testStart =  function (config) {
         if (config.ignores && config.ignores.length) {
             steal.instrument.ignores = config.ignores;
         }

@@ -447,6 +447,8 @@ steal("can/util", "can/model", "can/model/list", "can/map/delegate", "jquery/jst
             }
             return result;
         },
+
+        // TODO: this shouldn't be here. has to go into validation jig
         /**
          *
          * Validate a email serverside

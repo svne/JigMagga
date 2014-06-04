@@ -8,11 +8,11 @@
         "funcunit": "2.0.4"
     },
     "dependencies": {
-        "steal": "0.1.0",
+        "steal": "0.1.1",
         "canjs": "2.0.7",
-        "jquery": "1.10.2",
+        "jquery-legacy": "jquery#1.10.2",
         "jquery": "2.0.3",
         "jquerypp": "1.0.1",
-        "jStorage": "0.4.8"
+        "jstorage": "0.4.8"
     }
 }

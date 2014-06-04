@@ -1,1 +1,7 @@
-console.log("hello world");
+steal(
+    "./index.conf",
+    function () {
+        "use strict";
+        console.log("hello world");
+    }
+);

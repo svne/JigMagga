@@ -1,0 +1,21 @@
+steal('can/control', './css/<%= underscore %>.scss', function () {
+    "use strict";
+
+    /**
+     * @class <%= name %>
+     */
+    can.Control.extend('<%= name %>',
+    /** @Static */
+        {
+            defaults : {
+                template: "//<%= path %>/<%= underscore %>/views/init.mustache"
+            }
+        },
+        /** @Prototype */
+        {
+            init : function () {
+                var self = this;
+                this.element.html(can.view(self.options.template));
+            }
+        });
+});

@@ -1,0 +1,19 @@
+steal('unit', function () {
+    "use strict";
+
+    module("<%= fullName %>", {
+        setup: function () {
+            F.open("/<%= path %>/<%=underscore%>/<%=underscore%>.html");
+        }
+    });
+
+    test("visible Test", function () {
+        //noinspection JSLint
+        F(".<%=fullName.toLowerCase().replace(/\./g, '-')%>").visible(function () {
+            ok(true, "Section is visible");
+        });
+        F(".<%=fullName.toLowerCase().replace(/\./g, '-')%> div").visible(function () {
+            ok(true, "Section is not empty");
+        });
+    });
+});

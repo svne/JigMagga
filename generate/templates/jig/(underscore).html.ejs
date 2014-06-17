@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+	<head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<title><%= name %></title>
+	</head>
+	<body>
+	    <h1 class="<%= namespace %>-testcase-title"><%= name %> <span>Testcase</span></h1>
+
+        <div class="<%= namespace %>-inner">
+            <div class="<%= namespace %>-grid">
+                <div class="<%= namespace %>-grid-24">
+
+                    <section class='<%= fullName.toLowerCase().replace(/\./g, '-') %>'></section>
+
+                </div>
+            </div>
+        </div>
+
+		<script type='text/javascript' 
+                src='<%= path_to_steal %>/steal/steal.js'>
+        </script>
+		<script type='text/javascript'>
+            steal('<%= namespace %>/fixture/fixtures.js').then('<%= path %>/<%= underscore %>', function () {
+                "use strict";
+                //noinspection JSLint
+				new <%= name %>('.<%= fullName.toLowerCase().replace(/\./g, '-') %>');
+			});
+		</script>
+	</body>
+</html>

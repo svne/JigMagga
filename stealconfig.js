@@ -1,16 +1,11 @@
 steal.config({
     jmENV : "development",
     map: {
-        scss: "steal-types/sass/sass.js",
-        ejs: "can/view/ejs/ejs.js",
-        mustache: "can/view/mustache/mustache.js",
-        conf: "steal-types/conf/conf.js",
-        po: "steal-types/po/po.js",
         "*": {
-            "jquery/jquery.js": "jquery",
             "jquery/jstorage": "bower_components/jstorage/jstorage.js",
             "can/util/util.js": "can/util/jquery/jquery.js",
-            "can/control": "core/control.js"
+            "can/control": "core/control/control.js",
+            "can/model": "core/model/model.js"
         }
     },
     paths: {
@@ -38,5 +33,12 @@ steal.config({
         "steal-types/po/po.js" : {
             ignore : true
         }
+    },
+    ext: {
+        scss: "steal-types/sass/sass.js",
+        ejs: "can/view/ejs/ejs.js",
+        mustache: "can/view/mustache/mustache.js",
+        conf: "steal-types/conf/conf.js",
+        po: "steal-types/po/po.js"
     }
 });

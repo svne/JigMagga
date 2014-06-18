@@ -1,14 +1,14 @@
-steal('can/control', './css/<%= underscore %>.scss', function () {
+steal('can/control', './css/<%= name %>.scss', function () {
     "use strict";
 
     /**
      * @class <%= name %>
      */
-    can.Control.extend('<%= name %>',
+    can.Control.extend('<%= Namespace %>.Jig.<%= Name %>',
     /** @Static */
         {
             defaults : {
-                template: "//<%= path %>/<%= underscore %>/views/init.mustache"
+                template: "//<%= namespace %>/jig/<%= name %>/views/init.mustache"
             }
         },
         /** @Prototype */

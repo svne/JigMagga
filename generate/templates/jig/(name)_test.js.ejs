@@ -1,18 +1,18 @@
 steal('unit', function () {
     "use strict";
 
-    module("<%= fullName %>", {
+    module("<%= Namespace %>.Jig.<%= Name %>", {
         setup: function () {
-            F.open("/<%= path %>/<%=underscore%>/<%=underscore%>.html");
+            F.open("/<%= namespace %>/jig/<%= name %>/<%= name %>.html");
         }
     });
 
     test("visible Test", function () {
         //noinspection JSLint
-        F(".<%=fullName.toLowerCase().replace(/\./g, '-')%>").visible(function () {
+        F(".<%= namespace %>-jig-<%= name %>").visible(function () {
             ok(true, "Section is visible");
         });
-        F(".<%=fullName.toLowerCase().replace(/\./g, '-')%> div").visible(function () {
+        F(".<%= namespace %>-jig-<%= name %> div").visible(function () {
             ok(true, "Section is not empty");
         });
     });

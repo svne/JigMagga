@@ -20,7 +20,7 @@ module.exports = function(grunt) {
                             type: "input",
                             message: "Please set the namespace of the project:",
                             default: function() {
-                                // TODO: step throug all folders, searching for a folder with <foldername>.conf. this should be a json file and should contain "namespace". Give the first one you find as the default
+                                // TODO: step through all folders, searching for a folder with page/page.conf inside. this should be a json file and should contain value for "namespace". Give the first one you find as the default
                                 return ""
                             },
                             filter: function(value) {
@@ -42,7 +42,7 @@ module.exports = function(grunt) {
                                 return value.toLowerCase();
                             },
                             validate: function(value) {
-                                if (!value.match(/^[a-z][a-z0-9]*$/i)) {
+                                if (!value.match(/^[a-z][\/a-z0-9]*$/i)) {
                                     return "Please only use chars and numbers starting with a character";
                                 } else {
                                     return true;
@@ -68,10 +68,10 @@ module.exports = function(grunt) {
                             }
                         },
                         {
-                            config: "generator.page",
+                            config: "generator.domain",
                             type: "list",
                             choices: function() {
-                                // TODO print out all domains/pages in the current namespace/page
+                                // TODO print out all domains and domains/pages in the current namespace/page (all with a conf-file inside)
                                 return [{name: "No page", value: "none"}, "default/index"]
                             },
                             message: "In which page should the jig be rendered?",
@@ -83,18 +83,33 @@ module.exports = function(grunt) {
                             }
                         },
                         {
-                            config: "generator.page",
+                            config: "generator.domain",
                             type: "list",
                             choices: function() {
                                 // TODO print out all domains in the current namespace/page
                                 return ["default", "lieferando.de"]
                             },
-                            message: "In which domain should it be rendered?",
+                            message: "In which domain should the page be rendered?",
                             filter: function(value) {
                                 return value.toLowerCase();
                             },
                             when: function(answers) {
-                                return answers['generator.template'] === 'locale' || answers['generator.template'] === 'page';
+                                return answers['generator.template'] === 'page';
+                            }
+                        },
+                        {
+                            config: "generator.domain",
+                            type: "list",
+                            choices: function() {
+                                // TODO print out the namespace"-domain" in all current namespace"/page/"domain/domain.conf
+                                return ["lieferando.de"]
+                            },
+                            message: "For which domain is this locale?",
+                            filter: function(value) {
+                                return value.toLowerCase();
+                            },
+                            when: function(answers) {
+                                return answers['generator.template'] === 'locale';
                             }
                         }
                     ]
@@ -159,7 +174,7 @@ module.exports = function(grunt) {
         ]);
 
     grunt.registerTask("generator", "Project structure generator", function() {
-        require(__dirname + "/generate/generate.js")[grunt.config("generator.template")](grunt.config("generator.namespace"), grunt.config("generator.name"), grunt.config("generator.page"));
+        require(__dirname + "/generate/generate.js")[grunt.config("generator.template")](grunt.config("generator.namespace"), grunt.config("generator.name"), grunt.config("generator.domain"));
     });
 
 };

@@ -142,18 +142,79 @@ Generating a repository
 
 When creating a project, the namespace folder is put into the gitignore file. With the generate repository option a project folder can be put into github as a repository.
 
-Stealing code
-=============
+Stealing files
+==============
 
+_JigMagga_ uses bitovi's [Steal] for the dependency management in the frontend application. [Steal] is build upon [SystemJS](https://github.com/systemjs/systemjs) and can map files to plugins.
+
+Steal comes bundled with plugins for CSS, [LESS](http://lesscss.org), [EJS](http://embeddedjs.com/), [Mustache](http://mustache.github.io/) and [CoffeScript](http://coffeescript.org/). 
+
+_JigMagga_ adds plugins for [gettext](http://de.wikipedia.org/wiki/GNU_gettext) po files, [SASS](http://sass-lang.com/) and _JigMagga_ configuration files.
+
+        steal(
+            "can/control",
+            "./css/init.scss",
+            "./views/init.mustache",
+            function (can) {
+                $("body").html(can.view("./views/init.mustache");
+            }
+        );
+This will convert the SASS file "init.scss" and puts it in the HTML file head. Then it will convert the Mustache template "./views/init.mustache" to HTML and puts it into the body.
+
+The file stealconfig.js in the root directory contains the following mapping.
+
+        ext: {
+        		scss: "steal-types/sass/sass.js",
+                less: "steal-types/less/less.js",
+                ejs: "can/view/ejs/ejs.js",
+                mustache: "can/view/mustache/mustache.js",
+                coffee: "steal/coffee/coffee.js",
+                conf: "steal-types/conf/conf.js",
+                po: "steal-types/po/po.js"
+        }
+
+Stealing a conf file mostly makes sense when doing it as the first steal in a page. See next chapter for config files.
+
+Normally the po file for a page gets stealed by the conf file plugin and not by itself. See the locales chapter for more information.
+
+When stealing a SASS or LESS file after stealing a config file, it is possible to define SASS or LASS variables in the config.  
+Therefore the steal LESS plugin is not called directly.  
+It then also renders the current domain and locale to SASS.
+
+        less: {
+            "color1": "#FFFFFF",
+            "color0": "#000000"
+        }
+when namespace is "jm" the above results in the following code placed at the beginning of every SASS import.
+
+        $color1: #FFFFFF;
+        $color0: #000000;
+        $jm-domain: domain.com
+        $jm-locale: en_EN
 
 
 The config files
 ================
 
-Domains, Pages and the hierarchical System
+The configuration files are the heart of _JigMagga_. They define and start jigs. Normally one configuration file is stealed at the beginning of the application. The application itself stays empty.
+
+        steal('./index.conf');
+
+
+-Domains, Pages and the hierarchical System
+- jigs
 
 Jigs
 ====
+- wo und wie gerendert
+- jig initialisieren in code (neue art)
+- view rendern
+
+
+Models
+======
+
+caching/getCurrent
 
 Live binding
 ------------
@@ -161,28 +222,51 @@ Live binding
 Late live binding
 -----------------
 
+Using locales
+=============
+
+
+
 Jig interaction
----------------
+===============
+
+Mediator (TBD)
 
 Styling with SASS
 =================
 
-Models
-======
+Grid -> benni!
 
-Using locales
-=============
+Building the project
+====================
+
+Building the project is done by Grunt
+
+        grunt build
+        
+-> upload?
+        
+The build process buildes one JavaScript file and one CSS file and uploads it to the CDN. The generation of HTML pages is done by the HTML worker.  
+
+HTML-Workers
+------------
+
+- statische seiten
+- queue
 
 
 You want to join the JigMagga team?
 ===================================
 
 Please take a look at our Jobs page at [lieferando](http://www.lieferando.de/jobs).
-If you want to use JigMagga and want to make bugfixes and improvements, we are welcome for [pull requests](https://help.github.com/articles/using-pull-requests).
-_JigMagga_ is released under the MIT licence. 
+If you want to use JigMagga and want to make bug fixes and improvements, we are welcome for [pull requests](https://help.github.com/articles/using-pull-requests).
 
 Coding conventions
 ------------------
 * Use 4 spaces instead of tabs.
 * Commas last.
 * Use double quotes instead of single quotes where possible.
+
+License
+=======
+_JigMagga_ is released under the MIT licence. 

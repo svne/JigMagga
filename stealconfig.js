@@ -37,8 +37,10 @@ steal.config({
     },
     ext: {
         scss: "steal-types/sass/sass.js",
+        less: "steal-types/less/less.js",
         ejs: "can/view/ejs/ejs.js",
         mustache: "can/view/mustache/mustache.js",
+        coffee: "steal/coffee/coffee.js",
         conf: "steal-types/conf/conf.js",
         po: "steal-types/po/po.js"
     }

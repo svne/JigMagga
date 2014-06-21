@@ -133,7 +133,7 @@ module.exports = function(grunt) {
                                 } else {
                                     // if no index file is generated yet, print out the README.md
                                     require('marked')(fs.readFileSync("./README.md", {encoding: "utf8"}), function (err, html) {
-                                        if (error) {
+                                        if (err) {
                                             grunt.log.error("README.md can't be rendered");
                                         } else {
                                             res.end(html);

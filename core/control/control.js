@@ -1,4 +1,4 @@
-steal("can/control", function () {
+steal("can/control").then(function () {
 
     can.prototype.Jig = {};
 

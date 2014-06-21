@@ -2,17 +2,15 @@ steal.config({
     jmENV : "development",
     map: {
         "*": {
-            "jquery/jstorage": "bower_components/jstorage/jstorage.js",
-            "can/util/util.js": "can/util/jquery/jquery.js",
-            "can/control": "core/control/control.js",
-            "can/model": "core/model/model.js"
+            "jquery/jquery.js": (this.navigator && this.navigator.userAgent.indexOf("MSIE") !== -1) || (typeof global !== "undefined" && global.DEFAULTS.browser && DEFAULTS.browser.indexOf("msie") !== -1) ? "bower_components/jquery-legacy/jquery.js" :  "bower_components/jquery/jquery.min.js",
+            "jquery/jstorage": "bower_components/jstorage"
         }
     },
     paths: {
         "jquery/": "bower_components/jquerypp/",
-        "jquery": (this.navigator && this.navigator.userAgent.indexOf("MSIE") !== -1) || (typeof global !== "undefined" && global.DEFAULTS.browser && DEFAULTS.browser.indexOf("msie") !== -1) ? "bower_components/jquery-legacy/jquery.js" :  "bower_components/jquery/jquery.js",
-        "can/": "bower_components/canjs/steal/",
-        "qunit/": "bower_components/qunit/qunit/"
+        "can/": "bower_components/canjs/steal/canjs/",
+        "qunit/": "bower_components/qunit/qunit/",
+        "locales/": "locales/"
     },
     shim: {
         jquery: {
@@ -22,7 +20,8 @@ steal.config({
             ignore : true
         },
         "steal-types/conf/conf.js" : {
-            ignore : true
+            ignore : true,
+            deps: ["lib/lib.js"]
         },
         "steal-types/sass/sass.js" : {
             ignore : true

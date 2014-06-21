@@ -508,6 +508,9 @@
 
             // include all browser specify stuff
             browserIncludes(config);
+
+            config.includes.push("lib/lib.js");
+
             // include all jigs that have IncludeController
 
 

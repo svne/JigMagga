@@ -153,8 +153,6 @@
         this.outputMarker = queryParams["outputMarker"] || "";
         this.outputFormat = queryParams["outputFormat"] || "junit";
 
-        console.log("---", queryParams["outputMarker"]);
-
         // Internal array of cModuleResult objects
         this.moduleResults = {};
         this.lastModuleStart = {};
@@ -173,7 +171,6 @@
             __tmpModuleName++;
         }
 
-        console.log("module", name);
         // Check to see if this module already exists.  If not, don't create it
         if (!this.moduleResults[name]) {
             var moduleResult = new cModuleResult(name);

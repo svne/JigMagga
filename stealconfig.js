@@ -16,12 +16,14 @@ steal.config({
         jquery: {
             exports: "jQuery"
         },
+        "bower_components/qunit/qunit/qunit.js": {
+            deps: ["qunit/qunit.css"]
+        },
         "can/util/fixture/fixture.js" : {
             ignore : true
         },
         "steal-types/conf/conf.js" : {
-            ignore : true,
-            deps: ["lib/lib.js"]
+            ignore : true
         },
         "steal-types/sass/sass.js" : {
             ignore : true

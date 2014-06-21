@@ -1,17 +1,16 @@
-steal('unit', function () {
+steal('test', function () {
     "use strict";
     module("Yd.Jig.Lightbox", {
         setup: function () {
-            F.open("jig/lightbox/lightbox.html", function(){
+            F.open("./lightbox.html", function(){
+                new F.win.Jig.Lightbox(".jig-lightbox", {viewOptions : {
 
+                }});
             });
         }
     });
     test("visible Test", function () {
-        new F.win.Jig.Lightbox(".jig-lightbox", {viewOptions : {
-
-        }});
         //noinspection JSLint
-        ok(true, "is visible");
+        F(".yd-jig-lightbox-small-content").visible("is visible");
     });
 });

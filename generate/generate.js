@@ -9,6 +9,7 @@ module.exports = {
         // create folder with the name namespace
         // inside create folder "page"
         // inside "page" create a conf json file with the parameter "namespace" set to namespace (like in templates)
+        // create a domain "default" (call this.domain(namespace, "default"))
         // inside "default" create a page called "index" (call this.page(namespace, "index", "default"))
         console.log(namespace);
     },
@@ -57,6 +58,7 @@ module.exports = {
         // create a folder called "jig" in the namespace if it doesn't exists
         // create jig by template in "jig"
         // creaate jig section in page/<domain>/<domainLast>.conf
+        // create a HTML section in page".html" with the class ".namespace-jig-name" and put it inside the body of the HTML page 
         // insert config for the jig into the config
         // example:
         // "<%= namespace %>-jig-<%= name %>": {

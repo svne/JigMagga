@@ -2,8 +2,10 @@
     "jigs" : {
         ".<%= namespace %>-jig-<%= name %>" : {
             "controller" : "<%= Namespace %>.Jig.<%= name %>",
-            "template": "<%= namespace %>/jig/<%= name %>/views/<%= name %>.mustache",
-            "css" : "<%= namespace %>/jig/<%= name %>/css/<%= name %>.scss"
+            "template": "<%= namespace %>/jig/<%= name %>/views/init.mustache",
+            "css" : "<%= namespace %>/jig/<%= name %>/css/<%= name %>.scss",
+            "render": true,
+            "prerender": true
         }
     }
 }

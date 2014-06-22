@@ -357,6 +357,12 @@ There are two blocks in the jig. One is for static variables and methods, the ot
 The `init` method in the second block is called after instantiation. Normally it renders the view. The DOM element where 
   the jig is rendered into is always reachable by `this.element`. It is a jQuery element. Normally it is used to render 
   a [canJS] view into (see views).
+  
+[canJs] controllers are very powerful. You can use the whole functionality in _JigMagga_ jigs. Please take a look at the API documentation
+at (canjs.com/docs/)[http://canjs.com/docs/can.Control.html]
+
+Jigs in the config files
+------------------------
 
 When using _JigMagga_ you don't instantiate jigs manually unless jigs should not get instantiated on page load (see below).
   Jigs and their views are either rendered on page load within the frontend application and/or on server side. 
@@ -364,22 +370,99 @@ When using _JigMagga_ you don't instantiate jigs manually unless jigs should not
   On server side only the connections to the model and some view helpers are needed in the view.
   
 When a config is loaded by the _JigMagga_ frontend application or by the _JigMagga_ workers, the jigs get either instantiated 
-by the app or the template of the jig is rendered by the worker after calling the needed API calls.  
+  by the frontend app or the template of the jig is rendered by the worker after calling the needed API calls. A normal configuration
+  for a jig looks like the following.
+  
+    {
+        "jigs" : {
+            ".jm-jig-header" : {
+                "controller" : "Jm.Jig.Header",
+                "template": "jm/jig/header/views/init.mustache",
+                "css" : "jm/jig/header/css/header.scss",
+                "render": true,
+                "prerender": true
+            }
+        }
+    }
 
-This will do the same as above
-- wo und wie gerendert
-- jig initialisieren in code (neue art)
+It is easily visible that the jig uses the controller `Jm.Jig.Header` with the template `jm/jig/header/views/init.mustache`
+  and the SASS styles from `jm/jig/header/css/header.scss`. Most interesting are the flags `render` and `prerender`.  
+  `prerender` tells the worker what to do with the jig. If it is set to true, the worker renders the view
+  (after calling the API calls if given).  
+  `render` tells the frontend application to include the jig code in the frontend application and instantiate the jig on page load.  
+  The default values for `render` and `prerender` are `true`. This is only useful if the jigs contain SEO relevant informations
+  and have to additionally handle events in the frontend. **Handle this with care!** Jigs without user inputs or events
+  should be set to `"render": false` to not grow up the frontend application JavaScript file and on the other hand side
+  Jigs that are not SEO relevant don't have to grow up the HTML source.
+  
+Options
+-------
+
+To set jig options in the config file simply do the following.
+
+    {
+        "jigs" : {
+            ".jm-jig-header" : {
+                "controller" : "Jm.Jig.Header",
+                "template": "jm/jig/header/views/init.mustache",
+                "css" : "jm/jig/header/css/header.scss",
+                "options": {
+                    "headline": "This is a special headline only used in this page configuration"
+                },
+                "render": false,
+                "prerender": false,
+                "includeController": true
+            }
+        }
+    }
+
+The option `headline` in a instantiated jig is available as `this.options.headline`. As `render` and `prerender` in this example
+  are set to `false` it looks like this jig is never rendered or instantiated, and that is true. Normally it won't get included
+  in the frontend application. There's another flag for letting it be included in the frontend application without being instantiated:
+  `includeController` tells the builder, to include it in the application. The jig can now be instantiated by an event or use input.
+  To get the jig instantiated from inside another jig and still getting the options from the config file you can call the
+  controller method `renderJig`.
+   
+        this.renderJig(".jm-jig-header");
+
+It is also possible to choose a different selector than given in the configuration and send extra options.
+
+        this.renderJig(".jm-jig-header", ".jig-jig-header-second-run", {
+            "headline": "This is a special headline only used for a later instantiation",
+            "extra": "Extra information only used for a later instantiation"
+        });
 
 Views
 -----
-- view rendern
 
-If you want to jump to a specific page in the current language
+To render the standard jig template in a jig all you have to do is the following.
 
-- links to other pages
+    this.element.html(can.view(this.options.template));
+    
+Templates can be build with [can.mustache](http://canjs.com/docs/can.stache.html) or [can.ejs](http://canjs.com/docs/can.ejs.html).
 
+If you want to send data to the view you can give an object of data.
+
+    this.element.html(can.view(this.options.template, {
+        headline: this.options.headline,
+        customer: customerModel
+    }));
+
+In the view the data is now reachable by `{{headline}}` (mustache) or rather `<%= headline %>` (EJS).
+If you send an observable object like a model to the view, the view gets automatically updated when the model gets updated
+(`{{customer.name}}` for mustache or `<%= customer.name %>` in EJS).
+
+Links to other pages listed in the domain config can be rendered by the following and are then working in develop mode
+and in the published page.
+
+    <%= pageLink("index") %>
+
+Please check the [can.view](http://canjs.com/docs/can.view.html) documentation for the full functionality.
+ 
 Events
 ------
+
+
 
 Routing
 -------
@@ -409,7 +492,9 @@ Mediator (TBD)
 Styling with SASS
 =================
 
-Grid -> TBD Benni!
+Grid
+----
+TBD Benni!
 
 The slot system
 ---------------
@@ -428,9 +513,10 @@ It is also possible to run the testcases from the command line with [testem](htt
 or use the grunt task `grunt test`.
 The configuration for testem is located in testem.json in the _JigMagger_ root directory.
 
-**Naming conventions for testcases:**
+Naming conventions for testcases
+--------------------------------
 
-- Module names have to have a dot notation eg. Jig.Lightbox
+- Module names have to have a dot notation eg. `Jm.Jig.Header`
 
 
 Building the project
@@ -440,9 +526,7 @@ Building the project is done by Grunt
 
         grunt build
         
--> upload?
-        
-The build process buildes one JavaScript file and one CSS file and uploads it to the CDN. The generation of HTML pages is done by the HTML worker.  
+The build process builds one JavaScript file and one CSS file and uploads it to the CDN. The generation of HTML pages is done by the HTML worker.  
 
 HTML-Workers
 ------------

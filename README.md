@@ -314,9 +314,9 @@ You can run the testcases from a jig by open the funcunit.html page in your favo
 It is also possible to run the testcases from the command line with [testem](https://github.com/airportyh/testem) or use the grunt task (grunt test) for it.
 The configuration for testem is located in testem.json in the JigMagger root directory.
 
-Naming conventions for testcases:
+**Naming conventions for testcases:**
 
--Module names have a dot notation eg. Yd.Jig.Lightbox
+- Module names have a dot notation eg. Yd.Jig.Lightbox
 
 
 

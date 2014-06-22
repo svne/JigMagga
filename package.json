@@ -1,7 +1,7 @@
 {
     "name": "JigMagga",
-    "description": "Replaces doneJS (JavascriptMVC) with a widget (jig) based page system that works with config-files",
-    "version": "0.1.0",
+    "description": "Replaces bitovis JavascriptMVC with a widget (jig) based page system that works with config-files",
+    "version": "0.0.5",
     "private": true,
     "author": {
         "name": "yd. yourdelivery GmbH",

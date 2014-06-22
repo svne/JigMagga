@@ -8,7 +8,7 @@ _JigMagga_ is a widget based configuration file driven frontend JavaScript MVC f
 It uses all technologies of [bitovi JavaScript MVC](https://github.com/bitovi/javascriptmvc) ([canJS], [steal], [funcunit], [documentJS])
 but replaces the core JavaScript MVC parts like the generator and the deployment by [Grunt] tasks or serverside workers.
 
-Widgets in JigMagga are called jigs. They can be rendered in the frontend application and/or because of SEO reasons get prerendered on serverside. This can be decided in the configuration.
+Widgets in JigMagga are called jigs. They can be rendered in the frontend application and/or because of SEO reasons get prerendered on serverside. This can be decided in the configuration. This means that _JigMagga_ is designed to *not* be a single page application framework. It produces a lot of prerendered pages with a optimal frontend application on each page.
 
 For styling there is a on the fly SASS compiler bundled.
 
@@ -55,16 +55,16 @@ _JigMagga_ is easy to install and works without any special environment but [nod
 We didn't yet test in on windows, but this should also work.  
 To run the [Grunt] processes easier, you can install grunt-cli globally (use sudo in debian and MacOS based system).
 
-        npm install -g grunt-cli
+    npm install -g grunt-cli
 
 Installation
 ------------
 
-To install JigMagga clone the repository and run npm install
+To install JigMagga clone the repository and run `npm install`
 
-        git clone git@github.com:yourdelivery/JigMagga.git JigMagga
-        cd JigMagga
-        npm install
+    git clone git@github.com:yourdelivery/JigMagga.git JigMagga
+    cd JigMagga
+    npm install
         
 Start JigMagga
 --------------
@@ -73,7 +73,7 @@ To start JigMagga webserver just type
 
         grunt connect
         
-It should automatically open your browser. If it doesn't go to http://0.0.0.0:8000.
+It should automatically open your browser. If it doesn't go to `http://0.0.0.0:8000`.
 
 If you run it the first time it shows this file. After you created a project, it shows the first index page.
  
@@ -140,20 +140,147 @@ When generating a locale for a domain, the locale gets inserted in the domain co
 Generating a repository
 -----------------------
 
-When creating a project, the namespace folder is put into the gitignore file. With the generate repository option a project folder can be put into github as a repository.
+When creating a project, the namespace folder is put into the `.gitignore` file. With the generate repository option a project folder can be put into github as a repository.
 
-Stealing code
-=============
+Stealing files
+==============
+
+_JigMagga_ uses bitovi's [Steal] for the dependency management in the frontend application. [Steal] is build upon [SystemJS](https://github.com/systemjs/systemjs) and can map files to plugins.
+
+Steal comes bundled with plugins for CSS, [LESS](http://lesscss.org), [EJS](http://embeddedjs.com/), [Mustache](http://mustache.github.io/) and [CoffeScript](http://coffeescript.org/). 
+
+_JigMagga_ adds plugins for [gettext](http://de.wikipedia.org/wiki/GNU_gettext) po files, [SASS](http://sass-lang.com/) and _JigMagga_ configuration files.
+
+    steal(
+        "can/control",
+        "./css/init.scss",
+        "./views/init.mustache",
+        function (can) {
+            $("body").html(can.view("./views/init.mustache");
+        }
+    );
+This will convert the SASS file "init.scss" and puts it in the HTML file head. Then it will convert the Mustache template "./views/init.mustache" to HTML and puts it into the body.
+
+The file stealconfig.js in the root directory contains the following mapping.
+
+    ext: {
+            scss: "steal-types/sass/sass.js",
+            less: "steal-types/less/less.js",
+            ejs: "can/view/ejs/ejs.js",
+            mustache: "can/view/mustache/mustache.js",
+            coffee: "steal/coffee/coffee.js",
+            conf: "steal-types/conf/conf.js",
+            po: "steal-types/po/po.js"
+    }
+
+Stealing a conf file mostly makes sense when doing it as the first steal in a page. See next chapter for config files.
+
+Normally the po file for a page gets stealed by the conf file plugin and not by itself. See the locales chapter for more information.
+
+When stealing a SASS or LESS file after stealing a config file, it is possible to define SASS or LASS variables in the config.  
+Therefore the steal LESS plugin is not called directly.  
+It then also renders the current domain and locale to SASS.
+
+    less: {
+        "color1": "#FFFFFF",
+        "color0": "#000000"
+    }
+when namespace is "jm" the above results in the following code placed at the beginning of every SASS import.
+
+    $color1: #FFFFFF;
+    $color0: #000000;
+    $jm-domain: domain.com
+    $jm-locale: en_EN
 
 
+Pages and config files
+======================
 
-The config files
-================
+The configuration files are the heart of _JigMagga_. They define and start jigs. Normally one configuration file is stealed at the beginning of the application. The application itself stays empty.
 
-Domains, Pages and the hierarchical System
+        steal('./index.conf');
+
+A configuration file is a simple JSON file with the extension `conf`. It holds the configuration for pages and jigs and can store everything else you need in your namespace.
+
+The configuration is build in a hierarchical system. A normal setup with a namespace called `jm` and one domain called `domain1.com`looks like this:
+
+    jm/
+        page/
+            default/
+                index/
+                    index.conf
+                    index.html
+                    index.js
+            domain1.com/
+                index/
+                    index.conf
+                domain1.com.conf
+            page.conf
+        
+This describes a namespace with a single domain and a single index page. The root configuration is the `page.conf`. It normally only holds the namespace definition.
+
+    {
+        "namespace": "jm"
+    }
+    
+The domain configuration file `domain1.com.conf` contains the pages configuration. If we would have two locales `en_EN` and `fr_FR` it will look like this:
+
+    {
+        "pages": {
+            "index": {"en_EN": "/", "fr_FR": "/fr/}
+        }
+    }
+
+That means after the deploy process this singe index page will get deployed for English under `http://domain1.com/` and for French under `http://domain1.com/fr/`.
+The domain.conf is also a good place to define domain wide includes and SASS variables:
+
+    {
+        "pages": {...}
+        "includes": ["/jm/lib/lib1.js", "/jm/lib/lib2.js"]
+        "sass": {
+            "mobilepage": true,
+            "header-color": "#FF0000"
+        }
+    }
+
+The hierarchical system
+-----------------------
+
+The page configuration mainly holds the jigs configuration for one page. 
+That doesn't mean that the jig config can only resist in a page configuration. 
+It can resist on every config file in the hierarchy. 
+If one jig like the header should get rendered an every page in the namespace, 
+you can define it in the `page.conf`. If all pages in the domain `domain1.com` should have the same footer,
+you can define them in the `domain1.com.conf`.
+
+The configuration plugin always bubbles through the whole tree to one page in default mode and in domain mode. 
+It starts with the `page.conf` of a name space and merges first all configs together up to the given page in 
+the default folder and then merges all configs up to the given page in the domain folder of the given domain.
+Merging is done with a deep extend functionality.  
+Levels in the tree without a config file just don't get merged.
+
+If you call `grunt connect` it opens the first index page in the first domain, if it exists.
+
+If the HTML page in the page folder under the domain folder doesn't exist, it uses the one on the default folder.
 
 Jigs
 ====
+- wo und wie gerendert
+- jig initialisieren in code (neue art)
+
+Views
+-----
+- view rendern
+
+If you want to jump to a specific page in the current language
+
+- links to other pages
+
+
+Models
+======
+
+caching/getCurrent
 
 Live binding
 ------------
@@ -161,28 +288,56 @@ Live binding
 Late live binding
 -----------------
 
+Using locales
+=============
+
+
+
 Jig interaction
----------------
+===============
+
+Mediator (TBD)
 
 Styling with SASS
 =================
 
-Models
-======
+Grid -> benni!
 
-Using locales
-=============
+Testing
+=======
+
+Toni!
+
+Building the project
+====================
+
+Building the project is done by Grunt
+
+        grunt build
+        
+-> upload?
+        
+The build process buildes one JavaScript file and one CSS file and uploads it to the CDN. The generation of HTML pages is done by the HTML worker.  
+
+HTML-Workers
+------------
+
+- statische seiten
+- queue
 
 
 You want to join the JigMagga team?
 ===================================
 
 Please take a look at our Jobs page at [lieferando](http://www.lieferando.de/jobs).
-If you want to use JigMagga and want to make bugfixes and improvements, we are welcome for [pull requests](https://help.github.com/articles/using-pull-requests).
-_JigMagga_ is released under the MIT licence. 
+If you want to use JigMagga and want to make bug fixes and improvements, we are welcome for [pull requests](https://help.github.com/articles/using-pull-requests).
 
 Coding conventions
 ------------------
 * Use 4 spaces instead of tabs.
 * Commas last.
 * Use double quotes instead of single quotes where possible.
+
+License
+=======
+_JigMagga_ is released under the MIT licence. 

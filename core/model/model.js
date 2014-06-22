@@ -357,7 +357,7 @@ steal("can/util", "can/model", "can/model/list", "can/map/delegate", "jquery/jst
             }
         },
         /**
-         * Check that attr have external reference to json file.
+         * Check that attr has external reference to json file.
          * Note only link format  testing no data load.
          *@param attributeName{String} - attr name for testing
          */

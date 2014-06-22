@@ -265,6 +265,9 @@ That means after the deploy process this singe index page will get deployed for 
             "header-color": "#FF0000"
         }
     }
+    
+Includes can also be set to ignore when they shouldn't be included in the builded frontend application. 
+Please see the chapter fixtures for an example. 
 
 The hierarchical system
 -----------------------
@@ -439,7 +442,7 @@ To render the standard jig template in a jig all you have to do is the following
 
     this.element.html(can.view(this.options.template));
     
-Templates can be build with [can.mustache](http://canjs.com/docs/can.stache.html) or [can.ejs](http://canjs.com/docs/can.ejs.html).
+Templates can be build with [can.stache (better mustache for canJS)](http://canjs.com/docs/can.stache.html) or [can.ejs](http://canjs.com/docs/can.ejs.html).
 
 If you want to send data to the view you can give an object of data.
 
@@ -462,27 +465,316 @@ Please check the [can.view](http://canjs.com/docs/can.view.html) documentation f
 Events
 ------
 
+Jigs are controllers that handle user inputs and other events. To bind any jQuery event in jigs DOM element to a method
+all you have to do is adding the event to the prototype block of the jig.
 
+    /** @Prototype */
+    {
+        init : function () {
+            this.element.html(can.view(this.options.template));
+        },
+        ".jm-jig-header-customer-name click": function(el, ev) {
+            el.html("you clicked this DOM element");
+        }
+    }
+    
+It is also possible to listen to changes in an observable object like a model. The most elegant form is to set the model
+in the jig options and call `this.on()`.
+
+        {
+            init : function () {
+                ...
+                this.options.customer = customerInstance;
+                this.on();
+            },
+            "{customer} name change": function(el, ev, attr, how, newVal, oldVal) {
+                this.element.find(".jm-jig-header-customer-name").html(newVal);
+            },
+            "{customer} name remove": function() {
+                this.element.find(".jm-jig-header-customer-name").html("Username deleted");
+            }
+        });
+        
+Please check the [canJS events documentation](http://canjs.com/docs/can.event.html) to get more information.
 
 Routing
 -------
+
+Routes are a special form of jig events. They are used to transport information through the browsers location hash change. 
+CanJS uses the route behind a hash bang `#!`. 
+
+Routing through browser location hash change has the advantage to be able to switch through configurations of the current page
+  by using the browser back and forward button. To initialize routes you can put a routing object in the jig configuration.
+
+        ".jm-jig-header": {
+            "controller": "Yd.Jig.Header",
+            "options": {
+                "routes": {
+                    "register": {
+                        "view": "register"
+                    },
+                    "login": {
+                        "view": "login"
+                    },
+                    "login/forgotpassword": {
+                        "view": "login"
+                    },
+                    "logout": {
+                        "view": "logout"
+                    }
+                }
+            }
+        }
+
+The given routes are now available in the jig events (they can be used in all active jigs).
+
+    steal(
+        'can/control',
+        'can/control/route',
+        'can/route',
+        function () {
+            "use strict";
+    
+            /**
+              * @class Yd.Jig.Header
+              */
+            can.Control.extend('Yd.Jig.Header',
+                /** @Static */
+                {
+                    defaults: {}
+                },
+                /** @Prototype */
+                {
+                    init: function () {
+                        this.element.html(can.view(this.options.template));
+                    },
+                    "{can.route} view change": function (el, ev, attr, how, newVal, oldVal) {
+                        // check newVal for the wanted view and show the expected dialogs
+                    },
+                    "{can.route} forgotpassword add": function () {
+                        // show additionaly a forgetpassowrd input dialog
+                    },
+                    "{can.route} forgotpassword remove": function () {
+                        // remove a forgetpassowrd input dialog
+                    }
+                }
+            });
+        });
+        
+Please check the [canJS routing documentation](http://canjs.com/docs/can.route.html) to get more information.
 
 
 Models
 ======
 
-caching/getCurrent
+_JigMagga_ models are observable objects that can easily connect to APIs.
+
+Please check the [canJS model documentation](http://canjs.com/docs/can.Model.html) and the [canJS map documentation](http://canjs.com/docs/can.Map.html)
+for more information on the base functionality.
+
+_JigMagga_ extends the canJS functionality by few methods that are able to handle locally stored data.
+For this it uses the library jStorage.
+ 
+The canJS models are only useful in one controller. If the application needs the data in more than one controller, it has to
+fetch the data again from the API.
+
+As jigs shouldn't connect to the API too often, the data is stored locally and shared. The canJS calls [can.Model.findOne()](http://canjs.com/docs/can.Model.findOne.html) 
+and [can.Model.findAll()](http://canjs.com/docs/can.Model.findAll.html) can be replaced by `can.Model.findOneCached()` and
+`can.Model.findAllCached()`. They use the same parameters, but when you call one on the methods again with the same `params` parameter,
+it doesn't connect to the API but uses the local stored data. You can also use `can.Model.getCurrent()` to get the last stored data
+of a model with the recently used parameters. If you define a model called `Jm.Model.Customer` as done below,
+
+    steal('core/model', function () {
+        "use strict";
+
+        can.Model.extend('Jm.Model.Customer',
+            {
+                findAll: "api/customers",
+                findOne: function (params) {
+                    return can.ajax({
+                        url: "api/customers/" + params.id,
+                    });
+                }
+            }
+        }
+    }
+
+you could use the following methods.
+
+    Jm.Model.Customer.findOneCached({
+            id: 1000
+        },
+        function (customer) {
+            // success method
+        },
+        function (error) {
+            // error method
+        });
+    Jm.Model.Customer.getCurrent(function (customer) {
+            // success method with the same data as in the findOneCached method if it was called before
+        });
+
+    Jm.Model.Customer.findAllCached({
+        },
+        function (customers) {
+            // success method
+        },
+        function (error) {
+            // error method
+        });
+    Jm.Model.Customer.getCurrent(function (customers) {
+            // success method with the same data as in the findAllCached method if it was called before
+        });
+
+You can easily store the model data to the local storage to use it even after page reload by using the following.
+
+    Jm.Model.Customer.findAllCached({
+        },
+        function (customers) {
+            customers.store()
+        });
+        
+In the next `Jm.Model.Customer.getCurrent()` call the model data is fetched from the jStorage. This works down to Internet Explorer 6.
+
+If you want to clear the model data, you can use `flush()` on the model data. It then gets removed from the global scope and from the local storage.
+
+    Jm.Model.Customer.findAllCached({
+        },
+        function (customers) {
+            customers.flush()
+        });
+
 
 Live binding
 ------------
 
+All canJS models and maps implement observable objects that can be used in the view for live binding.
+
+If you send a model to a view you can change the data using [attr()](http://canjs.com/docs/can.Map.prototype.attr.html)
+and it will instantly update the view.
+
+    Jm.Model.Customer.getCurrent(function (customer) {
+        customer.attr("loggedin", true);
+        self.element.html(can.view(self.options.template, {
+            customer: customer
+        })
+    );
+
+    //self.options.template
+    //<div>Name: {{customer.name}}</div>
+    //<div>Logged in: {{#customer.loggedin}}Yes{{/customer.loggedin}}{{^customer.loggedin}}No{{/customer.loggedin}}
+    
+    logout = function () {
+        customer.attr("name", "secret"}
+        customer.removeAttr("loggedin");
+    };
+
 Late live binding
 -----------------
+
+When a big jig, for example a huge list of customers, gets rendered on worker side, it might make sense to not render it again
+in the frontend application, because that takes too long.
+
+The trick is now how to bind the existing view to a live binding. _JigMagga_ does it by setting some data attributes into the DOM.
+
+    <ul>
+      {{#each customers}}
+        <li class="jm-latebinding" data-bindingtype="tag" data-bindingattr="{{@index}}.name">{{.name}}</li>
+      {{/each}}
+    </ul>
+    
+Now you can call `triggerlateLiveBinding()` in the jig and the livebinding is connected to the DOM.
+
+    customers.findLivebindingsInDom(self.element.find(".jm-latebinding"));
+    customers.bindLateLiveBinding();
+    
+Binding types can be:
+- "tag"
+- "class"
+
+Predefined worker data
+----------------------
+
+The config files can contain API calls that are used when rendering a jig on serverside.
+
+    ".jm-jig-customers": {
+        "controller": "Jm.Jig.Customers",
+        "template": "yd/jig/customers/views/init.mustache",
+        "apicalls": {
+            "customer": {
+                "method": "get",
+                "path": "api/customers",
+                "predefined": true,
+                "resultSchema": "//jm/fixture/schema/customers.json"
+            }
+        }
+    }
+    
+The HTML worker is now calling `GET api/customers` before rendering the template. The result of the API call is stored in
+the HTML page in `Jm.predefined.customer` and is globally accessible. You now may want to prefer the predefined data instead
+ of calling the API in the model.
+ 
+     findAll: function (params, success, error) {
+         if (Jm.predefined.customer !== undefined) {
+             success(new Jm.Models.Customer.List(Yd.predefined.customer));
+         } else {
+             can.ajax({
+                 url: "api/customers",
+                 success: function (data) {
+                     success(new Jm.Models.Customer.List(data));
+                 },
+                 error: error
+             });
+         }
+     }
+     
+The resultSchema can be used to check the validity of the API result.  
+If you want to pass params from the worker to the API call you can add a request schema to the API call definition.
+
+    "requestSchema": "//jm/fixture/schema/request/customers.json"
+
+All params that are defined here are send to the API with the call. It is also checked if required parameters are initialized.
+The worker will throw an error on undefined required parameters. 
+
+Using fixtures
+--------------
+
+In the development environment it is normally not wanted, that the system is calling the API. Also not in testcases.  
+For this it is possible to use mock data, in canJs they are called [fixtures](http://canjs.com/docs/can.fixture.html).
+
+You can add a fixture file to the `page.conf` includes. They will automatically get stripped out in deploy process.
+ 
+     "includes": [
+         {
+             "id": "//jm/fixture/fixtures.js",
+             "ignore": true
+         }
+     ]
+     
+A simple fixture definition looks like this.
+ 
+     steal("can/util/fixture", function () {
+         can.fixture("GET /api/customers", "//jm/fixture/data/customers.json");
+     )}
+     
+The fixture file `jm/fixture/data/customers.json` should have the same JSON format as a real API call woud have. In the model
+nothing more has to be done. Every call to `GET /api/customers` will now automatically result in the content of the given file.
+The API isn't called any more.
+
+In bigger teams with an own API team it is a good choice to define the interface by defining fixture files and the corresponding
+ result schema and request schema files. Schema files can easily be generated with the [JSON schema genarator](http://www.jsonschema.net/).
 
 Using locales
 =============
 
+_JigMagga_ uses sprintf.js by Ash Searle and gettext.js by Joshua I. Miller.
 
+The gettext functionality is only used in development mode and in build and deployment process. All `_()` functions are replaced
+by the equivalent `sprintf()` function with the replaced msgid. This is done while loading all JavaScript files.
+For this the systemJS JavaScript plugin is extended.
+
+The po file is loaded by the configuration file plugin. As the po file has to be loaded before any files with translations
+ it doesn't make sense to steal it later in the process.
 
 Jig interaction
 ===============
@@ -492,8 +784,11 @@ Mediator (TBD)
 Styling with SASS
 =================
 
+TBD Benni!
+
 Grid
 ----
+
 TBD Benni!
 
 The slot system
@@ -526,14 +821,17 @@ Building the project is done by Grunt
 
         grunt build
         
-The build process builds one JavaScript file and one CSS file and uploads it to the CDN. The generation of HTML pages is done by the HTML worker.  
+The build process builds one JavaScript file and one CSS file per page and uploads it to the CDN. The generation of HTML pages is done by the HTML worker.  
 
 HTML-Workers
 ------------
 
-- statische seiten
+TBD
+- static pages
 - queue
-
+- dynamic pages (using "{url}")
+- caching of JSON files to the CDN
+- childpages
 
 You want to join the JigMagga team?
 ===================================

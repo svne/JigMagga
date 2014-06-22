@@ -419,7 +419,19 @@ TBD Benni!
 Testing
 =======
 
-TBD Toni!
+For testing _JigMagga_ use [funcunit] which is an extension for [Qunit](http://qunitjs.com/).
+Every jig has a `funcunit.html` page that represents the Qunit test suite.
+This page will load a `*_test.js` JavaScript file from the jig which includes the test implementation.
+Make sure that your browser doesn't block popups. The `*_test.js` will open a new window with the jig environment.
+You can run the testcases manually by open the `funcunit.html` page of the jig in your favourite browser.
+It is also possible to run the testcases from the command line with [testem](https://github.com/airportyh/testem) 
+or use the grunt task `grunt test`.
+The configuration for testem is located in testem.json in the _JigMagger_ root directory.
+
+**Naming conventions for testcases:**
+
+- Module names have to have a dot notation eg. Jig.Lightbox
+
 
 Building the project
 ====================

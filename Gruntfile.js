@@ -1,5 +1,6 @@
-module.exports = function(grunt) {
+module.exports = function (grunt) {
     "use strict";
+
 
     var fs = require("fs");
 
@@ -19,14 +20,14 @@ module.exports = function(grunt) {
                             config: "generator.namespace",
                             type: "input",
                             message: "Please set the namespace of the project:",
-                            default: function() {
+                            default: function () {
                                 // TODO: step through all folders, searching for a folder with page/page.conf inside. this should be a json file and should contain value for "namespace". Give the first one you find as the default
                                 return ""
                             },
-                            filter: function(value) {
+                            filter: function (value) {
                                 return value.toLowerCase();
                             },
-                            validate: function(value) {
+                            validate: function (value) {
                                 if (!value.match(/^[a-z][a-z0-9]*$/i)) {
                                     return "Please only use chars and numbers starting with a character";
                                 } else {
@@ -38,17 +39,17 @@ module.exports = function(grunt) {
                             config: "generator.name",
                             type: "input",
                             message: "Please define the name:",
-                            filter: function(value) {
+                            filter: function (value) {
                                 return value.toLowerCase();
                             },
-                            validate: function(value) {
+                            validate: function (value) {
                                 if (!value.match(/^[a-z][\/a-z0-9]*$/i)) {
                                     return "Please only use chars and numbers starting with a character";
                                 } else {
                                     return true;
                                 }
                             },
-                            when: function(answers) {
+                            when: function (answers) {
                                 return answers['generator.template'] !== 'project' && answers['generator.template'] !== 'locale';
                             }
                         },
@@ -56,59 +57,62 @@ module.exports = function(grunt) {
                             config: "generator.name",
                             type: "input",
                             message: "Please define the locale:",
-                            validate: function(value) {
+                            validate: function (value) {
                                 if (!value.match(/^[a-z][a-z]_[A-Z][A-Z]$/i)) {
                                     return "Please choose a locale in the form 'xx_XX'";
                                 } else {
                                     return true;
                                 }
                             },
-                            when: function(answers) {
+                            when: function (answers) {
                                 return answers['generator.template'] === 'locale';
                             }
                         },
                         {
                             config: "generator.domain",
                             type: "list",
-                            choices: function() {
+                            choices: function () {
                                 // TODO print out all domains and domains/pages in the current namespace/page (all with a conf-file inside)
-                                return [{name: "No page", value: "none"}, "default/index"]
+                                return [
+                                    {name: "No page", value: "none"},
+                                    "default/index"
+                                ]
                             },
                             message: "In which page should the jig be rendered?",
-                            filter: function(value) {
+                            filter: function (value) {
                                 return value.toLowerCase();
                             },
-                            when: function(answers) {
+                            when: function (answers) {
                                 return answers['generator.template'] === 'jig';
                             }
                         },
                         {
                             config: "generator.domain",
                             type: "list",
-                            choices: function() {
+                            choices: function () {
                                 // TODO print out all domains in the current namespace/page
                                 return ["default", "lieferando.de"]
                             },
                             message: "In which domain should the page be rendered?",
-                            filter: function(value) {
+                            filter: function (value) {
                                 return value.toLowerCase();
                             },
-                            when: function(answers) {
+                            when: function (answers) {
                                 return answers['generator.template'] === 'page';
                             }
                         },
                         {
                             config: "generator.domain",
                             type: "list",
-                            choices: function() {
+                            choices: function () {
                                 // TODO print out the namespace"-domain" in all current namespace"/page/"domain/domain.conf
                                 return ["lieferando.de"]
                             },
                             message: "For which domain is this locale?",
-                            filter: function(value) {
+                            filter: function (value) {
                                 return value.toLowerCase();
                             },
-                            when: function(answers) {
+                            when: function (answers) {
                                 return answers['generator.template'] === 'locale';
                             }
                         }
@@ -121,9 +125,9 @@ module.exports = function(grunt) {
                 options: {
                     keepalive: true,
                     open: true,
-                    middleware: function(connect, options, middlewares) {
+                    middleware:  function (connect, options, middlewares) {
                         // inject a custom middleware into the array of default middlewares
-                        middlewares.unshift(function(req, res, next) {
+                        middlewares.unshift(function (req, res, next) {
                             if (req.url === "/") {
                                 // TODO: if there is a namespace with a index page, jump to the index page in the first domain or in default
                                 if (false) {
@@ -160,7 +164,6 @@ module.exports = function(grunt) {
                     }
                 }
             }
-
         }
     });
 
@@ -173,7 +176,16 @@ module.exports = function(grunt) {
             'generator'
         ]);
 
-    grunt.registerTask("generator", "Project structure generator", function() {
+
+    grunt.registerTask('test', "Test all files that have a funcunit.html file", function(){
+        var async = this.async(),
+            spawn = require('child_process').spawn,
+            testem = spawn(__dirname + '/node_modules/testem/testem.js', {
+                stdio : "inherit"
+            });
+    });
+
+    grunt.registerTask("generator", "Project structure generator", function () {
         require(__dirname + "/generate/generate.js")[grunt.config("generator.template")](grunt.config("generator.namespace"), grunt.config("generator.name"), grunt.config("generator.domain"));
     });
 

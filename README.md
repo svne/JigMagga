@@ -316,7 +316,7 @@ The configuration for testem is located in testem.json in the JigMagger root dir
 
 **Naming conventions for testcases:**
 
-- Module names have a dot notation eg. Yd.Jig.Lightbox
+- Module names have a dot notation eg. Jig.Lightbox
 
 
 

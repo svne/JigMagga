@@ -2,7 +2,7 @@ steal('test', function () {
     "use strict";
     module("Yd.Jig.Lightbox", {
         setup: function () {
-            F.open("./lightbox.html", function(){
+            F.open( steal.URI( "./" ).normalize().toString() + "lightbox.html", function(){
                 new F.win.Jig.Lightbox(".jig-lightbox", {viewOptions : {
 
                 }});

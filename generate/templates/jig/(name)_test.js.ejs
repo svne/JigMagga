@@ -3,7 +3,7 @@ steal('test', function () {
 
     module("<%= Namespace %>.Jig.<%= Name %>", {
         setup: function () {
-            F.open("./<%= name %>.html");
+            F.open(steal.URI( "./" ).normalize().toString() + "<%= name %>.html");
         }
     });
 

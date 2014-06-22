@@ -15,7 +15,7 @@ steal('core/control', function () {
         {
             init : function () {
                 var self = this;
-                this.element.html(can.view(self.options.template));
+                self.element.html(can.view(self.options.template));
             }
         });
 });

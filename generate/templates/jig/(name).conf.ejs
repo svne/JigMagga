@@ -1,9 +1,9 @@
 {
     "jigs" : {
-        ".jig-<%= name %>" : {
-            "controller" : "Jig.<%= name %>",
-            "template": "jig/<%= name %>/views/<%= name %>.mustache",
-            "css" : "jig/<%= name %>/css/<%= name %>.scss"
+        ".<%= namespace %>-jig-<%= name %>" : {
+            "controller" : "<%= Namespace %>.Jig.<%= name %>",
+            "template": "<%= namespace %>/jig/<%= name %>/views/<%= name %>.mustache",
+            "css" : "<%= namespace %>/jig/<%= name %>/css/<%= name %>.scss"
         }
     }
 }

@@ -1,183 +1,117 @@
-steal('core/control',
-    'can/control/route',
+steal(
+    'can/control',
     'jquery/event/drag',
-    'jquery/event/drag/limit',
-    'lib/legacy.js',
-    './views/init.ejs',
+    'can/construct/super',
     function () {
         "use strict";
-        var defaultProto = {
-                closeLightbox: function (ev) {
-                    var self = this;
-                    if (this.active) {
-                        ev.stopPropagation();
-                        this.active = false;
-                        this.element.addClass("hidden");
-                        $(".yd-inner").css('min-height', '');
-                        if (window.location.hash && window.location.hash.length > 2 && window.history.length > 0) {
-                            window.setTimeout(function() {
-                                if (!self.hash || self.hash === window.location.hash) {
-                                    window.history.go(-1);
-                                }
-                            }, 10);
-
-                        } else {
-                            window.location.hash = "";
-                        }
+        /**
+         * @class Jig.Lightbox
+         */
+        can.Control.extend('Jig.Lightbox',
+            /** @Static */
+            {
+                defaults: {
+                    view: "./views/small.ejs",
+                    removeElementAtClose: true,
+                    dragAllow: true,
+                    viewOptions: {},
+                    viewHelper: {}
+                }
+            },
+            /** @Prototype */
+            {
+                setup: function (element, options) {
+                    if (!element && options && options.element && options.append) {
+                        element = $(options.element);
+                        $(options.append).append(element);
                     }
+                    can.Control.prototype.setup.apply(this, [element, options]);
+                },
+                init: function () {
+                    var self = this;
+                    self.element.html(can.view(self.options.view, {options: self.options.viewOptions}, self.options.viewHelper));
+                    self.dragInit();
+                    self.initCSS();
+                    self.isOpen = true;
+                },
+                /**
+                 * this will init a view with his data and helpers and init the lightbox
+                 * @param view
+                 * @param data
+                 * @param helper
+                 */
+                initWithViewAndOptions: function (view, data, helper) {
+                    var self = this;
+                    self.options.view = view;
+                    self.options.viewOptions = data || {};
+                    self.options.viewHelper = helper || {};
+                    //call prototype init
+                    Jig.Lightbox.prototype.init.apply(this, []);
                 },
                 "{window} click": function (el, ev) {
-                    this.closeLightbox(ev);
+                    if (this.options.button && !$(ev.target).parents(this.options.button).length) {
+                        this.close(ev);
+                    }
+                },
+                dragInit: function () {
+                    var self = this,
+                        contentInner;
+                    if (!$.support.isMobile.any() && !($.browser.msie && $.browser.version < 10) && self.options.dragAllow) {
+                        $(".yd-jig-lightbox-content, .yd-jig-lightbox-small-content", self.element).on('draginit', function (ev, drag) {
+                            if (ev.target && $(ev.target).hasClass("yd-jig-lightbox-head")) {
+                                if (self.options && self.options.dragLimit) {
+                                    drag.limit($(self.options.dragLimit));
+                                } else {
+                                    contentInner = $('.yd-content-user').length > 0 ? $(".yd-content-user .yd-inner") : $(".yd-content .yd-inner");
+                                    drag.limit(contentInner);
+                                }
+                            } else {
+                                //HACK drag.cancel() do not work
+                                drag._cancelled = true;
+                                drag.selection();
+                            }
+                        });
+                    }
                 },
                 "{window} keydown": function (el, ev) {
                     if (ev.keyCode === 27) {
-                        this.closeLightbox(ev);
+                        this.close(ev);
                     }
                 },
-                ".jig-lightbox-close, .jig-lightbox-small-close click": function (el, ev) {
-                    this.closeLightbox(ev);
+                ".yd-jig-lightbox-close, .yd-jig-lightbox-small-close click": function (el, ev) {
+                    this.close(ev);
                 },
-                ".jig-lightbox-content, .jig-lightbox-small-content click": function (el, ev) {
+                ".yd-jig-lightbox-content, .yd-jig-lightbox-small-content click": function (el, ev) {
                     ev.stopPropagation();
                 },
-                ".jig-lightbox-body, .jig-lightbox-small-body mousedown": function (el, ev) {
+                ".yd-jig-lightbox-body, .yd-jig-lightbox-small-body mousedown": function (el, ev) {
                     ev.stopPropagation();
                 },
-                show: function () {
-                    this.element.removeClass('hidden');
-                    this.active = true;
-                    var $lightbox = this.element.find('.jig-lightbox-content'),
-                        $content = $('.yd-content .yd-inner');
+                initCSS: function () {
+                    var $lightbox = this.element.find('.yd-jig-lightbox-content'),
+                        contentInner;
                     $lightbox.css({
                         'top': ($(document).scrollTop() + 100) + 'px',
                         'margin-left': -($lightbox.width() / 2)
                     });
-                    $content.css('min-height', this.element.find('.jig-lightbox-content').height() + window.pageYOffset + 100);
+                    if ($lightbox.length > 0) {
+                        contentInner = $('.yd-content-user').length > 0 ? $(".yd-content-user .yd-inner") : $(".yd-content .yd-inner");
+                        contentInner.css('min-height', this.element.find('.yd-jig-lightbox-content').height() + (typeof window.pageYOffset === "number" ? window.pageYOffset : 0 ) + 300);
+                    }
                 },
                 close: function (ev) {
-                    ev.stopPropagation();
-                    this.active = false;
-                    this.element.addClass("hidden");
-                    $('.yd-content .yd-inner').removeAttr('style');
-                }
-            };
-
-        if (!jQuery.support.isMobile.any()) {
-            var drag = {
-                ".jig-lightbox-content, .jig-lightbox-small-content draginit": function (el, ev, drag) {
-                    drag.limit($('.yd-content .yd-inner'));
-                }
-            };
-            can.extend(defaultProto, drag);
-        }
-        //new alert / confirm lightbox
-        can.Control.extend('can.Jig.Alert', {
-            instances: 0,
-            init: function () {
-                var $body = this.element,
-                    options = this.options,
-                    $lightbox = $body.find('.jig-lightbox-small');
-                if (!options.html && options.msg && !options.head) {
-                    if (options.msg.length > 25) {
-                        options.head = options.msg.substring(0, 30) + '...';
+                    ev ? ev.stopPropagation() : null;
+                    if (this.options.removeElementAtClose) {
+                        this.element.remove();
                     } else {
-                        options.head = options.msg;
-                        options.msg = "";
+                        this.element.html("");
                     }
+                    $(".yd-inner").css('min-height', '');
+                    if (this.options.removeElementAtClose) {
+                        this.destroy();
+                    }
+                    this.isOpen = false;
                 }
-                can.extend(this, options);
-                if ($lightbox.length === 0) {
-                    $body.append(can.view("./views/init.ejs", {
-                        options: options
-                    }));
-                } else {
-                    $lightbox.html(can.view("./views/init.ejs", {
-                        options: options
-                    }));
-                }
-                this.element = $body.find('.jig-lightbox-small');
-                this.elementContent = $body.find('.jig-lightbox-small-content');
-                this.show();
-            },
-            show: function (ev) {
-                var self = this,
-                    winOffsetY = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement || document.body.parentNode || document.body).scrollTop;
-                $('#monetate_htmlLightbox').hide();
-                ev && ev.stopPropagation && ev.stopPropagation();
-                if (!this.instances) {
-                    $(document).bind("focusin.yd-alert", function(e) {
-                        if (!self.element.find(e.target).length) {
-                            e.preventDefault();
-                            self.element.find(".jig-lightbox-small-action").focus();
-                        }
-                    });
-                }
-                this.instances++;
-                this.element.removeClass("hidden");
-                this.element.find(".jig-lightbox-small-action").focus();
-                this.active = true;
-                this.elementContent.css("top", winOffsetY + 110);
-            },
-            close: function (ev) {
-                ev && ev.stopPropagation && ev.stopPropagation();
-                this.active = false;
-                this.instances--;
-                if (!this.instances) {
-                    $(document).unbind("focusin.yd-alert");
-                }
-                this.element.addClass("hidden");
-            },
-            ".jig-lightbox-small-content draginit": function (el, ev, drag) {
-                drag.limit($('.yd-wrapper'));
-            },
-            ".jig-lightbox-small-body mousedown": function (el, ev) {
-                ev.stopPropagation();
-            },
-            ".jig-lightbox-small .jig-lightbox-small-action click": function (el, ev) {
-                this.close(ev);
-                if (typeof this.options.cb === 'function') {
-                    this.options.cb(true);
-                    this.options.cb = undefined;
-                }
-            },
-            ".jig-lightbox-small .jig-lightbox-small-cancel click": function (el, ev) {
-                this.close(ev);
-                if (typeof this.options.cb === 'function') {
-                    this.options.cb(false);
-                    this.options.cb = undefined;
-                }
-            },
-            ".jig-lightbox-small .jig-lightbox-small-close click": function (el, ev) {
-                this.close(ev);
-                if (typeof this.options.cb === 'function') {
-                    this.options.cb(false);
-                    this.options.cb = undefined;
-                }
-            }
-
-        });
-        window.alert = function (msg, options) {
-            options = options || {};
-            options.type = 'alert';
-            if (!options.msg) {
-                options.msg = msg;
-            }
-            return new can.Jig.Alert('body', options);
-        };
-        window.confirm = function (msg, options, cb) {
-            if (typeof options === 'function') {
-                cb = options;
-            }
-            options = options || {};
-            options.cb = cb;
-            options.type = 'confirm';
-            if (!options.msg) {
-                options.msg = msg;
-            }
-            return new can.Jig.Alert('body', options);
-        };
-        can.Jig.Lightbox = function (name, staticObj, protoObj) {
-            var proto = can.extend({}, defaultProto, protoObj);
-            can.Control.apply(this, [name, staticObj, proto]);
-        };
-    });
+            });
+    }
+);

@@ -1,4 +1,4 @@
-steal({id: './gettext.js', ignore: true}, "//yd/core/sprintf.js",
+steal({id: './gettext.js', ignore: true}, "./sprintf.js",
     function (can) {
         "use strict";
         var replaceGettextUnderscore = {
@@ -95,7 +95,7 @@ steal({id: './gettext.js', ignore: true}, "//yd/core/sprintf.js",
         if (!steal.config("isBuild")) {
             steal().config().types.jsOld = steal().config().types.js;
             steal.type("js", function (jsOptions, jsSuccess, jsError) {
-                if (jsOptions && jsOptions.id && jsOptions.id.path && jsOptions.id.path.indexOf("yd") === 0) {
+                if (jsOptions && jsOptions.id && jsOptions.id.path) {
                     replaceGettextUnderscore.done(function () {
                         if (jsOptions.text === undefined) {
                             steal().config().types.text.require(jsOptions, function (text) {

@@ -1,3 +1,6 @@
+/**
+ * extension for steal instrument to ignore files
+ */
 steal('steal/instrument', function () {
     var oldIgnoreFn = steal.instrument.utils.shouldIgnore;
 

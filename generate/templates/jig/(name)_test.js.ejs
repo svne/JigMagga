@@ -1,19 +1,14 @@
-steal('unit', function () {
+steal('test', function () {
     "use strict";
 
     module("<%= Namespace %>.Jig.<%= Name %>", {
         setup: function () {
-            F.open("/<%= namespace %>/jig/<%= name %>/<%= name %>.html");
+            F.open(steal.URI( "./" ).normalize().toString() + "<%= name %>.html");
         }
     });
 
     test("visible Test", function () {
-        //noinspection JSLint
-        F(".<%= namespace %>-jig-<%= name %>").visible(function () {
-            ok(true, "Section is visible");
-        });
-        F(".<%= namespace %>-jig-<%= name %> div").visible(function () {
-            ok(true, "Section is not empty");
-        });
+        //TODO implement testacse for <%= Namespace %>.Jig.<%= Name %>
+        ok(false, "no testcase")
     });
 });

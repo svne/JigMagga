@@ -1,4 +1,4 @@
-steal('can/control', './css/<%= name %>.scss', function () {
+steal('core/control', function () {
     "use strict";
 
     /**
@@ -15,7 +15,7 @@ steal('can/control', './css/<%= name %>.scss', function () {
         {
             init : function () {
                 var self = this;
-                this.element.html(can.view(self.options.template));
+                self.element.html(can.view(self.options.template));
             }
         });
 });

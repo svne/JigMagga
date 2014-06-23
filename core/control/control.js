@@ -1,4 +1,4 @@
-steal("can/control").then(function () {
+steal("can/control").then(function (can) {
 
     can.prototype.Jig = {};
 
@@ -163,4 +163,6 @@ steal("can/control").then(function () {
             return date;
         }
     });
+    
+    return can;
 });

@@ -7,15 +7,14 @@ steal('core/model', function(){
  * Wraps <%= namespace %> backend services.
  */
 can.Model.extend("<%= Namespace %>.Models.<%= Name %>",
-/* @Static */
-{
-	findAll: "GET /api/<%= name %>s",
-  	findOne : "GET /api/<%= name %>s/{id}",
-  	create : "POST /api/<%= name %>s",
- 	update : "PUT /api/<%= name %>s/{id}",
-  	destroy : "DELETE /api/<%= name %>s/{id}"
-},
-/* @Prototype */
-{});
-
-})
+    /* @Static */
+    {
+        findAll: "GET /api/<%= name %>s",
+        findOne : "GET /api/<%= name %>s/{id}",
+        create : "POST /api/<%= name %>s",
+        update : "PUT /api/<%= name %>s/{id}",
+        destroy : "DELETE /api/<%= name %>s/{id}"
+    },
+    /* @Prototype */
+    {});
+});

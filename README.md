@@ -321,7 +321,7 @@ Normally every jig has its own initial mustache (or EJS) template and a SASS fil
 The main file in this jig is `header.js`. Could look like this the following. Beside the CSS and view files the others are 
   for testing.
 
-    steal('core/control', function () {
+    steal('core/control', function (can) {
         "use strict";
     
         /**
@@ -529,10 +529,8 @@ Routing through browser location hash change has the advantage to be able to swi
 The given routes are now available in the jig events (they can be used in all active jigs).
 
     steal(
-        'can/control',
         'can/control/route',
-        'can/route',
-        function () {
+        function (can) {
             "use strict";
     
             /**

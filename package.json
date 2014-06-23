@@ -26,7 +26,8 @@
         "grunt-prompt": "0.1.2",
         "can-compile": "^0.6.0",
         "marked": "0.3.2",
-        "testem": "^0.6.16"
+        "testem": "^0.6.16",
+        "walk": "~2.3.3"
     },
     "licenses": [
         {
@@ -38,5 +39,10 @@
     "scripts": {
         "install": "node node_modules/bower/bin/bower install --config.cwd=bower_components --config.directory=.",
         "prepublish": "node node_modules/bower/bin/bower install steal=git://github.com/bitovi/legacy-steal.git --config.directory=."
+    },
+    "dependencies": {
+        "lodash": "~2.4.1",
+        "ejs": "~1.0.0",
+        "stream-transform": "0.0.2"
     }
 }

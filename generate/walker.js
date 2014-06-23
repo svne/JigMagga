@@ -33,6 +33,11 @@ module.exports = function (defaultFolderPath, config) {
      * @extends walker
      */
     return {
+        /**
+         * return first namespace name in project folder
+         * @param {string} rootPath
+         * @return {*}
+         */
         getDefaultNamespace: function (rootPath) {
             var defaultNamespace;
 
@@ -69,6 +74,13 @@ module.exports = function (defaultFolderPath, config) {
             return defaultNamespace;
         },
 
+        /**
+         * returns list of all pages in all domains
+         * returns first 40 for now
+         *
+         * @param {string} namespace
+         * @return {array}
+         */
         getAllPagesInDomains: function (namespace) {
             
             var rootPath = path.join(projectPath, namespace),
@@ -112,6 +124,12 @@ module.exports = function (defaultFolderPath, config) {
             return _.first(results, 40);
         },
 
+        /**
+         * return all domains
+         *
+         * @param namespace
+         * @return {Array}
+         */
         getAllDomains: function (namespace) {
 
             var rootPath = path.join(projectPath, namespace),
@@ -136,6 +154,11 @@ module.exports = function (defaultFolderPath, config) {
             return results;
         },
 
+        /**
+         * return all domain grouped by namespace
+         * @param namespace
+         * @return {*}
+         */
         getAllNamespaceDomain: function (namespace) {
             var rootPath = path.join(projectPath, namespace),
                 results = [];
@@ -178,6 +201,10 @@ module.exports = function (defaultFolderPath, config) {
 
         },
 
+        /**
+         * get first index page in the first project in the folder
+         * @return {*}
+         */
         getIndexPage: function () {
             var files = [], result;
             getWalker(projectPath, {
@@ -207,6 +234,38 @@ module.exports = function (defaultFolderPath, config) {
 
             result = result.replace(projectPath, '');
             return result;
+        },
+
+        /**
+         * invoke action(domainName, domainPath) for each domain in the namespace
+         * @param {string} namespace
+         * @param {function} action
+         * @param {function} callback
+         */
+        forEachDomain: function (namespace, action, callback) {
+
+            var rootPath = path.join(projectPath, namespace),
+                walker = getWalker(rootPath);
+
+            walker.on('files', function (root, fileStats, next) {
+                    var folder = _.last(root.split(path.sep)),
+                        pageConfigStats;
+
+                    pageConfigStats = _.find(fileStats, {name: folder + '.conf'});
+
+                    if (!pageConfigStats || !isDomain(folder) ) {
+                        return next();
+                    }
+
+                    action(folder, root, next);
+                }
+            );
+
+            walker.on('end', function () {
+                callback();
+            });
+
         }
+
     };
 };

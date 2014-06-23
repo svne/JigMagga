@@ -7,12 +7,23 @@ var path = require('path'),
     format = require('util').format,
     fs = require('fs');
 
+var projectRoot = path.join(__dirname, '..');
+var templatesPath = path.join(__dirname, 'templates');
+
 var fsExtra = require('./fsExtra');
+var config = require('../grunt.config');
+var walker = require('./walker')(projectRoot , {filters: config.coreFolders});
 
 var capitalizeFirst = function (string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 };
 
+/**
+ * returns a list of parameters
+ * for templates
+ * @param {object} data
+ * @return {*}
+ */
 var getPlaceholders = function (data) {
 
     var placeholders = data;
@@ -35,6 +46,11 @@ var getPlaceholders = function (data) {
     return placeholders;
 };
 
+/**
+ * search for locale on parent config file
+ * @param {string} domainPath
+ * @return {array}
+ */
 var getLocaleForParentDomain = function (domainPath) {
     domainPath = domainPath.split('/');
     domainPath.pop();
@@ -49,6 +65,13 @@ var getLocaleForParentDomain = function (domainPath) {
     return parentDomainConfig.locales;
 };
 
+/**
+ * insert locale in the domain config
+ * @param {string} config
+ * @param {string} name
+ * @param {string} domainPath
+ * @return {array}
+ */
 var insertLocaleInPageConf = function (config, name, domainPath) {
     var locales = config.locales || getLocaleForParentDomain(domainPath),
         initLocale;
@@ -76,9 +99,7 @@ var insertLocaleInPageConf = function (config, name, domainPath) {
     return config;
 };
 
-var projectRoot = path.join(__dirname, '..');
 
-var templatesPath = path.join(__dirname, 'templates');
 
 var generator = module.exports = {
     // general placeholders:
@@ -290,6 +311,7 @@ var generator = module.exports = {
         var done = this.async(),
             tplPath = path.join(templatesPath, 'model', 'models'),
             modelsPath = path.join(projectRoot, namespace, 'models'),
+            fixturesPath = path.join(projectRoot, namespace, 'fixture'),
             params;
 
         if (fs.existsSync(path.join(modelsPath, name))) {
@@ -305,7 +327,27 @@ var generator = module.exports = {
 
         async.series([
             _.curry(fsExtra.createFolderIfNotExists)(modelsPath),
-            _.curry(fsExtra.copy)(tplPath, modelsPath, params)
+            _.curry(fsExtra.createFolderIfNotExists)(fixturesPath),
+            _.curry(fsExtra.copy)(tplPath, modelsPath, params),
+            function (next) {
+                fs.exists(path.join(fixturesPath, 'fixtures.js'), function (result) {
+                    if (result) {
+                        return next();
+                    }
+                    var fixtureTpl = path.join(tplPath, '..', 'fixture');
+                    fsExtra.copy(fixtureTpl, fixturesPath, params, next);
+                });
+            },
+            function (next) {
+                walker.forEachDomain(namespace, function (folder, root, cb) {
+                    fsExtra.editConfigFile(path.join(root, folder + '.conf'), function (data) {
+                        if (!data.includes) {
+                            data.includes = [{ "id": "//" + namespace +"/fixture/fixtures.js", "ignore" : true}];
+                        }
+                        return data;
+                    }, cb);
+                }, next);
+            }
         ], function (err) {
             if (err) {
                 grunt.log.error('Error happened while model creation', err);
@@ -374,4 +416,4 @@ var generator = module.exports = {
             done();
         });
     }
-}
+};

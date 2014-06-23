@@ -24,7 +24,13 @@ var createFolderIfNotExists = exports.createFolderIfNotExists = function (path, 
     });
 };
 
-
+/**
+ * replace placeholders in the string by the values in the params by placeholder key
+ *
+ * @param {string} stringWithPlaceholders
+ * @param {object} params
+ * @return {string}
+ */
 var replacePlaceholders = function (stringWithPlaceholders, params) {
     var regexp = new RegExp('\\(([^)]+)\\)', 'ig'),
         placeholders;
@@ -49,7 +55,15 @@ var replacePlaceholders = function (stringWithPlaceholders, params) {
     return stringWithPlaceholders;
 };
 
-
+/**
+ * copy files from source to destination
+ * options can contain rename and transform function
+ * @param {array} files
+ * @param {string} source
+ * @param {string} destination
+ * @param {object} options
+ * @param {function} callback
+ */
 var copyFiles = function (files, source, destination, options, callback) {
 
     async.each(files, function (file, next) {
@@ -80,6 +94,16 @@ var copyFiles = function (files, source, destination, options, callback) {
     }, callback);
 };
 
+/**
+ * create a folders from directories list, if object contain rename function it applies
+ * to each directory path
+ *
+ * @param {array} directories
+ * @param {string} source
+ * @param {string} destination
+ * @param {object} options
+ * @param callback
+ */
 var createFolderStructure = function (directories, source, destination, options, callback) {
     async.eachSeries(directories, function (directoryPath, next) {
         if (options.rename) {
@@ -90,6 +114,16 @@ var createFolderStructure = function (directories, source, destination, options,
     }, callback);
 };
 
+/**
+ * copy files and directories recursively from source to destination
+ * if options contains rename function it applies to each folder and file name
+ * if it contains transform function it applies to each file content
+ *
+ * @param {string} source
+ * @param {string} destination
+ * @param {object} options
+ * @param {function} callback
+ */
 var copy = function (source, destination, options, callback) {
     var directories = [],
         files = [],
@@ -131,7 +165,15 @@ var copy = function (source, destination, options, callback) {
 
 };
 
-
+/**
+ * copy files from source to dest, rename each file and folder and substetute
+ * the placeholders in it. Render each file content using ejs
+ *
+ * @param {string} source
+ * @param {string} destination
+ * @param {object} parameters
+ * @param {function} callback
+ */
 exports.copy = function (source, destination, parameters, callback) {
     copy(source, destination, {
         rename: function (target) {
@@ -145,7 +187,13 @@ exports.copy = function (source, destination, parameters, callback) {
     }, callback);
 };
 
-
+/**
+ * edit file content by reading it, changing content using edit function, and writing it again
+ * @params {string} filePath
+ * @params {action} edit
+ * @params {function} callback
+ * @type {editFile}
+ */
 var editFile = exports.editFile = function (filePath, edit, callback) {
     async.waterfall([
         fs.readFile.bind(fs, filePath),
@@ -157,6 +205,13 @@ var editFile = exports.editFile = function (filePath, edit, callback) {
     ], callback);
 };
 
+
+/**
+ * edit config file passing the file content to edit function as a JSON
+ * @param {string} filePath
+ * @param {function} edit
+ * @param {function} callback
+ */
 exports.editConfigFile = function (filePath, edit, callback) {
     editFile(filePath, function (data) {
         data = JSON.parse(data);
@@ -166,6 +221,17 @@ exports.editConfigFile = function (filePath, edit, callback) {
 };
 
 
+/**
+ * create a list of folder by path string
+ *
+ * for instence:
+ *  if rootPath === '/foo/bar/qaz'
+ *  it will create foo than /foo/bar than /foo/bar/qaz
+ *
+ * @param {string} rootPath
+ * @param {string} pathToCreate
+ * @param {function} callback
+ */
 exports.createPath = function (rootPath, pathToCreate, callback) {
     var folderList = pathToCreate.split('/'),
         currentPagePath = rootPath;

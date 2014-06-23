@@ -22,7 +22,7 @@ module.exports = function(grunt) {
                             config: "generator.template",
                             type: "list",
                             message: "Please define the type to generate",
-                            choices: ["jig", "model", "page", "domain", "locale", "project", "repository"],
+                            choices: ["jig", "model", "page", "domain", "locale", "project", "repository", "groupedDomain"],
                             default: "jig"
                         },
                         {
@@ -62,7 +62,9 @@ module.exports = function(grunt) {
                                 }
                             },
                             when: function (answers) {
-                                return answers['generator.template'] !== 'project' && answers['generator.template'] !== 'locale';
+                                return answers['generator.template'] !== 'project' &&
+                                    answers['generator.template'] !== 'locale' &&
+                                    answers['generator.template'] !== 'repository';
                             }
                         },
                         {
@@ -128,6 +130,24 @@ module.exports = function(grunt) {
                             },
                             when: function (answers) {
                                 return answers['generator.template'] === 'page';
+                            }
+                        },
+                        {
+                            config: "generator.domain",
+                            type: "list",
+                            choices: function(answers) {
+                                // print out all domains in the current namespace/page
+                                var result = walker.getAllFirstLevelDomains(answers['generator.namespace']);
+
+//                                result.unshift('default');
+                                return result;
+                            },
+                            message: "In which domain should the groupedDomain be rendered?",
+                            filter: function (value) {
+                                return value.toLowerCase();
+                            },
+                            when: function (answers) {
+                                return answers['generator.template'] === 'groupedDomain';
                             }
                         },
                         {

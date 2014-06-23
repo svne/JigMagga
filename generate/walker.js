@@ -155,6 +155,40 @@ module.exports = function (defaultFolderPath, config) {
         },
 
         /**
+         * return all domains
+         *
+         * @param namespace
+         * @return {Array}
+         */
+        getAllFirstLevelDomains: function (namespace) {
+
+            var rootPath = path.join(projectPath, namespace),
+                results = [];
+
+            getWalker(rootPath, {
+                files: function (root, fileStats, next) {
+                    var folderList = root.split(path.sep),
+                        folder = _.last(folderList),
+                        pageConfigStats;
+
+                    pageConfigStats = _.find(fileStats, {name: folder + '.conf'});
+
+                    if (!pageConfigStats ||
+                        !isDomain(folder) ||
+                        folderList[folderList.length - 2] !== 'page') {
+                        return next();
+                    }
+
+                    results.push({name: folder, value: root});
+                    next();
+                }
+            });
+
+            return results;
+        },
+
+
+        /**
          * return all domain grouped by namespace
          * @param namespace
          * @return {*}

@@ -5,7 +5,8 @@ var path = require('path'),
     grunt = require('grunt'),
     _ = require('lodash'),
     format = require('util').format,
-    fs = require('fs');
+    fs = require('fs'),
+    Git = require('git-wrapper');
 
 var projectRoot = path.join(__dirname, '..');
 var templatesPath = path.join(__dirname, 'templates');
@@ -155,10 +156,28 @@ var generator = module.exports = {
 
 
     },
-    repository: function (namespace, name) {
-        // TODO: fail if namespace folder is in git
+    repository: function (namespace) {
+        // fail if namespace folder is in git
         // create a repository from the namespace called "name"
-        console.log(namespace, name);
+        var git = new Git({}),
+            done = this.async(),
+            namespaceFolder = path.join(projectRoot, namespace);
+
+        if (fs.existsSync(path.join(namespaceFolder, '.git'))) {
+            grunt.log.error('Folder with namespace already is a git repository');
+            return done();
+        }
+
+        git.exec('init', [namespaceFolder], function (err, res) {
+            if (err) {
+                grunt.log.error('Error happened while repo creation', err);
+                return done();
+            }
+            grunt.log.writeln(res);
+            grunt.log.writeln('Repository created!');
+            done();
+        });
+
     },
     domain: function (namespace, name, locale) {
         var done = this.async(),
@@ -411,5 +430,26 @@ var generator = module.exports = {
             grunt.log.writeln('Jig created!');
             done();
         });
+    },
+    groupedDomain: function (namespace, name, domain) {
+        var done = this.async(),
+            tplPath = path.join(templatesPath, 'domain', 'page'),
+            params = getPlaceholders({name: name, namespace: namespace, subdomain: true}),
+            domainPath = path.join(domain, name);
+
+        if (fs.existsSync(domainPath)) {
+            grunt.log.error('Such subdomain already exists in domain');
+            return done();
+        }
+        async.series([
+            _.curry(fsExtra.copy)(tplPath, domain, params)
+        ], function (err) {
+            if (err) {
+                grunt.log.error('Error happened while domain creation', err);
+                return done(err);
+            }
+            grunt.log.writeln('Domain created!');
+        });
+
     }
 };

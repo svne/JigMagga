@@ -175,7 +175,7 @@ module.exports = function(grunt) {
                                     });
                                 }
                                 res.end();
-                            } else if (req.url && req.url.search(/\.[s]{0,1}html/) !== -1) {
+                            } else if (req.url && req.url.search(/\.html/) !== -1) {
                                 var filename = options.base[0] + req.url,
                                     defaultBase = filename.replace(/\/page\/[^\/]*\//, '/page/default/');
                                 if (fs.existsSync(filename)) {

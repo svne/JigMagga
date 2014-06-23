@@ -8,6 +8,7 @@ steal.config({
     },
     paths: {
         "jquery/": "bower_components/jquerypp/",
+        "jquerypp/": "bower_components/jquerypp/",
         "can/": "bower_components/canjs/steal/canjs/",
         "qunit/": "bower_components/qunit/qunit/",
         "locales/": "locales/"

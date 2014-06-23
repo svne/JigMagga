@@ -134,14 +134,16 @@ var generator = module.exports = {
                 }, next);
             },
             function (next) {
-                fs.mkdir(path.join(projectRoot, namespace), next);
+                fs.mkdir(destinationPath, next);
             },
             function (next) {
                 var tplPath = templatesPath + '/project',
-                    destination = projectRoot + '/' + namespace,
                     params = getPlaceholders({namespace: namespace});
 
-                fsExtra.copy(tplPath, destination, params, next);
+                fsExtra.copy(tplPath, destinationPath, params, next);
+            },
+            function (next) {
+                fs.mkdir(path.join(destinationPath, 'page', 'default'), next);
             },
             function (next) {
                 generator.page(namespace, 'index', 'default', next);
@@ -152,6 +154,7 @@ var generator = module.exports = {
                 return done();
             }
             grunt.log.writeln('Project created!');
+            done();
         });
 
 
@@ -202,6 +205,7 @@ var generator = module.exports = {
                 return done(err);
             }
             grunt.log.writeln('Domain created!');
+            done();
         });
 
         // fail if the domain name exists in locale and in page
@@ -267,6 +271,7 @@ var generator = module.exports = {
                 return done(err);
             }
             grunt.log.writeln('Locale created!');
+            done();
         });
     },
     page: function (namespace, name, domainPath, callback) {
@@ -393,7 +398,6 @@ var generator = module.exports = {
             jigPath,
             params;
 
-        console.log(domain);
         jigPath = path.join(jigFolderPath, name);
         if (fs.existsSync(jigPath)) {
             grunt.log.error('Such jig already exists in namespace');

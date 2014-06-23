@@ -2,12 +2,13 @@ steal.config({
     jmENV : "development",
     map: {
         "*": {
-            "jquery/jquery.js": (this.navigator && this.navigator.userAgent.indexOf("MSIE") !== -1) || (typeof global !== "undefined" && global.DEFAULTS.browser && DEFAULTS.browser.indexOf("msie") !== -1) ? "bower_components/jquery-legacy/jquery.js" :  "bower_components/jquery/jquery.min.js",
+            "jquery/jquery.js": (this.navigator && this.navigator.userAgent.indexOf("MSIE") !== -1) || (typeof global !== "undefined" && global.DEFAULTS.browser && DEFAULTS.browser.indexOf("msie") !== -1) ? "bower_components/jquery/jquery.js" :  "bower_components/jquery2/jquery.min.js",
             "jquery/jstorage": "bower_components/jstorage"
         }
     },
     paths: {
         "jquery/": "bower_components/jquerypp/",
+        "jquerypp/": "bower_components/jquerypp/",
         "can/": "bower_components/canjs/steal/canjs/",
         "qunit/": "bower_components/qunit/qunit/",
         "locales/": "locales/"

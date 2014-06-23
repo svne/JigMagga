@@ -1,4 +1,4 @@
-steal("can/model/list", "can/map/delegate", "jquery/jstorage", function (can) {
+steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
     "use strict";
     can.extend(can.Model, {
 

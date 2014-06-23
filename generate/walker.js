@@ -247,7 +247,7 @@ module.exports = function (defaultFolderPath, config) {
                         indexFile;
 
                     indexFile = _.find(fileStats, function (stats) {
-                        return stats.name === 'index.html' || stats.name === 'index.shtml';
+                        return stats.name === 'index.html';
                     });
 
                     function inDomainOrDefault() {

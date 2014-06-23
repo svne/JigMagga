@@ -183,7 +183,7 @@ module.exports = function(grunt) {
                                 var deafultIndex = walker.getIndexPage();
 
                                 if (deafultIndex) {
-                                    res.writeHead(301, {Location: deafultIndex});
+                                    res.writeHead(301, {Location: deafultIndex, Expires: new Date().toGMTString()});
                                 } else {
                                     // if no index file is generated yet, print out the README.md
                                     require('marked')(fs.readFileSync("./README.md", {encoding: "utf8"}), function (err, html) {
@@ -195,7 +195,7 @@ module.exports = function(grunt) {
                                     });
                                 }
                                 res.end();
-                            } else if (req.url && req.url.search(/\.[s]{0,1}html/) !== -1) {
+                            } else if (req.url && req.url.search(/\.html/) !== -1) {
                                 var filename = options.base[0] + req.url,
                                     defaultBase = filename.replace(/\/page\/[^\/]*\//, '/page/default/');
                                 if (fs.existsSync(filename)) {

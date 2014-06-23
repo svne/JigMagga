@@ -8,8 +8,8 @@
     },
     "dependencies": {
         "canjs": "2.0.7",
-        "jquery-legacy": "jquery#1.10.2",
-        "jquery": "2.0.3",
+        "jquery": "jquery#1.11.0",
+        "jquery2": "jquery#~2.0.3",
         "jquerypp": "1.0.1",
         "jstorage": "0.4.8"
     }

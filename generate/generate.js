@@ -164,7 +164,6 @@ var generator = module.exports = {
         console.log(namespace, name);
     },
     domain: function (namespace, name, locale) {
-        console.log(arguments);
         var done = this.async(),
             tplPath = path.join(templatesPath, 'domain', 'page'),
             params = getPlaceholders({name: name, namespace: namespace}),

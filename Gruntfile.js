@@ -9,10 +9,6 @@ var walker = createWalker('.', {
     filters: config.coreFolders
 });
 
-//var gen = require('./generate/generate');
-//
-//gen.project('zz');
-
 module.exports = function(grunt) {
     var namespace;
 

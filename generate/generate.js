@@ -34,14 +34,11 @@ var getPlaceholders = function (data) {
 
     if (data.name) {
         placeholders.Name = capitalizeFirst(data.name);
-        placeholders.plural = data.name + 's';
-        placeholders.underscore = data.name;
     }
 
     if (data.path) {
         placeholders.nameLast = _.last(data.path.split('/'));
     }
-
 
     return placeholders;
 };

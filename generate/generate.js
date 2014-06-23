@@ -35,13 +35,32 @@ var getPlaceholders = function (data) {
     return placeholders;
 };
 
-var insertLocaleInPageConf = function (config, name) {
-    config.locales = config.locales || ['de_DE'];
+var getLocaleForParentDomain = function (domainPath) {
+    domainPath = domainPath.split('/');
+    domainPath.pop();
 
-    var initLocale = config['init-locale'] || _.first(config.locales);
+    var domainName = _.last(domainPath),
+        parentDomainPath = domainPath.join('/'),
+        parentDomainConfig;
+
+    parentDomainConfig = fs.readFileSync(path.join(parentDomainPath, domainName + '.conf'));
+    parentDomainConfig = JSON.parse(parentDomainConfig.toString());
+
+    return parentDomainConfig.locales;
+};
+
+var insertLocaleInPageConf = function (config, name, domainPath) {
+    var locales = config.locales || getLocaleForParentDomain(domainPath),
+        initLocale;
+
+    if (!locales) {
+        throw new Error('You do not have an locale in current or parent domain');
+    }
+
+    initLocale = config['init-locale'] || _.first(locales);
     config.pages = config.pages || {};
     config.pages[name] = {};
-    config.locales.forEach(function (locale) {
+    locales.forEach(function (locale) {
         var localeLanguage = _.first(locale.split('_')),
             path;
 
@@ -51,6 +70,7 @@ var insertLocaleInPageConf = function (config, name) {
             path = '/' + localeLanguage + '/' + name;
         }
 
+        path = path.replace(/index$/i, '');
         config.pages[name][locale] = path;
     });
     return config;
@@ -85,9 +105,12 @@ var generator = module.exports = {
 
         async.series([
             function (next) {
-                var gitignore = path.join(projectRoot, '.gitignore');
-
+                var gitignore = path.join(projectRoot, '.gitignore'),
+                    lastIsNewLine = new RegExp('\\n$', 'i');
                 fsExtra.editFile(gitignore, function (data) {
+                    if (!lastIsNewLine.test(data)) {
+                        data += '\n';
+                    }
                     return data + namespace + '\n';
                 }, next);
             },
@@ -119,14 +142,39 @@ var generator = module.exports = {
         // create a repository from the namespace called "name"
         console.log(namespace, name);
     },
-    domain: function (namespace, name) {
-        // TODO: fail if the domain name exists in locale and in page
+    domain: function (namespace, name, locale) {
+        console.log(arguments);
+        var done = this.async(),
+            tplPath = path.join(templatesPath, 'domain', 'page'),
+            params = getPlaceholders({name: name, namespace: namespace}),
+            pagePath = path.join(projectRoot, namespace, 'page'),
+            domainPath = path.join(projectRoot, namespace, 'page', name);
+
+        if (fs.existsSync(domainPath)) {
+            grunt.log.error('Such domain already exists in namespace');
+            return done();
+        }
+        async.series([
+            _.curry(fsExtra.copy)(tplPath, pagePath, params),
+            function (next) {
+                var domains = [{name: name, value: domainPath}];
+                generator.locale(namespace, locale, domains, next);
+            }
+        ], function (err) {
+            if (err) {
+                grunt.log.error('Error happened while domain creation', err);
+                return done(err);
+            }
+            grunt.log.writeln('Domain created!');
+        });
+
+        // fail if the domain name exists in locale and in page
         // create a folder called name in "page"
         // create a conf file in "page"/domain as the template
-        console.log(namespace, name);
     },
-    locale: function (namespace, name, domains) {
-        var done = this.async(),
+    locale: function (namespace, name, domains, callback) {
+
+        var done = callback || this.async(),
             domain,
             localePath,
             tplPath,
@@ -138,18 +186,11 @@ var generator = module.exports = {
         // inside namespace/"page"/domain/domain".conf" add the key "locales" if it doesn't exists and inside the array of locales add the locale
         // example: "locales": ["de_DE", "en_EN"]
         // inside create a header.po and a messages.po with the same content having "locale" set to locale, see template
-        domains = JSON.parse(domains);
-
+        domains = _.isString(domains) ? JSON.parse(domains) : domains;
         domain = _.find(domains, function (item) {
             return item.name === _.last(item.value.split('/'));
         });
         localePath = path.join(projectRoot, namespace, 'locales');
-
-        if (fs.existsSync(path.join(localePath, domain.name, name)) ||
-            !fs.existsSync(domain.value)) {
-            grunt.log.error('Such locale already exists in namespace or domain does not exists');
-            return done();
-        }
 
         tplPath = path.join(templatesPath, 'locale', 'locales');
         params = getPlaceholders({
@@ -159,6 +200,15 @@ var generator = module.exports = {
         });
 
         async.series([
+            _.curry(fsExtra.createFolderIfNotExists)(localePath),
+            function (next) {
+                if (fs.existsSync(path.join(localePath, domain.name, name)) ||
+                    !fs.existsSync(domain.value)) {
+                    grunt.log.error('Such locale already exists in namespace or domain does not exists');
+                    return done();
+                }
+                return next();
+            },
             _.curry(fsExtra.copy)(tplPath, localePath, params),
             function (next) {
                 async.each(domains, function (item, cb) {
@@ -173,7 +223,7 @@ var generator = module.exports = {
                         return data;
                     }, cb);
                 }, next);
-            },
+            }
 
         ], function (err) {
             if (err) {
@@ -217,7 +267,7 @@ var generator = module.exports = {
                         return next();
                     }
                     fsExtra.editConfigFile(domainConfig, function (config) {
-                        return insertLocaleInPageConf(config, name);
+                        return insertLocaleInPageConf(config, name, domainPath);
                     }, next);
                 }
             ], function (err) {

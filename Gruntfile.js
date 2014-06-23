@@ -85,6 +85,21 @@ module.exports = function(grunt) {
                             }
                         },
                         {
+                            config: "generator.locale",
+                            type: "input",
+                            message: "Please define the locale:",
+                            validate: function (value) {
+                                if (!value.match(/^[a-z][a-z]_[A-Z][A-Z]$/i)) {
+                                    return "Please choose a first locale in domain in the form 'xx_XX'";
+                                } else {
+                                    return true;
+                                }
+                            },
+                            when: function (answers) {
+                                return answers['generator.template'] === 'domain';
+                            }
+                        },
+                        {
                             config: "generator.domain",
                             type: "list",
                             choices: function(answers) {
@@ -208,7 +223,7 @@ module.exports = function(grunt) {
         var generate = require(__dirname + "/generate/generate");
 
         generate[grunt.config("generator.template")].call(this, grunt.config("generator.namespace"),
-            grunt.config("generator.name"), grunt.config("generator.domain"));
+            grunt.config("generator.name"), grunt.config("generator.domain") || grunt.config("generator.locale"));
     });
 
 };

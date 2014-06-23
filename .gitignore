@@ -18,4 +18,5 @@ bower_components/*
 !bower_components/bower.json
 node_modules/
 yd/
+yd/*
 steal/

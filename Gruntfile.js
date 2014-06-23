@@ -1,8 +1,17 @@
-module.exports = function (grunt) {
-    "use strict";
+"use strict";
+var fs = require("fs");
 
+var createWalker = require('./generate/walker');
+var config = require('./grunt.config');
 
-    var fs = require("fs");
+var walker = createWalker('.', {
+    followLinks: false,
+    filters: config.coreFolders
+});
+
+module.exports = function(grunt) {
+    var namespace;
+
 
     grunt.initConfig({
         prompt: {
@@ -20,9 +29,12 @@ module.exports = function (grunt) {
                             config: "generator.namespace",
                             type: "input",
                             message: "Please set the namespace of the project:",
-                            default: function () {
-                                // TODO: step through all folders, searching for a folder with page/page.conf inside. this should be a json file and should contain value for "namespace". Give the first one you find as the default
-                                return ""
+                            default: function(answer) {
+                                if (answer['generator.template'] === 'project') {
+                                    return;
+                                }
+                                // step through all folders, searching for a folder with page/page.conf inside. this should be a json file and should contain value for "namespace". Give the first one you find as the default
+                                return walker.getDefaultNamespace();
                             },
                             filter: function (value) {
                                 return value.toLowerCase();
@@ -42,8 +54,8 @@ module.exports = function (grunt) {
                             filter: function (value) {
                                 return value.toLowerCase();
                             },
-                            validate: function (value) {
-                                if (!value.match(/^[a-z][\/a-z0-9]*$/i)) {
+                            validate: function(value) {
+                                if (!value.match(/^[a-z][\/a-z0-9.]*$/i)) {
                                     return "Please only use chars and numbers starting with a character";
                                 } else {
                                     return true;
@@ -69,14 +81,28 @@ module.exports = function (grunt) {
                             }
                         },
                         {
+                            config: "generator.locale",
+                            type: "input",
+                            message: "Please define the locale:",
+                            validate: function (value) {
+                                if (!value.match(/^[a-z][a-z]_[A-Z][A-Z]$/i)) {
+                                    return "Please choose a first locale in domain in the form 'xx_XX'";
+                                } else {
+                                    return true;
+                                }
+                            },
+                            when: function (answers) {
+                                return answers['generator.template'] === 'domain';
+                            }
+                        },
+                        {
                             config: "generator.domain",
                             type: "list",
-                            choices: function () {
-                                // TODO print out all domains and domains/pages in the current namespace/page (all with a conf-file inside)
-                                return [
-                                    {name: "No page", value: "none"},
-                                    "default/index"
-                                ]
+                            choices: function(answers) {
+                                var result = walker.getAllPagesInDomains(answers['generator.namespace']);
+                                // print out all domains and domains/pages in the current namespace/page (all with a conf-file inside)
+                                result.unshift({name: "No page", value: "none"});
+                                return result;
                             },
                             message: "In which page should the jig be rendered?",
                             filter: function (value) {
@@ -89,9 +115,12 @@ module.exports = function (grunt) {
                         {
                             config: "generator.domain",
                             type: "list",
-                            choices: function () {
-                                // TODO print out all domains in the current namespace/page
-                                return ["default", "lieferando.de"]
+                            choices: function(answers) {
+                                // print out all domains in the current namespace/page
+                                var result = walker.getAllDomains(answers['generator.namespace']);
+
+                                result.unshift('default');
+                                return result;
                             },
                             message: "In which domain should the page be rendered?",
                             filter: function (value) {
@@ -104,9 +133,10 @@ module.exports = function (grunt) {
                         {
                             config: "generator.domain",
                             type: "list",
-                            choices: function () {
-                                // TODO print out the namespace"-domain" in all current namespace"/page/"domain/domain.conf
-                                return ["lieferando.de"]
+                            choices: function(answers) {
+                                // print out the namespace"-domain" in all current namespace"/page/"domain/domain.conf
+                                var result = walker.getAllNamespaceDomain(answers['generator.namespace']);
+                                return result;
                             },
                             message: "For which domain is this locale?",
                             filter: function (value) {
@@ -129,11 +159,11 @@ module.exports = function (grunt) {
                         // inject a custom middleware into the array of default middlewares
                         middlewares.unshift(function (req, res, next) {
                             if (req.url === "/") {
-                                // TODO: if there is a namespace with a index page, jump to the index page in the first domain or in default
-                                if (false) {
-                                    res.writeHead(301,
-                                        {Location: namespace + '/page/' + domain + "/index/index.html"}
-                                    );
+                                // if there is a namespace with a index page, jump to the index page in the first domain or in default
+                                var deafultIndex = walker.getIndexPage();
+
+                                if (deafultIndex) {
+                                    res.writeHead(301, {Location: deafultIndex});
                                 } else {
                                     // if no index file is generated yet, print out the README.md
                                     require('marked')(fs.readFileSync("./README.md", {encoding: "utf8"}), function (err, html) {
@@ -185,8 +215,11 @@ module.exports = function (grunt) {
             });
     });
 
-    grunt.registerTask("generator", "Project structure generator", function () {
-        require(__dirname + "/generate/generate.js")[grunt.config("generator.template")](grunt.config("generator.namespace"), grunt.config("generator.name"), grunt.config("generator.domain"));
+    grunt.registerTask("generator", "Project structure generator", function() {
+        var generate = require(__dirname + "/generate/generate");
+
+        generate[grunt.config("generator.template")].call(this, grunt.config("generator.namespace"),
+            grunt.config("generator.name"), grunt.config("generator.domain") || grunt.config("generator.locale"));
     });
 
 };

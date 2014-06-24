@@ -1,5 +1,6 @@
 "use strict";
-var fs = require("fs");
+var fs = require("fs"),
+    path = require('path');
 
 var createWalker = require('./generate/walker');
 var config = require('./grunt.config');
@@ -22,7 +23,7 @@ module.exports = function(grunt) {
                             config: "generator.template",
                             type: "list",
                             message: "Please define the type to generate",
-                            choices: ["jig", "model", "page", "domain", "locale", "project", "repository"],
+                            choices: ["jig", "model", "page", "domain", "locale", "project", "repository", "groupedDomain"],
                             default: "jig"
                         },
                         {
@@ -62,7 +63,9 @@ module.exports = function(grunt) {
                                 }
                             },
                             when: function (answers) {
-                                return answers['generator.template'] !== 'project' && answers['generator.template'] !== 'locale';
+                                return answers['generator.template'] !== 'project' &&
+                                    answers['generator.template'] !== 'locale' &&
+                                    answers['generator.template'] !== 'repository';
                             }
                         },
                         {
@@ -134,6 +137,24 @@ module.exports = function(grunt) {
                             config: "generator.domain",
                             type: "list",
                             choices: function(answers) {
+                                // print out all domains in the current namespace/page
+                                var result = walker.getAllFirstLevelDomains(answers['generator.namespace']);
+
+//                                result.unshift('default');
+                                return result;
+                            },
+                            message: "In which domain should the groupedDomain be rendered?",
+                            filter: function (value) {
+                                return value.toLowerCase();
+                            },
+                            when: function (answers) {
+                                return answers['generator.template'] === 'groupedDomain';
+                            }
+                        },
+                        {
+                            config: "generator.domain",
+                            type: "list",
+                            choices: function(answers) {
                                 // print out the namespace"-domain" in all current namespace"/page/"domain/domain.conf
                                 var result = walker.getAllNamespaceDomain(answers['generator.namespace']);
                                 return result;
@@ -146,6 +167,27 @@ module.exports = function(grunt) {
                                 return answers['generator.template'] === 'locale';
                             }
                         }
+                    ]
+                }
+            },
+            test: {
+                options: {
+                    questions: [
+                        {
+                            config: "generator.test.namespace",
+                            type: "input",
+                            message: "Please set the namespace of the project:",
+                            default: function(answer) {
+                                if (answer['generator.template'] === 'project') {
+                                    return;
+                                }
+                                return walker.getDefaultNamespace();
+                            },
+                            filter: function (value) {
+                                return value.toLowerCase();
+                            }
+                        }
+
                     ]
                 }
             }
@@ -206,13 +248,23 @@ module.exports = function(grunt) {
             'generator'
         ]);
 
+    grunt.registerTask('test', [
+        'prompt:test',
+        'testem'
+    ]);
 
-    grunt.registerTask('test', "Test all files that have a funcunit.html file", function(){
+    grunt.registerTask('testem', "Test all files that have a funcunit.html file", function(){
         var async = this.async(),
-            spawn = require('child_process').spawn,
-            testem = spawn(__dirname + '/node_modules/testem/testem.js', {
-                stdio : "inherit"
-            });
+            namespace = grunt.config('generator.test.namespace'),
+            pathToTests,
+            fork = require('child_process').fork,
+            testem;
+
+        pathToTests = namespace ? path.join(__dirname, namespace) : __dirname;
+
+        testem = fork(__dirname + '/node_modules/testem/testem.js', [], {
+            cwd: pathToTests
+        });
     });
 
     grunt.registerTask("generator", "Project structure generator", function() {

@@ -1,4 +1,4 @@
-steal("can/util", "can/model", "can/model/list", "can/map/delegate", "jquery/jstorage", "./ajaxSetup", function () {
+steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
     "use strict";
     can.extend(can.Model, {
 
@@ -494,4 +494,6 @@ steal("can/util", "can/model", "can/model/list", "can/map/delegate", "jquery/jst
             }
         }
     });
+    
+    return can;
 });

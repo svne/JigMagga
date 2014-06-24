@@ -163,7 +163,7 @@ module.exports = function(grunt) {
                                 var deafultIndex = walker.getIndexPage();
 
                                 if (deafultIndex) {
-                                    res.writeHead(301, {Location: deafultIndex});
+                                    res.writeHead(301, {Location: deafultIndex, Expires: new Date().toGMTString()});
                                 } else {
                                     // if no index file is generated yet, print out the README.md
                                     require('marked')(fs.readFileSync("./README.md", {encoding: "utf8"}), function (err, html) {

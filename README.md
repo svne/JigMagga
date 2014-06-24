@@ -44,12 +44,12 @@ Example configuration for generating pages
 
 This is currently the workflow at all takeaway plattforms that use _JigMagga_.
 
-![JigMagga](media/img/jigMaggaWorkflow.jpg)
+![JigMagga](media/img/jigMaggaWorkflow.png)
 
 It uses several queues and workers generating the different domains and pushing the pages to the CDN.
  The rabbitMQ admin pannel for all domains look like The following.
  
-![JigMagga](media/img/jigMaggaRabbitMq.jpg)
+![JigMagga](media/img/jigMaggaRabbitMq.png)
 
 Getting started
 ===============
@@ -882,7 +882,7 @@ In this case we want to append the "header jig" to the header area of our index 
  
     ".yournamespace-jig-header": {
         "controller": "Yournamespace.Jig.Header",
-        "template": "yournamespace/jig/header/views/init.ejs",
+        "template": "yournamespace/jig/header/views/init.mustache",
         "slot" : {
             "parent" : ".yournamespace-header .yournamespace-grid",
             "insertAsChild": "append",
@@ -905,7 +905,7 @@ In this case we want to append the "header jig" to the header area of our index 
     <div class="yournamespace-header">
         <div class="yournamespace-grid">
             <section class="yournamespace-jig-header your-additional-classes">
-                <!-- Your content of "yournamespace/jig/header/views/init.ejs" -->
+                <!-- Your content of "yournamespace/jig/header/views/init.mustache" -->
             </section>
         </div>
     </div>

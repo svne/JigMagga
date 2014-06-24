@@ -1,4 +1,4 @@
-![JigMagga](media/img/jigMagga.jpg)
+![JigMagga](media/img/JigMagga.jpg)
 
 JigMagga
 ========
@@ -46,12 +46,12 @@ Example configuration for generating pages
 
 This is currently the workflow at all takeaway plattforms that use _JigMagga_.
 
-![JigMagga](media/img/jigMaggaWorkflow.png)
+![JigMagga](media/img/JigMaggaWorkflow.png)
 
 It uses several queues and workers generating the different domains and pushing the pages to the CDN.
  The rabbitMQ admin pannel for all domains look like The following.
  
-![JigMagga](media/img/jigMaggaRabbitMq.png)
+![JigMagga](media/img/JigMaggaRabbitMq.png)
 
 Getting started
 ===============

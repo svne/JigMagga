@@ -785,33 +785,33 @@ Styling with SASS
 For styling we use [SASS](http://sass-lang.com/) (Syntactically Awesome Style Sheets). It is a CSS extension library which adds features like color functions, variables and other useful stuff.
 In addition to the .scss file of each jig there are two main files for global styling:
 
-- `jm-scss.scss` => Here are all the functions, mixins and variables you need. It's a sort of a configuration file and is included (@include) in every jig and in our `jm-core.scss`.
-- `jm-core.scss` => The `jm-core.scss` holds the global used styles like link colors, headlines, predefined boxes and our [grid](#grid).
+- `yournamespace-scss.scss` => Here are all the functions, mixins and variables you need. It's a sort of a configuration file and is included (@include) in every jig and in our `yournamespace-core.scss`.
+- `yournamespace-core.scss` => The `yournamespace-core.scss` holds the global used styles like link colors, headlines, predefined boxes and our [grid](#grid).
 
-We've already put some predefined mixins into `jm-scss.scss` to make it easier for you to start.
+We've already put some predefined mixins into `yournamespace-scss.scss` to make it easier for you to start.
 
-It's recommended to always use the `jm-` prefix for classed and ids. So you can avoid problems with stylesheets of external plugins or something like that.
+It's recommended to always use the `yournamespace-` prefix for classed and ids. So you can avoid problems with stylesheets of external plugins or something like that.
 
-As already mentioned every jig got it's own .scss file. This should be only used for jig related styling. Every class from `jm-core.scss` or every function from `jm-scss.scss` could be used for extending the jig styles.
-For jig styling you should use a namespace convention like `.jm-jig-yourjigname-elementname`. So it will be easier for you to find your styles or to debug your code. It's also helpful to avoid conflicts with other jig styles.
+As already mentioned every jig got it's own .scss file. This should be only used for jig related styling. Every class from `yournamespace-core.scss` or every function from `yournamespace-scss.scss` could be used for extending the jig styles.
+For jig styling you should use a namespace convention like `.yournamespace-jig-yourjigname-elementname`. So it will be easier for you to find your styles or to debug your code. It's also helpful to avoid conflicts with other jig styles.
 
 At last here is a short example of what you can do with SASS in _JigMagga_:
 
-###### jm-scss.scss
+###### yournamespace-scss.scss
 
     $font-family-primary: 'Roboto', sans-serif;
     $font-weight-bold: 700;
     
-    @mixin jm-headline-big {
+    @mixin yournamespace-headline-big {
         font-family: $font-family-primary;
         font-weight: $font-weight-bold;
         font-size: 32px;
     }
 
-###### jm-core.scss
+###### yournamespace-core.scss
 
     .headline {
-        @include jm-headline-big();
+        @include yournamespace-headline-big();
         color: #f00;
     }
 
@@ -832,31 +832,31 @@ Grid
 
 We created a 24-column grid to make positioning easier.
 
-![JigMagga](media/img/jm-grid.png)
+![JigMagga](media/img/JigMaggaGrid.png)
 
 Just create the following HTML-structure to use the grid:
 
-    <div class="jm-grid">
-        <div class="jm-grid-06"></div>
-        <div class="jm-grid-03"></div>
-        <div class="jm-grid-07"></div>
-        <div class="jm-grid-08"></div>
+    <div class="yournamespace-grid">
+        <div class="yournamespace-grid-06"></div>
+        <div class="yournamespace-grid-03"></div>
+        <div class="yournamespace-grid-07"></div>
+        <div class="yournamespace-grid-08"></div>
     </div>
     
 If you want to use gaps or a offset between the boxes you have to add one of the following classes:
 
-- jm-grid-gap-l => gap on the left side
-- jm-grid-gap-r => gap on the right side
-- jm-grid-gap-b => gap on both sides
-- jm-off-xx => xx colums offset (replace xx with a number from 01 to 23)
+- yournamespace-grid-gap-l => gap on the left side
+- yournamespace-grid-gap-r => gap on the right side
+- yournamespace-grid-gap-b => gap on both sides
+- yournamespace-off-xx => xx colums offset (replace xx with a number from 01 to 23)
 
 Here's an example for that:
 
-    <div class="jm-grid">
-        <div class="jm-grid-06 jm-grid-gap-l"></div>
-        <div class="jm-grid-03 jm-grid-gap-b"></div>
-        <div class="jm-grid-07"></div>
-        <div class="jm-grid-05 jm-off-03"></div>
+    <div class="yournamespace-grid">
+        <div class="yournamespace-grid-06 yournamespace-grid-gap-l"></div>
+        <div class="yournamespace-grid-03 yournamespace-grid-gap-b"></div>
+        <div class="yournamespace-grid-07"></div>
+        <div class="yournamespace-grid-05 yournamespace-off-03"></div>
     </div>
 
 The slot system
@@ -868,23 +868,23 @@ In this case we want to append the "header jig" to the header area of our index 
 
 ###### index.html
 
-    <div class="jm-header">
-        <div class="jm-grid"></div>
+    <div class="yournamespace-header">
+        <div class="yournamespace-grid"></div>
     </div>
-    <div class="jm-content">
-        <div class="jm-grid"></div>
+    <div class="yournamespace-content">
+        <div class="yournamespace-grid"></div>
     </div>
-    <div class="jm-footer">
-        <div class="jm-grid"></div>
+    <div class="yournamespace-footer">
+        <div class="yournamespace-grid"></div>
     </div>
     
 ###### index.conf
  
-    ".jm-jig-header": {
-        "controller": "Jm.Jig.Header",
-        "template": "jm/jig/header/views/init.ejs",
+    ".yournamespace-jig-header": {
+        "controller": "Yournamespace.Jig.Header",
+        "template": "yournamespace/jig/header/views/init.ejs",
         "slot" : {
-            "parent" : ".jm-header .jm-grid",
+            "parent" : ".yournamespace-header .yournamespace-grid",
             "insertAsChild": "append",
             "classes" : [
                 "put",
@@ -902,22 +902,22 @@ In this case we want to append the "header jig" to the header area of our index 
 
 ###### output HTML
 
-    <div class="jm-header">
-        <div class="jm-grid">
-            <section class="jm-jig-header your-additional-classes">
-                <!-- Your content of "jm/jig/header/views/init.ejs" -->
+    <div class="yournamespace-header">
+        <div class="yournamespace-grid">
+            <section class="yournamespace-jig-header your-additional-classes">
+                <!-- Your content of "yournamespace/jig/header/views/init.ejs" -->
             </section>
         </div>
     </div>
-    <div class="jm-content">
-        <div class="jm-grid"></div>
+    <div class="yournamespace-content">
+        <div class="yournamespace-grid"></div>
     </div>
-    <div class="jm-footer">
-        <div class="jm-grid"></div>
+    <div class="yournamespace-footer">
+        <div class="yournamespace-grid"></div>
     </div>
     
 ###### Explanation:
-The configuration key `".jm-jig-header"` is used as the main class for the rendered object. The controller and template configuration are already described in [here](#jigs-in-the-config-files).
+The configuration key `".yournamespace-jig-header"` is used as the main class for the rendered object. The controller and template configuration are already described in [here](#jigs-in-the-config-files).
 Inside the slot config of a jig you can set a parent. That's the element where the jig gets appended or prepended. Depends on your "insertAsChild" settings. Default setting for that is "append".
 In "classes" you can add additional CSS classes just as you want. You can also add [grid](#grid) classes to set the wanted position of your jig. If you want to add some options please have a look at the [howto](#options).
 
@@ -926,11 +926,11 @@ Images
 
 Images are stored in:
 
-    /jm/media/img
+    /yournamespace/media/img
     
 It's recommended to put global used images in that main folder. For every image that will be only used by a jig you should create a folder like that:
 
-    /jm/media/img/jm-jig-yourjigname
+    /yournamespace/media/img/yournamespace-jig-yourjigname
     
 That should give you a better overview of your files and will match the namespace conventions. Keep in mind that this is just a suggestion. Feel free to organize your images in another way.
 

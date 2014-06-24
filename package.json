@@ -1,48 +1,50 @@
 {
-    "name": "JigMagga",
-    "description": "Replaces bitovis JavascriptMVC with a widget (jig) based page system that works with config-files",
-    "version": "0.0.5",
-    "private": true,
-    "author": {
-        "name": "yd. yourdelivery GmbH",
-        "email": "naie@lieferando.de",
-        "web": "http://www.lieferando.de/"
+  "name": "JigMagga",
+  "description": "Replaces bitovis JavascriptMVC with a widget (jig) based page system that works with config-files",
+  "version": "0.0.5",
+  "private": true,
+  "author": {
+    "name": "yd. yourdelivery GmbH",
+    "email": "naie@lieferando.de",
+    "web": "http://www.lieferando.de/"
+  },
+  "contributors": [
+    {
+      "name": "Jens Naie",
+      "email": "naie@lieferando.de"
     },
-    "contributors": [
-        {
-            "name": "Jens Naie",
-            "email": "naie@lieferando.de"
-        },
-        {
-            "name": "Toni Meuschke",
-            "email": "meuschke@lieferando.de"
-        }
-    ],
-    "devDependencies": {
-        "bower": "1.2.8",
-        "grunt": "~0.4.1",
-        "grunt-cli": "^0.1.13",
-        "grunt-contrib-connect": "^0.7.1",
-        "grunt-prompt": "0.1.2",
-        "can-compile": "^0.6.0",
-        "marked": "0.3.2",
-        "testem": "^0.6.16",
-        "walk": "~2.3.3"
-    },
-    "licenses": [
-        {
-            "type": "MIT",
-            "url": "http://opensource.org/licenses/mit-license.php"
-        }
-    ],
-    "main": "home",
-    "scripts": {
-        "install": "node node_modules/bower/bin/bower install --config.cwd=bower_components --config.directory=.",
-        "prepublish": "node node_modules/bower/bin/bower install steal=git://github.com/bitovi/legacy-steal.git --config.directory=."
-    },
-    "dependencies": {
-        "lodash": "~2.4.1",
-        "ejs": "~1.0.0",
-        "stream-transform": "0.0.2"
+    {
+      "name": "Toni Meuschke",
+      "email": "meuschke@lieferando.de"
     }
+  ],
+  "devDependencies": {
+    "bower": "1.2.8",
+    "grunt": "~0.4.1",
+    "grunt-cli": "^0.1.13",
+    "grunt-contrib-connect": "^0.7.1",
+    "grunt-prompt": "0.1.2",
+    "can-compile": "^0.6.0",
+    "marked": "0.3.2",
+    "testem": "^0.6.16",
+    "walk": "~2.3.3"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://opensource.org/licenses/mit-license.php"
+    }
+  ],
+  "main": "home",
+  "scripts": {
+    "install": "node node_modules/bower/bin/bower install --config.cwd=bower_components --config.directory=.",
+    "prepublish": "node node_modules/bower/bin/bower install steal=git://github.com/bitovi/legacy-steal.git --config.directory=."
+  },
+  "dependencies": {
+    "lodash": "~2.4.1",
+    "ejs": "~1.0.0",
+    "stream-transform": "0.0.2",
+    "git-wrapper": "~0.1.1",
+    "async": "^0.9.0"
+  }
 }

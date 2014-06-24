@@ -35,9 +35,9 @@ _JigMagga_ is built for SEO compatible multi language multi domain sites with a 
 Who uses JigMagga?
 ------------------
 
-![lieferando](http://www.lieferando.de/yd/media/img/yd-jig-header/logo-big-dach.png)
-![pyszne.pl](http://pyszne.pl/yd/media/img/yd-jig-header/logo-big-pl.png)
-![lieferservice.de](http://www.lieferando.de/yd/media/img/yd-jig-header/logo-big-lieferservice.de.png)
+![lieferando](media/img/logoLieferando.png)
+![pyszne.pl](media/img/logoPyszne.png)
+![lieferservice.de](media/img/logoLieferservice.png)
 
 Example configuration for generating pages
 ------------------------------------------
@@ -46,9 +46,10 @@ This is currently the workflow at all takeaway plattforms that use _JigMagga_.
 
 ![JigMagga](media/img/jigMaggaWorkflow.jpg)
 
-It uses several queues and workers generating the different domains and pushing the pages to the CDN
+It uses several queues and workers generating the different domains and pushing the pages to the CDN.
+ The rabbitMQ admin pannel for all domains look like The following.
  
-![JigMagga](media/img/jigMaggaWorkflow.jpg)
+![JigMagga](media/img/jigMaggaRabbitMq.jpg)
 
 Getting started
 ===============
@@ -189,9 +190,9 @@ The file stealconfig.js in the root directory contains the following mapping.
             po: "steal-types/po/po.js"
     }
 
-Stealing a conf file mostly makes sense when doing it as the first steal in a page. See next chapter for config files.
+Stealing a conf file mostly makes sense when doing it as the first steal in a page. See [next chapter](#pages-and-config-files) for config files.
 
-Normally the po file for a page gets stealed by the conf file plugin and not by itself. See the locales chapter for more 
+Normally the po file for a page gets stealed by the conf file plugin and not by itself. See the [locales chapter](#using-locales) for more 
   information.
 
 When stealing a SASS or LESS file after stealing a config file, it is possible to define SASS or LESS variables in the config.  
@@ -266,7 +267,7 @@ That means after the deploy process this singe index page will get deployed for 
     }
     
 Includes can also be set to ignore when they shouldn't be included in the built frontend application. 
-Please see the chapter fixtures for an example. 
+Please see the chapter [fixtures](#using-fixtures) for an example. 
 
 The hierarchical system
 -----------------------

@@ -36,7 +36,9 @@ Who uses JigMagga?
 ------------------
 
 ![lieferando](media/img/logoLieferando.png)
+
 ![pyszne.pl](media/img/logoPyszne.png)
+  
 ![lieferservice.de](media/img/logoLieferservice.png)
 
 Example configuration for generating pages

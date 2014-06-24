@@ -140,7 +140,6 @@ module.exports = function(grunt) {
                                 // print out all domains in the current namespace/page
                                 var result = walker.getAllFirstLevelDomains(answers['generator.namespace']);
 
-//                                result.unshift('default');
                                 return result;
                             },
                             message: "In which domain should the groupedDomain be rendered?",

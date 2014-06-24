@@ -2,8 +2,9 @@ steal.config({
     jmENV : "development",
     map: {
         "*": {
-            "jquery/jquery.js": (this.navigator && this.navigator.userAgent.indexOf("MSIE") !== -1) || (typeof global !== "undefined" && global.DEFAULTS.browser && DEFAULTS.browser.indexOf("msie") !== -1) ? "bower_components/jquery/jquery.js" :  "bower_components/jquery2/jquery.min.js",
-            "jquery/jstorage": "bower_components/jstorage"
+            "jquery/jquery.js": (this.navigator && this.navigator.userAgent.indexOf("MSIE") !== -1) || (typeof global !== "undefined" && global.DEFAULTS.browser && DEFAULTS.browser.indexOf("msie") !== -1) ? "bower_components/jquery-old/jquery.js" :  "bower_components/jquery/jquery.min.js",
+            "jquery/jstorage": "bower_components/jstorage",
+            "funcunit" : "bower_components/funcunit/dist/"
         }
     },
     paths: {
@@ -17,8 +18,11 @@ steal.config({
         jquery: {
             exports: "jQuery"
         },
-        "bower_components/qunit/qunit/qunit.js": {
-            deps: ["qunit/qunit.css"]
+        "qunit": {
+            deps: ["jquery", "qunit/qunit.css"]
+        },
+        "funcunit": {
+            deps: ["qunit"]
         },
         "can/util/fixture/fixture.js" : {
             ignore : true

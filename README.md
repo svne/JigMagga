@@ -784,15 +784,15 @@ Styling with SASS
 For styling we use [SASS](http://sass-lang.com/) (Syntactically Awesome Style Sheets). It is a CSS extension library which adds features like color functions, variables and other useful stuff.
 In addition to the .scss file of each jig there are two main files for global styling:
 
-- **jm-scss.scss** => Here are all the functions, mixins and variables you need. It's a sort of a configuration file and is included (@include) in every jig and in our **jm-core.scss**.
-- **jm-core.scss** => The **jm-core.scss** holds the global used styles like link colors, headlines, predefined boxes and our [grid](#grid).
+`jm-scss.scss` => Here are all the functions, mixins and variables you need. It's a sort of a configuration file and is included (@include) in every jig and in our `jm-core.scss`.
+`jm-core.scss` => The `jm-core.scss` holds the global used styles like link colors, headlines, predefined boxes and our [grid](#grid).
 
-We've already put some predefined mixins into **jm-scss.scss** to make it easier for you to start.
+We've already put some predefined mixins into `jm-scss.scss` to make it easier for you to start.
 
 It's recommended to always use the "jm-" prefix for classed and ids. So you can avoid problems with stylesheets of external plugins or something like that.
 
-As already mentioned every jig got it's own .scss file. This should be only used for jig related styling. Every class from **jm-core.scss** or every function from **jm-scss.scss** could be used for extending the jig styles.
-For jig styling you should use a namespace convention like **".jm-jig-yourjigname-elementname"**. So it will be easier for you to find your styles or to debug your code. It's also helpful to avoid conflicts with other jig styles.
+As already mentioned every jig got it's own .scss file. This should be only used for jig related styling. Every class from `jm-core.scss` or every function from `jm-scss.scss` could be used for extending the jig styles.
+For jig styling you should use a namespace convention like `.jm-jig-yourjigname-elementname`. So it will be easier for you to find your styles or to debug your code. It's also helpful to avoid conflicts with other jig styles.
 
 At last here is a short example of what you can do with SASS in _JigMagga_:
 
@@ -916,7 +916,7 @@ In this case we want to append the "header jig" to the header area of our index 
     </div>
     
 ###### Explanation:
-The configuration key ".jm-jig-header" is used as the main class for the rendered object. The controller and template configuration are already described in [here](#jigs-in-the-config-files).
+The configuration key `".jm-jig-header"` is used as the main class for the rendered object. The controller and template configuration are already described in [here](#jigs-in-the-config-files).
 Inside the slot config of a jig you can set a parent. That's the element where the jig gets appended or prepended. Depends on your "insertAsChild" settings. Default setting for that is "append".
 In "classes" you can add additional CSS classes just as you want. You can also add [grid](#grid) classes to set the wanted position of your jig. If you want to add some options please have a look at the [howto](#options).
 

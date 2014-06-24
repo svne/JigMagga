@@ -506,7 +506,7 @@ Managing the routing through the browser's `location.hash` property has the adva
   by using the browser back and forward button. To initialize routes you can put a routing object in the jig configuration.
 
         ".jm-jig-header": {
-            "controller": "Yd.Jig.Header",
+            "controller": "Jm.Jig.Header",
             "options": {
                 "routes": {
                     "register": {
@@ -533,9 +533,9 @@ The given routes are now available in the jig events (they can be used in all ac
             "use strict";
     
             /**
-              * @class Yd.Jig.Header
+              * @class Jm.Jig.Header
               */
-            can.Control.extend('Yd.Jig.Header',
+            can.Control.extend('Jm.Jig.Header',
                 /** @Static */
                 {
                     defaults: {}
@@ -696,7 +696,7 @@ The config files can contain API calls that are used when rendering a jig on ser
 
     ".jm-jig-customers": {
         "controller": "Jm.Jig.Customers",
-        "template": "yd/jig/customers/views/init.mustache",
+        "template": "jm/jig/customers/views/init.mustache",
         "apicalls": {
             "customer": {
                 "method": "get",
@@ -713,7 +713,7 @@ the HTML page in `Jm.predefined.customer` and is globally accessible. You now ma
  
      findAll: function (params, success, error) {
          if (Jm.predefined.customer !== undefined) {
-             success(new Jm.Models.Customer.List(Yd.predefined.customer));
+             success(new Jm.Models.Customer.List(Jm.predefined.customer));
          } else {
              can.ajax({
                  url: "api/customers",

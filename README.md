@@ -789,7 +789,7 @@ In addition to the .scss file of each jig there are two main files for global st
 
 We've already put some predefined mixins into `jm-scss.scss` to make it easier for you to start.
 
-It's recommended to always use the "jm-" prefix for classed and ids. So you can avoid problems with stylesheets of external plugins or something like that.
+It's recommended to always use the `jm-` prefix for classed and ids. So you can avoid problems with stylesheets of external plugins or something like that.
 
 As already mentioned every jig got it's own .scss file. This should be only used for jig related styling. Every class from `jm-core.scss` or every function from `jm-scss.scss` could be used for extending the jig styles.
 For jig styling you should use a namespace convention like `.jm-jig-yourjigname-elementname`. So it will be easier for you to find your styles or to debug your code. It's also helpful to avoid conflicts with other jig styles.

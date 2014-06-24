@@ -784,8 +784,8 @@ Styling with SASS
 For styling we use [SASS](http://sass-lang.com/) (Syntactically Awesome Style Sheets). It is a CSS extension library which adds features like color functions, variables and other useful stuff.
 In addition to the .scss file of each jig there are two main files for global styling:
 
-`jm-scss.scss` => Here are all the functions, mixins and variables you need. It's a sort of a configuration file and is included (@include) in every jig and in our `jm-core.scss`.
-`jm-core.scss` => The `jm-core.scss` holds the global used styles like link colors, headlines, predefined boxes and our [grid](#grid).
+- `jm-scss.scss` => Here are all the functions, mixins and variables you need. It's a sort of a configuration file and is included (@include) in every jig and in our `jm-core.scss`.
+- `jm-core.scss` => The `jm-core.scss` holds the global used styles like link colors, headlines, predefined boxes and our [grid](#grid).
 
 We've already put some predefined mixins into `jm-scss.scss` to make it easier for you to start.
 

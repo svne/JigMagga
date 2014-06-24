@@ -2,25 +2,18 @@
  * Sprites
  **********************************************************/
 
-$sprite-icons: url('');
+$sprite: url('/put/your/sprite/here.png');
 
 /*
  * Colors
  **********************************************************/
 
-$color-white: #fff;
-$color-black: #000;
-
 $color-corporate: #e00;
 $color-default: #555;
 
-$color-grey: #bbb;
-$color-grey-icons: #999;
-$color-grey-icons-disabled: #ddd;
-$color-grey-dark: #333;
+$color-white: #fff;
+$color-black: #000;
 $color-grey-light: #ccc;
-$color-grey-carousel: #aaa;
-$color-grey-alpha: rgba(0,0,0,.1);
 
 $color-blue-light: #59d;
 $color-blue-dark: #26a;
@@ -33,15 +26,6 @@ $color-green-dark: #380;
 
 $color-yellow-light: #ff6;
 $color-yellow-dark: #fc0;
-
-$color-purple: #b4c;
-
-$color-discount-stamps: #ff9a03;
-$color-discount-without: #eee;
-$color-discount-normal: #f0452a;
-$color-discount-newcustomer: #48b2f7;
-$color-discount-newcustomer-disabled: #ddd;
-$color-discount-code: #f6f6f6;
 
 /*
  * Fonts
@@ -57,17 +41,13 @@ $font-weight-bold: 700;
  * CSS Details
  **********************************************************/
 
-@if $jm-domain == "lieferservice_de" {
-    $css-radius: 5px;
-} @else {
-    $css-radius: 2px;
-}
+$css-radius: 2px;
 
 /*
  * Mixins
  **********************************************************/
 
-@mixin jm-truncate() {
+@mixin <%= namespace %>-truncate() {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -77,26 +57,26 @@ $font-weight-bold: 700;
  * Prefix Mixins
  **********************************************************/
 
-@mixin jm-box-sizing {
+@mixin <%= namespace %>-box-sizing {
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     box-sizing: border-box;
 }
 
-@mixin jm-appearance {
+@mixin <%= namespace %>-appearance {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
 }
 
-@mixin jm-user-select {
+@mixin <%= namespace %>-user-select {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
 }
 
-@mixin jm-gradient($bg1, $bg2) {
+@mixin <%= namespace %>-gradient($bg1, $bg2) {
     background: $bg1;
     background: -webkit-linear-gradient(top, $bg1 0%, $bg2 100%);
     background:    -moz-linear-gradient(top, $bg1 0%, $bg2 100%);
@@ -104,21 +84,21 @@ $font-weight-bold: 700;
     background:   linear-gradient(to bottom, $bg1 0%, $bg2 100%);
 }
 
-@mixin jm-transition($transition: all 0.3s linear) {
+@mixin <%= namespace %>-transition($transition: all 0.3s linear) {
     -webkit-transition: $transition;
     -moz-transition: $transition;
     -o-transition: $transition;
     transition: $transition;
 }
 
-@mixin jm-transition-double($transition1, $transition2) {
+@mixin <%= namespace %>-transition-double($transition1, $transition2) {
     -webkit-transition: $transition1, $transition2;
     -moz-transition: $transition1, $transition2;
     -o-transition: $transition1, $transition2;
     transition: $transition1, $transition2;
 }
 
-@mixin jm-transform($transform) {
+@mixin <%= namespace %>-transform($transform) {
     -webkit-transform: $transform;
     -moz-transform: $transform;
     -ms-transform: $transform;
@@ -126,13 +106,13 @@ $font-weight-bold: 700;
     transform: $transform;
 }
 
-@mixin jm-animation($animation) {
+@mixin <%= namespace %>-animation($animation) {
     -webkit-animation: $animation;
     -moz-animation: $animation;
     animation: $animation;
 }
 
-@mixin jm-opacity($opacity: 0.5) {
+@mixin <%= namespace %>-opacity($opacity: 0.5) {
     $opperc: $opacity * 100;
     filter: "alpha(opacity=${opperc})"; /* IE 7 */
     -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(opacity=${opperc})"; /* IE 8 */

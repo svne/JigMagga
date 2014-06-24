@@ -1,5 +1,6 @@
 "use strict";
-var fs = require("fs");
+var fs = require("fs"),
+    path = require('path');
 
 var createWalker = require('./generate/walker');
 var config = require('./grunt.config');
@@ -168,6 +169,27 @@ module.exports = function(grunt) {
                         }
                     ]
                 }
+            },
+            test: {
+                options: {
+                    questions: [
+                        {
+                            config: "generator.test.namespace",
+                            type: "input",
+                            message: "Please set the namespace of the project:",
+                            default: function(answer) {
+                                if (answer['generator.template'] === 'project') {
+                                    return;
+                                }
+                                return walker.getDefaultNamespace();
+                            },
+                            filter: function (value) {
+                                return value.toLowerCase();
+                            }
+                        }
+
+                    ]
+                }
             }
         },
         connect: {
@@ -226,13 +248,23 @@ module.exports = function(grunt) {
             'generator'
         ]);
 
+    grunt.registerTask('test', [
+        'prompt:test',
+        'testem'
+    ]);
 
-    grunt.registerTask('test', "Test all files that have a funcunit.html file", function(){
+    grunt.registerTask('testem', "Test all files that have a funcunit.html file", function(){
         var async = this.async(),
-            spawn = require('child_process').spawn,
-            testem = spawn(__dirname + '/node_modules/testem/testem.js', {
-                stdio : "inherit"
-            });
+            namespace = grunt.config('generator.test.namespace'),
+            pathToTests,
+            fork = require('child_process').fork,
+            testem;
+
+        pathToTests = namespace ? path.join(__dirname, namespace) : __dirname;
+
+        testem = fork(__dirname + '/node_modules/testem/testem.js', [], {
+            cwd: pathToTests
+        });
     });
 
     grunt.registerTask("generator", "Project structure generator", function() {

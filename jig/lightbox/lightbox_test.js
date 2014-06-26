@@ -11,6 +11,6 @@ steal("test",function () {
     });
     test("visible Test", function () {
         //noinspection JSLint
-        F(".yd-jig-lightbox-small-content").visible("is visible");
+        F(".jig-lightbox-small-content").visible("is visible");
     });
 });

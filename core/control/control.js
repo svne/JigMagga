@@ -30,8 +30,6 @@ steal("can/control", function () {
         if ("Notification" in window) {
             var self = this,
                 timeout = 30000,
-            // TODO: don't define the icon here!
-            //icon = "/yd/media/img/yd-notification-logo-" + (Yd.config.satellite ? "satellites" : Yd.config.domain.replace(".","_")) + ".png",
                 createNotification = function (obj) {
                     var notification = new Notification(obj.title, {
                         icon: icon,

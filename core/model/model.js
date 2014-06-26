@@ -455,7 +455,7 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
          *
          */
 
-        emailValidation: function (email, attr, invalidAttr) {
+        emailValidation: function (email, attr, invalidAttr, apiPath) {
             var self = this;
             invalidAttr = invalidAttr || "emailFail";
             if (!self._oldFailMail || self._oldFailMail !== email) {
@@ -463,9 +463,8 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                 clearTimeout(self._emailTimer);
                 self._emailTimer = setTimeout(function () {
                     can.ajax({
-                        url: Yd.config.api + Yd.config.version + "/customer/checkemail",
+                        url: (apiPath || "") + "/customer/checkemail",
                         data: {"email": email},
-                        dataType: Yd.config["ajax-data-type"],
                         success: function (data) {
                             if (data.status === "UNKNOWN") {
                                 self.attr(invalidAttr, data.status);
@@ -474,17 +473,8 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                             } else if (data.status === "BLACKLISTED") {
                                 self.attr(invalidAttr, data.status);
                             } else if (data.status === "MODIFIED") {
-                                confirm('', {
-                                    html: can.view.render("//yd/library/views/ModifyEmail.ejs", {
-                                        oldMail : email,
-                                        modifiedEmail: data.address
-                                    })
-                                }, function (confirm) {
-                                    if (confirm) {
-                                        self.attr(attr, data.address)
-                                    }
-                                    self.attr(invalidAttr, false);
-                                });
+                                self.attr(attr, data.address);
+                                self.attr(invalidAttr, false);
                             } else {
                                 self.attr(invalidAttr, false);
                             }

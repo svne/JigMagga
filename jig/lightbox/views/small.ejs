@@ -1,37 +1,37 @@
-<div class="yd-jig-lightbox-small hidden">
-    <div class='yd-jig-lightbox-small-content <%= (options.extraClass || "") %>'>
+<div class="jig-lightbox-small hidden">
+    <div class='jig-lightbox-small-content <%= (options.extraClass || "") %>'>
 
         <% if(options.html) { %>
         <% ___v1ew.push(options.html) %>
         <% } else { %>
-        <span class="yd-jig-lightbox-small-close"></span>
+        <span class="jig-lightbox-small-close"></span>
 
-        <div class="yd-jig-lightbox-small-head">
+        <div class="jig-lightbox-small-head">
             <%= (options.head || "") %>
         </div>
 
-        <div class="yd-jig-lightbox-small-body">
+        <div class="jig-lightbox-small-body">
 
             <% if (options.title) { %>
-            <span class="yd-jig-selectplz-title"><%= options.title %></span>
+            <span class="jig-selectplz-title"><%= options.title %></span>
             <% } %>
 
             <% if (options.subtitle) { %>
-            <span class="yd-jig-lightbox-small-subtitle"><%= (options.subtitle || "") %></span>
+            <span class="jig-lightbox-small-subtitle"><%= (options.subtitle || "") %></span>
             <% } %>
 
             <% if (options.msg) { %>
-            <span class="yd-jig-lightbox-small-msg"><% ___v1ew.push(options.msg || "") %></span>
+            <span class="jig-lightbox-small-msg"><% ___v1ew.push(options.msg || "") %></span>
             <% } %>
 
-            <a class="yd-btn-m yd-btn-order yd-jig-lightbox-small-action"> <%= (options.buttonOK || _("yd-core-ok")) %></a>
+            <a class="btn-m btn-order jig-lightbox-small-action"> <%= (options.buttonOK || _("core-ok")) %></a>
             <% if(options.type === "confirm") { %>
-            <a class="yd-btn-m yd-btn-other yd-jig-lightbox-small-cancel"> <%= (options.cancel || _("yd-core-cancel")) %></a>
+            <a class="btn-m btn-other jig-lightbox-small-cancel"> <%= (options.cancel || _("core-cancel")) %></a>
             <% } %>
 
         </div>
         <% } %>
     </div>
 
-    <div class="yd-jig-lightbox-overlay"></div>
+    <div class="jig-lightbox-overlay"></div>
 </div>

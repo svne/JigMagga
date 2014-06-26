@@ -8,9 +8,11 @@ _JigMagga_ is a widget based configuration file driven frontend JavaScript MVC f
 It uses all technologies of [bitovi JavaScript MVC](https://github.com/bitovi/javascriptmvc) ([CanJS], [steal], [funcunit], [documentJS])
   but replaces the core JavaScript MVC parts such as the generator and the deployment by [Grunt] tasks and serverside workers.
 
+_JigMagga_ can be used to create a one page applications, but it's main goal is - because of SEO - to generate thousands of pages
+in many domains. All with an optimized frontend application and shared widgets. 
+
 Widgets in JigMagga are called jigs. They can be rendered in the frontend application or because of SEO requirements, get 
-  (additionally) prerendered on serverside. This can be decided in the configuration. This means that _JigMagga_ is designed to *not* be 
-  a single page application framework. It produces a lot of prerendered pages with an optimal frontend application on each page.
+  (additionally) prerendered on serverside. This can be decided in the configuration.
 
 For styling there is an on the fly SASS compiler bundled.
 

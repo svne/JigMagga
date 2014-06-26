@@ -847,7 +847,7 @@
                 // set local
                 mergedConfig.locale = steal.config("init-locale") || steal.config().env === 'development' && !steal.config("isBuild") && readCookie("yd-dev-locale") || mergedConfig["init-locale"] || (mergedConfig.locales && mergedConfig.locales[0]) || "default";
 
-                mergedConfig.includes.unshift(mergedConfig.namespace + "/locales/" + mergedConfig.domain + "/" + mergedConfig.locale + "/messages.po");
+                mergedConfig.includes.unshift((mergedConfig.namespace || "") + "/locales/" + mergedConfig.domain + "/" + mergedConfig.locale + "/messages.po");
 
 
                 mergedConfig = setSassVariables(mergedConfig);

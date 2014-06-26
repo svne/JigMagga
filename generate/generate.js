@@ -413,7 +413,7 @@ var generator = module.exports = {
             function (next) {
                 fsExtra.editConfigFile(domain, function (data) {
                     data.jigs = data.jigs || {};
-                    var jigName = format('%s-jig-%s', params.namespace, params.name);
+                    var jigName = format('.%s-jig-%s', params.namespace, params.name);
 
                     data.jigs[jigName] = {
                         "controller": format('%s.Jig.%s', params.Namespace, params.Name),

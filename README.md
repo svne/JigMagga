@@ -1,4 +1,4 @@
-![JigMagga](media/img/jigMagga.jpg)
+![JigMagga](media/img/JigMagga.jpg)
 
 JigMagga
 ========
@@ -35,20 +35,23 @@ _JigMagga_ is built for SEO compatible multi language multi domain sites with a 
 Who uses JigMagga?
 ------------------
 
-![lieferando](http://www.lieferando.de/yd/media/img/yd-jig-header/logo-big-dach.png)
-![pyszne.pl](http://pyszne.pl/yd/media/img/yd-jig-header/logo-big-pl.png)
-![lieferservice.de](http://www.lieferando.de/yd/media/img/yd-jig-header/logo-big-lieferservice.de.png)
+![lieferando](media/img/logoLieferando.png)
+
+![pyszne.pl](media/img/logoPyszne.png)
+  
+![lieferservice.de](media/img/logoLieferservice.png)
 
 Example configuration for generating pages
 ------------------------------------------
 
 This is currently the workflow at all takeaway plattforms that use _JigMagga_.
 
-![JigMagga](media/img/jigMaggaWorkflow.jpg)
+![JigMagga](media/img/JigMaggaWorkflow.png)
 
-It uses several queues and workers generating the different domains and pushing the pages to the CDN
+It uses several queues and workers generating the different domains and pushing the pages to the CDN.
+ The rabbitMQ admin pannel for all domains look like The following.
  
-![JigMagga](media/img/jigMaggaWorkflow.jpg)
+![JigMagga](media/img/JigMaggaRabbitMq.png)
 
 Getting started
 ===============
@@ -189,15 +192,15 @@ The file stealconfig.js in the root directory contains the following mapping.
             po: "steal-types/po/po.js"
     }
 
-Stealing a conf file mostly makes sense when doing it as the first steal in a page. See next chapter for config files.
+Stealing a conf file mostly makes sense when doing it as the first steal in a page. See [next chapter](#pages-and-config-files) for config files.
 
-Normally the po file for a page gets stealed by the conf file plugin and not by itself. See the locales chapter for more 
+Normally the po file for a page gets stealed by the conf file plugin and not by itself. See the [locales chapter](#using-locales) for more 
   information.
 
 When stealing a SASS or LESS file after stealing a config file, it is possible to define SASS or LESS variables in the config.  
   Therefore the steal LESS plugin is not called directly. It then also renders the current domain and locale to SASS.
 
-    less: {
+    sass: {
         "color1": "#FFFFFF",
         "color0": "#000000"
     }
@@ -266,7 +269,7 @@ That means after the deploy process this singe index page will get deployed for 
     }
     
 Includes can also be set to ignore when they shouldn't be included in the built frontend application. 
-Please see the chapter fixtures for an example. 
+Please see the chapter [fixtures](#using-fixtures) for an example. 
 
 The hierarchical system
 -----------------------
@@ -506,7 +509,7 @@ Managing the routing through the browser's `location.hash` property has the adva
   by using the browser back and forward button. To initialize routes you can put a routing object in the jig configuration.
 
         ".jm-jig-header": {
-            "controller": "Yd.Jig.Header",
+            "controller": "Jm.Jig.Header",
             "options": {
                 "routes": {
                     "register": {
@@ -533,9 +536,9 @@ The given routes are now available in the jig events (they can be used in all ac
             "use strict";
     
             /**
-              * @class Yd.Jig.Header
+              * @class Jm.Jig.Header
               */
-            can.Control.extend('Yd.Jig.Header',
+            can.Control.extend('Jm.Jig.Header',
                 /** @Static */
                 {
                     defaults: {}
@@ -696,7 +699,7 @@ The config files can contain API calls that are used when rendering a jig on ser
 
     ".jm-jig-customers": {
         "controller": "Jm.Jig.Customers",
-        "template": "yd/jig/customers/views/init.mustache",
+        "template": "jm/jig/customers/views/init.mustache",
         "apicalls": {
             "customer": {
                 "method": "get",
@@ -713,7 +716,7 @@ the HTML page in `Jm.predefined.customer` and is globally accessible. You now ma
  
      findAll: function (params, success, error) {
          if (Jm.predefined.customer !== undefined) {
-             success(new Jm.Models.Customer.List(Yd.predefined.customer));
+             success(new Jm.Models.Customer.List(Jm.predefined.customer));
          } else {
              can.ajax({
                  url: "api/customers",
@@ -781,17 +784,157 @@ Mediator (TBD)
 Styling with SASS
 =================
 
-TBD Benni!
+For styling we use [SASS](http://sass-lang.com/) (Syntactically Awesome Style Sheets). It is a CSS extension library which adds features like color functions, variables and other useful stuff.
+In addition to the .scss file of each jig there are two main files for global styling:
+
+- `yournamespace-scss.scss` => Here are all the functions, mixins and variables you need. It's a sort of a configuration file and is included (@include) in every jig and in our `yournamespace-core.scss`.
+- `yournamespace-core.scss` => The `yournamespace-core.scss` holds the global used styles like link colors, headlines, predefined boxes and our [grid](#grid).
+
+We've already put some predefined mixins into `yournamespace-scss.scss` to make it easier for you to start.
+
+It's recommended to always use the `yournamespace-` prefix for classed and ids. So you can avoid problems with stylesheets of external plugins or something like that.
+
+As already mentioned every jig got it's own .scss file. This should be only used for jig related styling. Every class from `yournamespace-core.scss` or every function from `yournamespace-scss.scss` could be used for extending the jig styles.
+For jig styling you should use a namespace convention like `.yournamespace-jig-yourjigname-elementname`. So it will be easier for you to find your styles or to debug your code. It's also helpful to avoid conflicts with other jig styles.
+
+At last here is a short example of what you can do with SASS in _JigMagga_:
+
+###### yournamespace-scss.scss
+
+    $font-family-primary: 'Roboto', sans-serif;
+    $font-weight-bold: 700;
+    
+    @mixin yournamespace-headline-big {
+        font-family: $font-family-primary;
+        font-weight: $font-weight-bold;
+        font-size: 32px;
+    }
+
+###### yournamespace-core.scss
+
+    .headline {
+        @include yournamespace-headline-big();
+        color: #f00;
+    }
+
+###### compiled output
+
+    .headline {
+        font-family: 'Roboto', sans-serif;
+        font-weight: 700;
+        font-size: 32px;
+        color: #f00;
+    }
+    
+For detailed information about SASS please have a look at the [SASS documentation](http://sass-lang.com/documentation/file.SASS_REFERENCE.html)
+
 
 Grid
-----
+====
 
-TBD Benni!
+We created a 24-column grid to make positioning easier.
+
+![JigMagga](media/img/JigMaggaGrid.png)
+
+Just create the following HTML-structure to use the grid:
+
+    <div class="yournamespace-grid">
+        <div class="yournamespace-grid-06"></div>
+        <div class="yournamespace-grid-03"></div>
+        <div class="yournamespace-grid-07"></div>
+        <div class="yournamespace-grid-08"></div>
+    </div>
+    
+If you want to use gaps or a offset between the boxes you have to add one of the following classes:
+
+- yournamespace-grid-gap-l => gap on the left side
+- yournamespace-grid-gap-r => gap on the right side
+- yournamespace-grid-gap-b => gap on both sides
+- yournamespace-off-xx => xx colums offset (replace xx with a number from 01 to 23)
+
+Here's an example for that:
+
+    <div class="yournamespace-grid">
+        <div class="yournamespace-grid-06 yournamespace-grid-gap-l"></div>
+        <div class="yournamespace-grid-03 yournamespace-grid-gap-b"></div>
+        <div class="yournamespace-grid-07"></div>
+        <div class="yournamespace-grid-05 yournamespace-off-03"></div>
+    </div>
 
 The slot system
----------------
+===============
 
-TBD Benni!
+We also got a slot system for dynamically setting the position where a jig should be rendered.
+The following example will show you how to add the "header jig" to your desired element in your HTML page.
+In this case we want to append the "header jig" to the header area of our index page.
+
+###### index.html
+
+    <div class="yournamespace-header">
+        <div class="yournamespace-grid"></div>
+    </div>
+    <div class="yournamespace-content">
+        <div class="yournamespace-grid"></div>
+    </div>
+    <div class="yournamespace-footer">
+        <div class="yournamespace-grid"></div>
+    </div>
+    
+###### index.conf
+ 
+    ".yournamespace-jig-header": {
+        "controller": "Yournamespace.Jig.Header",
+        "template": "yournamespace/jig/header/views/init.mustache",
+        "slot" : {
+            "parent" : ".yournamespace-header .yournamespace-grid",
+            "insertAsChild": "append",
+            "classes" : [
+                "put",
+                "some",
+                "additional",
+                "classes",
+                "in",
+                "here"
+            ]
+        },
+        "options": {
+            "some": "options"
+        }
+    }
+
+###### output HTML
+
+    <div class="yournamespace-header">
+        <div class="yournamespace-grid">
+            <section class="yournamespace-jig-header your-additional-classes">
+                <!-- Your content of "yournamespace/jig/header/views/init.mustache" -->
+            </section>
+        </div>
+    </div>
+    <div class="yournamespace-content">
+        <div class="yournamespace-grid"></div>
+    </div>
+    <div class="yournamespace-footer">
+        <div class="yournamespace-grid"></div>
+    </div>
+    
+###### Explanation:
+The configuration key `".yournamespace-jig-header"` is used as the main class for the rendered object. The controller and template configuration are already described in [here](#jigs-in-the-config-files).
+Inside the slot config of a jig you can set a parent. That's the element where the jig gets appended or prepended. Depends on your "insertAsChild" settings. Default setting for that is "append".
+In "classes" you can add additional CSS classes just as you want. You can also add [grid](#grid) classes to set the wanted position of your jig. If you want to add some options please have a look at the [howto](#options).
+
+Images
+======
+
+Images are stored in:
+
+    /yournamespace/media/img
+    
+It's recommended to put global used images in that main folder. For every image that will be only used by a jig you should create a folder like that:
+
+    /yournamespace/media/img/yournamespace-jig-yourjigname
+    
+That should give you a better overview of your files and will match the namespace conventions. Keep in mind that this is just a suggestion. Feel free to organize your images in another way.
 
 Testing
 =======

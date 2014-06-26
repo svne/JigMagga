@@ -10,7 +10,9 @@
             {{#serve_files}}
             testFiles.push('/{{src}}');
             {{/serve_files}}
-        steal.apply(null, testFiles);
+        steal.one("done", function(){
+            steal.apply(null, testFiles);
+        });
     </script>
 </head>
 <body>

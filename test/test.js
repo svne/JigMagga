@@ -3,11 +3,8 @@ steal('./funcunit-helper.js',function(){
         ignores: ["bower_components/*", "unit/*", "steal/*", "*test*", "*/lib/*", "*fixture*"],
         onlyShow :[document.location.pathname.substr(0, document.location.pathname.lastIndexOf("/")) + "/*"]
     });
-}).then("jquery").then("bower_components/qunit/qunit").then("bower_components/funcunit/dist/funcunit.js").then("/testem.js", function () {
-
-        QUnit.init();
-        QUnit.start();
-
+}).then("jquery").then("qunit").then("funcunit").then("/testem.js", function () {
+    QUnit.load();
 });
 
 

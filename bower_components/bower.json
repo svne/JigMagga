@@ -3,13 +3,13 @@
     "main": "home.js",
     "version": "0.1.0",
     "devDependencies": {
-        "qunit": "~1.12.0",
-        "funcunit": "https://github.com/bitovi/funcunit/archive/v2.1.0-pre.tar.gz"
+        "qunit": "~1.10.0",
+        "funcunit": "https://github.com/bitovi/funcunit/archive/v2.0.4.tar.gz"
     },
     "dependencies": {
         "canjs": "2.0.7",
-        "jquery": "jquery#1.11.0",
-        "jquery2": "jquery#~2.0.3",
+        "jquery-old": "jquery#1.11.0",
+        "jquery": "jquery#~2.0.3",
         "jquerypp": "1.0.1",
         "jstorage": "0.4.8"
     }

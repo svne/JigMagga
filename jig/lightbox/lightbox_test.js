@@ -1,4 +1,4 @@
-steal('test', function () {
+steal("test",function () {
     "use strict";
     module("Jig.Lightbox", {
         setup: function () {

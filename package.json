@@ -1,8 +1,7 @@
 {
   "name": "JigMagga",
-  "description": "Replaces bitovis JavascriptMVC with a widget (jig) based page system that works with config-files",
+  "description": "JigMagga is a widget based JavaScript MVC framework based on bitovis canJS that was build for large SEO sites",
   "version": "0.0.5",
-  "private": true,
   "author": {
     "name": "yd. yourdelivery GmbH",
     "email": "naie@lieferando.de",
@@ -31,8 +30,8 @@
   },
   "licenses": [
     {
-      "type": "MIT",
-      "url": "http://opensource.org/licenses/mit-license.php"
+      "type": "LPGL",
+      "url": "http://www.gnu.org/licenses/lgpl.html"
     }
   ],
   "main": "home",

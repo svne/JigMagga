@@ -40,13 +40,11 @@ Who uses JigMagga?
 ![lieferando](media/img/logoLieferando.png)
 
 ![pyszne.pl](media/img/logoPyszne.png)
-  
-![lieferservice.de](media/img/logoLieferservice.png)
 
 Example configuration for generating pages
 ------------------------------------------
 
-This is currently the workflow at all takeaway plattforms that use _JigMagga_.
+This is currently the workflow at plattforms from yd. yourdelivery GmbH that use _JigMagga_.
 
 ![JigMagga](media/img/JigMaggaWorkflow.png)
 
@@ -972,10 +970,14 @@ Building the project is done by Grunt
 
         grunt build
         
-The build process builds one JavaScript file and one CSS file per page and uploads it to the CDN. The generation of HTML pages is done by the HTML worker.  
+The build process builds one JavaScript file and one CSS file per page and uploads it to the CDN. The generation of HTML pages is done by the HTML worker.
+  
+The build process is not yet distributed to _JigMagga_. 
 
 HTML-Workers
 ------------
+
+The workers are not yet distributed to _JigMagga_. 
 
 TBD
 - static pages
@@ -998,4 +1000,4 @@ Coding conventions
 
 License
 =======
-_JigMagga_ is released under the MIT licence. 
+_JigMagga_ is released under the LPGL licence. 

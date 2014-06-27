@@ -4,7 +4,7 @@
  * Lightbox (normal)
  **********************************************************/
 
-.yd-jig-lightbox-content {
+.jig-lightbox-content {
   position: absolute;
   top: 100px;
   left: 50%;
@@ -16,7 +16,7 @@
   border-radius: 5px;
 }
 
-.yd-jig-lightbox-overlay {
+.jig-lightbox-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -27,7 +27,7 @@
   opacity: 0.8;
 }
 
-.yd-jig-lightbox-close {
+.jig-lightbox-close {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -38,12 +38,12 @@
   background: #ffffcc;
 }
 
-.yd-jig-lightbox-close:hover {
+.jig-lightbox-close:hover {
   cursor: pointer;
   background: #002288;
 }
 
-.yd-jig-lightbox-close:after {
+.jig-lightbox-close:after {
   content: '\e80f';
   position: absolute;
   top: 1px;
@@ -52,7 +52,7 @@
   color: #fff;
 }
 
-.yd-jig-lightbox-head {
+.jig-lightbox-head {
   min-height: 60px;
   height: auto;
   padding: 0 15px;
@@ -64,14 +64,14 @@
   overflow: auto;
 }
 
-.yd-jig-lightbox-body {
+.jig-lightbox-body {
   min-height: 50px;
   padding: 20px 15px;
   background: #fff;
   line-height: 140%;
 }
 
-.yd-jig-lightbox-body .yd-btn-m {
+.jig-lightbox-body .btn-m {
   margin: 10px 10px 10px 0;
 }
 
@@ -79,7 +79,7 @@
  * Lightbox (small)
  **********************************************************/
 
-.yd-jig-lightbox-small-content {
+.jig-lightbox-small-content {
   position: absolute;
   top: 150px;
   left: 50%;
@@ -91,7 +91,7 @@
   border-radius: 5px;
 }
 
-.yd-jig-lightbox-small-overlay {
+.jig-lightbox-small-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -102,7 +102,7 @@
   opacity : 0.8;
 }
 
-.yd-jig-lightbox-small-close {
+.jig-lightbox-small-close {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -113,12 +113,12 @@
   background: #ffffcc;
 }
 
-.yd-jig-lightbox-small-close:hover {
+.jig-lightbox-small-close:hover {
   cursor: pointer;
   background: #002288;
 }
 
-.yd-jig-lightbox-small-close:after {
+.jig-lightbox-small-close:after {
   content: '\e80f';
   position: absolute;
   top: 0;
@@ -127,7 +127,7 @@
   color: #fff;
 }
 
-.yd-jig-lightbox-small-head {
+.jig-lightbox-small-head {
   height: 60px;
   padding: 0 15px;
   font-size: 18px;
@@ -137,7 +137,7 @@
   cursor: move;
 }
 
-.yd-jig-lightbox-small-body {
+.jig-lightbox-small-body {
   padding: 20px 15px;
   background: #fff;
   font-size: 14px;
@@ -145,11 +145,11 @@
   text-align: center;
 }
 
-.yd-jig-lightbox-small-body .yd-btn-m {
+.jig-lightbox-small-body .btn-m {
   margin: 10px 10px 10px 0;
 }
 
-.yd-jig-lightbox-small-msg {
+.jig-lightbox-small-msg {
   display: inline-block;
   width: 100%;
   margin: 0 0 15px 0;

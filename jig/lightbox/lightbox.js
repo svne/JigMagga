@@ -57,12 +57,12 @@ steal(
                     var self = this,
                         contentInner;
                     if (!$.support.isMobile.any() && !($.browser.msie && $.browser.version < 10) && self.options.dragAllow) {
-                        $(".yd-jig-lightbox-content, .yd-jig-lightbox-small-content", self.element).on('draginit', function (ev, drag) {
-                            if (ev.target && $(ev.target).hasClass("yd-jig-lightbox-head")) {
+                        $(".jig-lightbox-content, .jig-lightbox-small-content", self.element).on('draginit', function (ev, drag) {
+                            if (ev.target && $(ev.target).hasClass("jig-lightbox-head")) {
                                 if (self.options && self.options.dragLimit) {
                                     drag.limit($(self.options.dragLimit));
                                 } else {
-                                    contentInner = $('.yd-content-user').length > 0 ? $(".yd-content-user .yd-inner") : $(".yd-content .yd-inner");
+                                    contentInner = $('.content-user').length > 0 ? $(".content-user .inner") : $(".content .inner");
                                     drag.limit(contentInner);
                                 }
                             } else {
@@ -78,25 +78,25 @@ steal(
                         this.close(ev);
                     }
                 },
-                ".yd-jig-lightbox-close, .yd-jig-lightbox-small-close click": function (el, ev) {
+                ".jig-lightbox-close, .jig-lightbox-small-close click": function (el, ev) {
                     this.close(ev);
                 },
-                ".yd-jig-lightbox-content, .yd-jig-lightbox-small-content click": function (el, ev) {
+                ".jig-lightbox-content, .jig-lightbox-small-content click": function (el, ev) {
                     ev.stopPropagation();
                 },
-                ".yd-jig-lightbox-body, .yd-jig-lightbox-small-body mousedown": function (el, ev) {
+                ".jig-lightbox-body, .jig-lightbox-small-body mousedown": function (el, ev) {
                     ev.stopPropagation();
                 },
                 initCSS: function () {
-                    var $lightbox = this.element.find('.yd-jig-lightbox-content'),
+                    var $lightbox = this.element.find('.jig-lightbox-content'),
                         contentInner;
                     $lightbox.css({
                         'top': ($(document).scrollTop() + 100) + 'px',
                         'margin-left': -($lightbox.width() / 2)
                     });
                     if ($lightbox.length > 0) {
-                        contentInner = $('.yd-content-user').length > 0 ? $(".yd-content-user .yd-inner") : $(".yd-content .yd-inner");
-                        contentInner.css('min-height', this.element.find('.yd-jig-lightbox-content').height() + (typeof window.pageYOffset === "number" ? window.pageYOffset : 0 ) + 300);
+                        contentInner = $('.content-user').length > 0 ? $(".content-user .inner") : $(".content .inner");
+                        contentInner.css('min-height', this.element.find('.jig-lightbox-content').height() + (typeof window.pageYOffset === "number" ? window.pageYOffset : 0 ) + 300);
                     }
                 },
                 close: function (ev) {
@@ -106,7 +106,7 @@ steal(
                     } else {
                         this.element.html("");
                     }
-                    $(".yd-inner").css('min-height', '');
+                    $(".inner").css('min-height', '');
                     if (this.options.removeElementAtClose) {
                         this.destroy();
                     }

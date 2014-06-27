@@ -10,11 +10,23 @@
   "contributors": [
     {
       "name": "Jens Naie",
-      "email": "naie@lieferando.de"
+      "email": "naie@lieferando.de",
+      "url": "https://github.com/jnaie"
     },
     {
-      "name": "Toni Meuschke",
-      "email": "meuschke@lieferando.de"
+        "name": "Toni Meuschke",
+        "email": "meuschke@lieferando.de",
+        "url": "https://github.com/meuschke"
+    },
+    {
+        "name": "Eugene Tsypkin",
+        "email": "eugene@lieferando.de",
+        "url": "https://github.com/jhony-chikens"
+    },
+    {
+        "name": "Benjamin Seifert",
+        "email": "seifert@lieferando.de",
+        "url": "https://github.com/SiLeNcoRRR"
     }
   ],
   "devDependencies": {

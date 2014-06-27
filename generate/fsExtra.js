@@ -205,6 +205,15 @@ var editFile = exports.editFile = function (filePath, edit, callback) {
     ], callback);
 };
 
+exports.getConfig = function (filePath, callback) {
+    fs.readFile(filePath, function (err, res) {
+        if (err) {
+            return callback(err);
+        }
+
+        callback(null, JSON.parse(res.toString()));
+    });
+};
 
 /**
  * edit config file passing the file content to edit function as a JSON

@@ -165,6 +165,23 @@ module.exports = function(grunt) {
                             when: function (answers) {
                                 return answers['generator.template'] === 'locale';
                             }
+                        },
+                        {
+                            config: "generator.parent",
+                            type: "input",
+                            message: "Please define parent css class (optional):",
+                            filter: function (value) {
+
+                                value = value.trim().toLowerCase();
+
+                                if (value !== '' && value.charAt(0) !== '.') {
+                                    value = '.' + value;
+                                }
+                                return value;
+                            },
+                            when: function (answers) {
+                                return answers['generator.template'] === 'jig';
+                            }
                         }
                     ]
                 }
@@ -267,10 +284,16 @@ module.exports = function(grunt) {
     });
 
     grunt.registerTask("generator", "Project structure generator", function() {
-        var generate = require(__dirname + "/generate/generate");
+        var generate = require(__dirname + "/generate/generate"),
+            config = {
+                namespace: grunt.config("generator.namespace"),
+                name: grunt.config("generator.name"),
+                domain: grunt.config("generator.domain"),
+                locale: grunt.config("generator.locale"),
+                slotParent: grunt.config("generator.parent")
+            };
 
-        generate[grunt.config("generator.template")].call(this, grunt.config("generator.namespace"),
-            grunt.config("generator.name"), grunt.config("generator.domain") || grunt.config("generator.locale"));
+        generate[grunt.config("generator.template")].create.call(this, config);
     });
 
 };

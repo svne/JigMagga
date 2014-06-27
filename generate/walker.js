@@ -12,6 +12,8 @@ var isDomain = function (domainName) {
     return regexp.test(domainName);
 };
 
+var f;
+
 /**
  * create walker
  * @namespace walker
@@ -104,7 +106,7 @@ module.exports = function (defaultFolderPath, config) {
 
                     if (isDomain(folder)) {
                         domain = folder;
-                        page = 'main';
+                        page = '';
                     } else if (folder === 'page' && pathList[pathList.length - 2] === namespace) {
                         domain = page = 'all';
                     } else {
@@ -270,6 +272,22 @@ module.exports = function (defaultFolderPath, config) {
             return result;
         },
 
+        forEachFile: function (path, action, callback) {
+            var walker = walk.walk(path, {});
+
+            walker.on('files', function (root, stats, next) {
+                action(root, stats, next);
+            });
+
+            walker.on('errors', function (root, nodeStatsArray, next) {
+                next('error while geting all files');
+            });
+
+            walker.on('end', function () {
+                callback();
+            });
+        },
+
         /**
          * invoke action(domainName, domainPath) for each domain in the namespace
          * @param {string} namespace
@@ -299,6 +317,22 @@ module.exports = function (defaultFolderPath, config) {
                 callback();
             });
 
+        },
+        
+        forEachPageInPath: function (rootPath, action, callback) {
+
+            this.forEachFile(rootPath, function (root, fileStats, next) {
+
+                var folder = _.last(root.split(path.sep)),
+                    pageConfigStats;
+
+                pageConfigStats = _.find(fileStats, {name: folder + '.html'});
+
+                if (!pageConfigStats) {
+                    return next();
+                }
+                action(pageConfigStats.name, root, next);
+            }, callback);
         }
 
     };

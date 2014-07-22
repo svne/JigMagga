@@ -14,19 +14,19 @@
       "url": "https://github.com/jnaie"
     },
     {
-        "name": "Toni Meuschke",
-        "email": "meuschke@lieferando.de",
-        "url": "https://github.com/meuschke"
+      "name": "Toni Meuschke",
+      "email": "meuschke@lieferando.de",
+      "url": "https://github.com/meuschke"
     },
     {
-        "name": "Eugene Tsypkin",
-        "email": "eugene@lieferando.de",
-        "url": "https://github.com/jhony-chikens"
+      "name": "Eugene Tsypkin",
+      "email": "eugene@lieferando.de",
+      "url": "https://github.com/jhony-chikens"
     },
     {
-        "name": "Benjamin Seifert",
-        "email": "seifert@lieferando.de",
-        "url": "https://github.com/SiLeNcoRRR"
+      "name": "Benjamin Seifert",
+      "email": "seifert@lieferando.de",
+      "url": "https://github.com/SiLeNcoRRR"
     }
   ],
   "devDependencies": {
@@ -38,7 +38,11 @@
     "can-compile": "^0.6.0",
     "marked": "0.3.2",
     "testem": "^0.6.16",
-    "walk": "~2.3.3"
+    "mustache": "~0.8.1",
+    "mocha": "~1.20.1",
+    "chai": "~1.9.1",
+    "sinon": "~1.10.3",
+    "rewire": "~2.1.0"
   },
   "licenses": [
     {
@@ -48,15 +52,24 @@
   ],
   "main": "home",
   "scripts": {
+    "test": "mocha -R spec --recursive ./worker/test",
     "install": "node node_modules/bower/bin/bower install --config.cwd=bower_components --config.directory=.",
     "prepublish": "node node_modules/bower/bin/bower install steal=git://github.com/bitovi/legacy-steal.git --config.directory=."
   },
   "dependencies": {
-    "lodash": "~2.4.1",
-    "ejs": "~1.0.0",
-    "stream-transform": "0.0.2",
-    "git-wrapper": "~0.1.1",
+    "amqp": "^0.2.0",
     "async": "^0.9.0",
-    "cheerio": "~0.17.0"
+    "cheerio": "~0.17.0",
+    "commander": "^2.3.0",
+    "deep-extend": "^0.2.10",
+    "ejs": "~1.0.0",
+    "emit-stream": "~0.1.2",
+    "event-stream": "~3.1.5",
+    "git-wrapper": "~0.1.1",
+    "konphyg": "~1.4.0",
+    "lodash": "~2.4.1",
+    "readable-stream": "~1.0.27-1",
+    "stream-transform": "0.0.2",
+    "walk": "~2.3.3"
   }
 }

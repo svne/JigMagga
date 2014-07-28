@@ -5,5 +5,6 @@ var net = require('net');
 var pipe = net.Socket({fd: 3});
 
 pipe.on('data', function (data) {
+    console.log('some data');
     pipe.write(data);
 });

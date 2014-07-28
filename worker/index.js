@@ -2,6 +2,8 @@
 'use strict';
 
 var konphyg = require('konphyg')(__dirname + '/config'),
+    fs = require('fs'),
+    format = require('util').format,
     _ = require('lodash'),
     es = require('event-stream'),
     path = require('path'),
@@ -11,6 +13,7 @@ var amqp = require('./lib/amqp'),
     ProcessRouter = require('./lib/router'),
     configMerge = require('./lib/configMerge'),
     messageHelper = require('./lib/message'),
+    archiver = require('./lib/archiver'),
     helper = require('./lib/helper');
 
 var config = konphyg.all();
@@ -47,8 +50,6 @@ program
 
 var basePath = (program.args[0]) ? path.join(process.cwd(), program.args[0]) : process.cwd();
 
-var pageConfigPath = path.join(basePath, 'page');
-
 var connection = amqp.getConnection(config.amqp.credentials);
 var queues = helper.getQueNames(program, config.amqp);
 
@@ -58,14 +59,6 @@ var generator = helper.createSubProcess(__dirname + '/generator/index.js');
 
 var generatorRouter = new ProcessRouter(generator);
 
-generatorRouter.addRoutes({
-    log: function (data) {
-        console.log('from generator', data);
-    },
-    pipe: function (data) {
-        console.log('message from pipe');
-    }
-});
 
 var queueStreams = _.values(queues).map(function (queueName) {
     return amqp.getStream({
@@ -76,6 +69,16 @@ var queueStreams = _.values(queues).map(function (queueName) {
     });
 });
 
+var generateBucketName = function (data) {
+    var baseDomain = data.message.basedomain,
+        buckets = config.main.knox.buckets;
+    if (program.live || program.liveuncached) {
+        return buckets.live[baseDomain] || 'www.' + baseDomain;
+    }
+
+    return buckets.stage[baseDomain] || 'stage.' + baseDomain;
+};
+
 var isDomainInSkipList = function (domain) {
     return config.main.skipDomains.indexOf(domain) >= 0;
 };
@@ -85,8 +88,10 @@ var isMessageFormatCorrect = function (message) {
         ((message.url && message.page) || (!message.url && !message.page));
 };
 
+//main stream
+
 es.merge.apply(es, queueStreams)
-    .pipe(helper.streamLog('[NEW:MESSAGE]'))
+    .pipe(helper.streamLog('[RECEIVED:MESSAGE]'))
     .pipe(messageHelper.getMessageParser())
     .pipe(helper.streamLog('[PARSED:MESSAGE]'))
     .pipe(helper.streamFilter(function (data) {
@@ -94,20 +99,57 @@ es.merge.apply(es, queueStreams)
             console.error('something wrong with message fields');
             return false;
         }
+        data.basePath = basePath;
         return true;
     }))
     .pipe(helper.streamLog('[FILTERED:MESSAGE]'))
-    .pipe(configMerge.getDomainConfigStream(pageConfigPath))
+
+    .pipe(configMerge.getConfigStream())
     .pipe(messageHelper.getSplitter())
+
     .pipe(es.through(function (data) {
         console.log('[SPLITTER]', data.message);
         this.emit('data', data);
     }))
+
+    //add page configs for those messages that did not have page key before splitting
+    .pipe(configMerge.getConfigStream())
     .pipe(es.through(function (message) {
-        this.emit('data', messageHelper.createMessage(message.message, program, message.config));
+        message.message = messageHelper.createMessage(message.message, program, message.config);
+        message.bucketName = generateBucketName(message);
+        this.emit('data', message);
     }))
     .on('data', function (data) {
         generatorRouter.send('new:message', data);
-        generatorRouter.send('pipe', 'message to Pipe');
+    })
+    .on('error', function (err) {
+        console.log('ERROR', err);
     });
 
+
+
+generatorRouter.addRoutes({
+    log: function (data) {
+        console.log('from generator', data);
+    },
+    pipe: function (data) {
+        var uploadFileList,
+            zipFileName;
+
+        data = JSON.parse(data);
+        console.log('message from pipe generator pipe', data.message.page, data.message.url, data.message.locale);
+
+        uploadFileList = data.json.reduce(function (result, currentItem) {
+            return result.concat(currentItem);
+        }, data.html);
+
+        zipFileName = format('%s-%s-%s-%d.zip', data.message.page, data.message.url, data.message.locale, Date.now());
+
+        archiver.bulkArchive(uploadFileList)
+            .pipe(fs.createWriteStream(path.join(basePath, 'tmp', zipFileName)))
+            .on('finish', function () {
+                console.log('saved!! to ', zipFileName);
+            });
+
+    }
+});

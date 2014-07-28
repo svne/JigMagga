@@ -3,6 +3,13 @@
 var _ = require('lodash'),
     net = require('net');
 
+var LAST_CHUNK_IDENTIFIER = '!!@#$!!';
+
+var isLastChunkIn = function (chunk) {
+    var regExp = new RegExp('!!@#\\$!!$', 'ig');
+    return regExp.test(chunk);
+};
+
 var defaultErrorHandler = function (err) {
     console.error(err);
 };
@@ -31,11 +38,19 @@ var ProcessRouter = function (processInstance, pipeFdNumber) {
 
 
 ProcessRouter.prototype._createPipeHandler = function (handler) {
-    var that = this;
+    var that = this,
+        buffer = '';
 
     this.pipe.on('data', function (buf) {
-        var data = buf.toString('utf-8');
-        handler.call(that, data);
+        var data = buf.toString(),
+            messages;
+        buffer += data;
+        if (isLastChunkIn(buffer)) {
+            messages = buffer.split(LAST_CHUNK_IDENTIFIER);
+            _.compact(messages).forEach(handler.bind(that));
+
+            buffer = '';
+        }
     });
 };
 
@@ -51,7 +66,7 @@ ProcessRouter.prototype.addRoutes = function (routes) {
 ProcessRouter.prototype.send = function (command, data) {
     if (command === 'pipe') {
         data = _.isString(data) ? data : JSON.stringify(data);
-
+        data += LAST_CHUNK_IDENTIFIER;
         return this.pipe.write(new Buffer(data));
     }
     var message = {

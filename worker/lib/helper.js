@@ -80,6 +80,16 @@ module.exports = {
             console[level](prefix, message);
             this.emit('data', message);
         });
+    },
+
+    streamDuplex: function () {
+        return es.through(
+            function (data) {
+                this.emit('data', data);
+            },
+            function () {
+                this.emit('end');
+            });
     }
 
 };

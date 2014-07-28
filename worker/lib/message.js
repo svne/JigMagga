@@ -87,7 +87,11 @@ module.exports = {
             }
 
             if (data.contentType === 'text/plain') {
-                message = JSON.parse(data.data.toString('utf-8'));
+                try {
+                    message = JSON.parse(data.data.toString('utf-8'));
+                } catch (e) {
+                    this.emit('error', 'Date from queue is not JSON ' + data.data.toString('utf-8'));
+                }
             }
             if (data.contentType === 'text/json' || (!data.contentType && _.isPlainObject(data))) {
                 message = data.data;
@@ -103,6 +107,8 @@ module.exports = {
     },
 
     getSplitter: function () {
+
+        //TODO: should be devided in to localeSpliter and PageSpliter
         return es.through(function (data) {
             var that = this,
                 result = [],

@@ -20,6 +20,7 @@ var readConfig = function (path, callback) {
     fs.readFile(path, function (err, result) {
         if (err) {
             if (err.code === 'ENOENT') {
+                configStorage[path] = {};
                 return callback(null, {});
             }
 
@@ -91,6 +92,9 @@ module.exports = {
             callback = page;
             page = '';
         }
+
+        page = page || '';
+
         async.waterfall([
             this.getConfigPaths.bind(null, basePath, domain, page),
             function (configPaths, next) {
@@ -110,19 +114,28 @@ module.exports = {
         ], callback);
     },
 
-    getDomainConfigStream: function (basePath) {
+    getConfigStream: function () {
         var that = this;
         return es.map(function (data, callback) {
             var message = data.message,
-                result;
+                result,
+                basePath = data.basePath;
 
-            that.getPageConfig(basePath, message.basedomain, function (err, config) {
+            if (data.isPageConfigLoaded) {
+                return callback(null, data);
+            }
+
+            basePath = path.join(basePath, 'page');
+
+            that.getPageConfig(basePath, message.basedomain, message.page, function (err, config) {
                 if (err) {
                     return callback(err);
                 }
 
                 result = _.cloneDeep(data);
                 result.config = config;
+                result.isPageConfigLoaded = (message.page) ? true : false;
+
                 callback(null, result);
             });
         });

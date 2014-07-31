@@ -81,7 +81,7 @@ describe('message', function () {
     });
 
 
-    describe('#getSplitter', function () {
+    describe('#pageLocaleSplitter', function () {
         var config = {
             pages: {
                 foo: {
@@ -99,7 +99,7 @@ describe('message', function () {
             var msg = {message: {url: 'foo', page: 'bar', locale: 'de_DE'}};
 
             es.readArray([msg])
-                .pipe(messageHelper.getSplitter())
+                .pipe(messageHelper.pageLocaleSplitter())
                 .pipe(es.writeArray(function (err, res) {
                     expect(err).to.eql(null);
                     expect(res).to.have.length(1);
@@ -112,7 +112,7 @@ describe('message', function () {
             function (done) {
                 var msg = {url: 'foo', page: 'foo'};
                 es.readArray([{message: msg, config: config}])
-                    .pipe(messageHelper.getSplitter())
+                    .pipe(messageHelper.pageLocaleSplitter())
                     .pipe(es.writeArray(function (err, res) {
                         expect(err).to.eql(null);
                         expect(res).to.have.length(2);
@@ -130,7 +130,7 @@ describe('message', function () {
                 }
             ];
             es.readArray(list)
-                .pipe(messageHelper.getSplitter())
+                .pipe(messageHelper.pageLocaleSplitter())
                 .pipe(es.writeArray(function (err, res) {
                     expect(err).to.eql(null);
                     expect(res).to.have.length(1);
@@ -151,7 +151,7 @@ describe('message', function () {
 
                 ];
                 es.readArray(list)
-                    .pipe(messageHelper.getSplitter())
+                    .pipe(messageHelper.pageLocaleSplitter())
                     .pipe(es.writeArray(function (err, res) {
                         expect(err).to.eql(null);
                         expect(res).to.have.length(1);
@@ -170,7 +170,7 @@ describe('message', function () {
 
             ];
             es.readArray(list)
-                .pipe(messageHelper.getSplitter())
+                .pipe(messageHelper.pageLocaleSplitter())
                 .pipe(es.writeArray(function (err, res) {
                     expect(err).to.eql(null);
                     expect(res).to.have.length(3);

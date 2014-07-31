@@ -9,7 +9,7 @@ module.exports = {
         fileList.forEach(function (item) {
             archive.append(new Buffer(item.content), {name: item.url});
         });
-
+        fileList = [];
         archive.finalize();
 
         return archive;

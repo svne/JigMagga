@@ -50,6 +50,7 @@ ProcessRouter.prototype._createPipeHandler = function (handler) {
             _.compact(messages).forEach(handler.bind(that));
 
             buffer = '';
+            messages = [];
         }
     });
 };

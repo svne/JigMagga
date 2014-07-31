@@ -1,12 +1,12 @@
 #! /usr/local/bin/node
 'use strict';
 
-var konphyg = require('konphyg')(__dirname + '/config'),
-    fs = require('fs'),
+var fs = require('fs'),
     format = require('util').format,
     _ = require('lodash'),
     es = require('event-stream'),
     path = require('path'),
+    getRedisClient = require('./lib/redisClient'),
     program = require('commander');
 
 var amqp = require('./lib/amqp'),
@@ -14,9 +14,15 @@ var amqp = require('./lib/amqp'),
     configMerge = require('./lib/configMerge'),
     messageHelper = require('./lib/message'),
     archiver = require('./lib/archiver'),
-    helper = require('./lib/helper');
+    helper = require('./lib/helper'),
+    stream = require('./lib/streamHelper');
 
-var config = konphyg.all();
+var config = require('./config');
+
+if (config.main.nodetime) {
+    console.log('connect to nodetime for profiling', config.main.nodetime);
+    require('nodetime').profile(config.main.nodetime);
+}
 
 program
     .option('-c, --cityId <n>', 'define location by cityId', parseInt)
@@ -45,8 +51,14 @@ program
     .option('-a, --archive', 'archive file before upload')
     .option('-D, --stageversion', 'upload file to subdomain with current branch name (2.5 -> stage-2-5.lieferando.de)')
     .option('-I, --locale', 'use given locale')
+    .option('-w, --write [value]', 'write to disk the archive with generated files instead of upload them, path should be provided')
     .parse(process.argv);
 
+var redisClient = getRedisClient(function error(err) {
+    console.log("[Redis] Error " + err);
+}, function success() {
+    console.log("[Redis] client is ready");
+});
 
 var basePath = (program.args[0]) ? path.join(process.cwd(), program.args[0]) : process.cwd();
 
@@ -55,9 +67,14 @@ var queues = helper.getQueNames(program, config.amqp);
 
 console.log('queues', queues);
 
-var generator = helper.createSubProcess(__dirname + '/generator/index.js');
+var generator = helper.createSubProcess(__dirname + '/generator/index.js'),
+    uploader = helper.createSubProcess(__dirname + '/uploader/index.js');
 
-var generatorRouter = new ProcessRouter(generator);
+console.log('Generator created pid:', generator.pid);
+console.log('Uploader created pid:', uploader.pid);
+
+var generatorRouter = new ProcessRouter(generator),
+    uploaderRouter = new ProcessRouter(uploader);
 
 
 var queueStreams = _.values(queues).map(function (queueName) {
@@ -90,11 +107,13 @@ var isMessageFormatCorrect = function (message) {
 
 //main stream
 
+console.log('worker started current process pid is', process.pid);
+
 es.merge.apply(es, queueStreams)
-    .pipe(helper.streamLog('[RECEIVED:MESSAGE]'))
+    .pipe(stream.log('[RECEIVED:MESSAGE]'))
     .pipe(messageHelper.getMessageParser())
-    .pipe(helper.streamLog('[PARSED:MESSAGE]'))
-    .pipe(helper.streamFilter(function (data) {
+    .pipe(stream.log('[PARSED:MESSAGE]'))
+    .pipe(stream.filter(function (data) {
         if (!isMessageFormatCorrect(data.message)) {
             console.error('something wrong with message fields');
             return false;
@@ -102,10 +121,10 @@ es.merge.apply(es, queueStreams)
         data.basePath = basePath;
         return true;
     }))
-    .pipe(helper.streamLog('[FILTERED:MESSAGE]'))
+    .pipe(stream.log('[FILTERED:MESSAGE]'))
 
     .pipe(configMerge.getConfigStream())
-    .pipe(messageHelper.getSplitter())
+    .pipe(messageHelper.pageLocaleSplitter())
 
     .pipe(es.through(function (data) {
         console.log('[SPLITTER]', data.message);
@@ -130,26 +149,47 @@ es.merge.apply(es, queueStreams)
 
 generatorRouter.addRoutes({
     log: function (data) {
-        console.log('from generator', data);
+        console.log('[from generator]', data);
     },
     pipe: function (data) {
         var uploadFileList,
-            zipFileName;
+            archiverStream,
+            destination,
+            message;
 
         data = JSON.parse(data);
-        console.log('message from pipe generator pipe', data.message.page, data.message.url, data.message.locale);
+        message = data.message;
+        console.log('message from pipe generator pipe', message.page, message.url, message.locale);
 
         uploadFileList = data.json.reduce(function (result, currentItem) {
             return result.concat(currentItem);
         }, data.html);
+        data = null;
+        archiverStream = archiver.bulkArchive(uploadFileList);
 
-        zipFileName = format('%s-%s-%s-%d.zip', data.message.page, data.message.url, data.message.locale, Date.now());
-
-        archiver.bulkArchive(uploadFileList)
-            .pipe(fs.createWriteStream(path.join(basePath, 'tmp', zipFileName)))
-            .on('finish', function () {
-                console.log('saved!! to ', zipFileName);
+        if (program.write) {
+            destination = helper.createSaveZipStream(program, message, basePath);
+        } else {
+            destination = stream.accumulate(function(err, data, next) {
+                uploadFileList = [];
+                redisClient.rpush(config.redis.keys.list, JSON.stringify({url: message.url, data: data}), function () {
+                    next();
+                });
             });
+        }
 
+        archiverStream.pipe(destination)
+            .on('finish', function () {
+                if (program.write) {
+                    return console.log('saved!!');
+                }
+                console.log('sanded to uploader');
+            });
+    }
+});
+
+uploaderRouter.addRoutes({
+    log: function (data) {
+        console.log('[from uploader]', data);
     }
 });

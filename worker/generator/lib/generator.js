@@ -19,7 +19,7 @@ var placeholderHelper = require("./placeholders.js");
 var slots = require('./slots');
 var http = require('http-get');
 var _ = require('underscore');
-var Uploader = require('../../lib/yd-uploader');
+var Uploader = require('jmUtil').ydUploader;
 var zlib = require('zlib');
 var gt;
 var pageCounter = 0;
@@ -276,22 +276,8 @@ exports.generateJsonPage = function (config) {
             saveDiskPath + "/production." + upload[0].replace(/\//g, "_") :
             config.pagePath + "production." + upload[0].replace(/\//g, "_");
 
-        return {path: filename, content: JSON.stringify(upload[1]), url: encodeURIComponent(upload[0])};
+        return {path: filename, content: JSON.stringify(upload[1]), url: upload[0]};
     });
-//    async.map(toUpload, function (upload, cb) {
-//        var filename = config["upload-worker"] ? saveDiskPath + "/production." + upload[0].replace(/\//g, "_") : config.pagePath + "production." + upload[0].replace(/\//g, "_");
-//        fs.writeFile(filename, JSON.stringify(upload[1]), 'utf8', function (err) {
-//            if (err) {
-//                cb({message: "Failed to write json to file: " + filename});
-//                return;
-//            }
-//
-//            console.log("Saved file to tmp", filename);
-//            cb(null, {from: filename, to: upload[0]});
-//        });
-//    }, function(err, results) {
-//        callback && callback(err, results);
-//    });
 };
 
 var uploadFileS3 = function (conf, cb) {

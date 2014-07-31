@@ -1,6 +1,8 @@
 'use strict';
 var _ = require('lodash'),
-    es = require('event-stream'),
+    format = require('util').format,
+    fs = require('fs'),
+    path = require('path'),
     spawn = require('child_process').spawn;
 
 module.exports = {
@@ -50,46 +52,14 @@ module.exports = {
         return spawn(process.execPath, args, options);
     },
 
-    streamFilter: function (predicate) {
-        var isAsync = (predicate.length === 2);
+    createSaveZipStream: function (program, message, basePath) {
+        var zipFileName = format('%s-%s-%s-%d.zip', message.page, message.url, message.locale, Date.now()),
+            destinationPath;
 
-        if (!isAsync) {
-            return es.through(function (data) {
-                if (predicate(data)) {
-                    this.emit('data', data);
-                }
-            });
-        }
+        destinationPath = (_.isString(program.write)) ?
+            path.join(process.cwd(), program.write) : path.join(basePath, 'tmp');
 
-        return es.map(function (data, callback) {
-            predicate(data, function (err, res) {
-                if (err) {
-                    return callback(err);
-                }
-                if (res) {
-                    return callback(null, data);
-                }
-                callback();
-            });
-        });
-    },
-    streamLog: function (prefix, level) {
-        level = level || 'log';
+        return fs.createWriteStream(path.join(destinationPath, zipFileName));
 
-        return es.through(function (message) {
-            console[level](prefix, message);
-            this.emit('data', message);
-        });
-    },
-
-    streamDuplex: function () {
-        return es.through(
-            function (data) {
-                this.emit('data', data);
-            },
-            function () {
-                this.emit('end');
-            });
     }
-
 };

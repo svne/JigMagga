@@ -26,3 +26,4 @@ craftbeer
 hello
 testyd
 yd
+worker/config/*.local.json

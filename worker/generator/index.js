@@ -1,27 +1,20 @@
 'use strict';
 
 var _ = require('lodash'),
-    async = require('async'),
     path = require('path'),
     es = require('event-stream');
 
-var konphyg = require('konphyg')(__dirname + '/../config'),
-    ydGetText = require('../lib/yd-gettext'),
+var stream = require('../lib/streamHelper'),
+    ydGetText = require('jmUtil').ydGettext,
     generateConfig = require('./lib/generateConfig'),
     generator = require('./lib/generator'),
     ProcessRouter = require('../lib/router');
 
 var router = new ProcessRouter(process);
 
-var config = konphyg.all();
+var config = require('../config');
 
-var messageStream = es.through(
-    function (data) {
-        this.emit('data', data);
-    },
-    function () {
-        this.emit('end');
-    });
+var messageStream = stream.duplex();
 
 router.addRoutes({
     'new:message': function (data) {
@@ -71,12 +64,16 @@ messageStream
     .pipe(es.map(function (data, callback) {
         generator.apiCalls([data.config], function (err, res) {
             if (err) {
+
                 return callback(err);
             }
             data.config = res;
             callback(null, data);
         });
     }))
+    .on('error', function (err) {
+        console.log('Error in apiCall', err, err.stack);
+    })
     .on('data', function (data) {
         var result = {
             json: _.map(data.config, generator.generateJsonPage),
@@ -85,4 +82,5 @@ messageStream
         };
 
         router.send('pipe', result);
+        result = null;
     });

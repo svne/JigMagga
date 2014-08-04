@@ -2,6 +2,7 @@
 
 var _ = require('lodash'),
     path = require('path'),
+    clc = require('cli-color'),
     es = require('event-stream');
 
 var stream = require('../lib/streamHelper'),
@@ -72,7 +73,7 @@ messageStream
         });
     }))
     .on('error', function (err) {
-        console.log('Error in apiCall', err, err.stack);
+        console.log('Error in apiCall', err, err.err);
     })
     .on('data', function (data) {
         var result = {
@@ -84,3 +85,12 @@ messageStream
         router.send('pipe', result);
         result = null;
     });
+
+process.send({ready: true});
+
+process.on('uncaughtException', function (err) {
+    console.log(clc.red('[ERROR IN GENERATOR]'));
+    console.log(clc.red(err));
+    console.log(clc.red(err.stack));
+    process.kill();
+});

@@ -53,6 +53,7 @@ exports.generatePage = function (origConfig, callback) {
         config["template"] = ejs.render(config["template"], viewContainer);
         viewContainer.Yd = {config: config, predefined: config["predefined"]};
         viewContainer._ = global._ = gt._;
+        console.log('[viewContainer._]', viewContainer._);
         viewContainer._n = gt._n;
         for (var key in config) {
             if (key === "predefined") continue;
@@ -156,7 +157,7 @@ exports.generatePage = function (origConfig, callback) {
             saveDiskPath + "/production." + url.replace(/\//g, "_") :
             path.join(config["pagePath"], "production." + url.replace(/\//g, "_"));
 
-        return {path: filename, content: finalHtml, url: encodeURIComponent(url)};
+        return {path: filename, content: finalHtml, url: url};
     }
     catch (err) {
         console.log(err);
@@ -459,7 +460,7 @@ var apiCalls = function (configs, callback, readyConfigs, dontCheckPlaceholders)
             }
         }
         catch (err) {
-            callback({message: "failed to parse configs: " + err});
+            callback({message: "failed to parse configs: " + err, err: err});
         }
     });
 };

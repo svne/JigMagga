@@ -1,6 +1,7 @@
 'use strict';
 
-var fs = require('fs'),
+var _ = require('lodash'),
+    clc = require('cli-color'),
     Uploader = require('jmUtil').ydUploader,
     getRedisClient = require('../lib/redisClient'),
     es = require('event-stream');
@@ -32,7 +33,7 @@ var createRedisListStream = function (client, listKey) {
        client.lpop(listKey, function (err, data) {
            if (data) {
                router.send('log', 'new message in list');
-               that.emit('data', data);
+               that.emit('data', data.toString());
            }
 
            callback(err);
@@ -40,22 +41,36 @@ var createRedisListStream = function (client, listKey) {
    });
 };
 
+var uploadStream = function () {
+    return es.map(function (data, callback) {
+        if (_.isString(data)) {
+            data = JSON.parse(data);
+        }
+
+        console.log('start uploading new file', data.url, typeof data.data, _.isArray(data.data), Buffer.isBuffer(data.data));
+        uploader.uploadContent(new Buffer(data.data), data.url, callback, callback, {
+            headers: {'X-Myra-Unzip': 1},
+            type: 'application/octet-stream'
+        });
+    });
+};
+
+
 redisClient.on('ready', function () {
     console.log('[uploader:Redis] client is ready');
 
     createRedisListStream(redisClient, config.redis.keys.list)
-        .pipe(es.map(function (data, callback) {
-            data = JSON.parse(data);
+        .pipe(uploadStream());
 
-            router.send('log', 'start uploading new file', data.url);
-            uploader.uploadContent(new Buffer(data.data), data.url, callback, callback, {
-                headers: {'X-Myra-Unzip': 1},
-                type: 'application/octet-stream'
-            });
-        }))
-        .on('finish', function () {
-            router.send('log', 'finished!');
-        });
+    process.send({ready: true});
 });
 
+messageStream.pipe(uploadStream());
 
+
+process.on('uncaughtException', function (err) {
+    console.log(clc.red('[ERROR IN UPLOADER]'));
+    console.log(clc.red(err));
+    console.log(clc.red(err.stack));
+    process.kill();
+});

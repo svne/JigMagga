@@ -31,6 +31,7 @@ amqpConnection.on('ready', function () {
             queue.bind('amq.direct', 'pages.generate.high');
             console.log('queue obtained');
             publishMessages(exc, 'pages.generate.high');
+            process.exit();
         });
     });
 });

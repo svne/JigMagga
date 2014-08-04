@@ -1,8 +1,7 @@
 #! /usr/local/bin/node
 'use strict';
 
-var fs = require('fs'),
-    format = require('util').format,
+var clc = require('cli-color'),
     _ = require('lodash'),
     es = require('event-stream'),
     path = require('path'),
@@ -50,9 +49,10 @@ program
     .option('-V, --postfix', 'use this version postfix queue')
     .option('-a, --archive', 'archive file before upload')
     .option('-D, --stageversion', 'upload file to subdomain with current branch name (2.5 -> stage-2-5.lieferando.de)')
-    .option('-I, --locale', 'use given locale')
+    .option('-I, --locale <n>', 'use given locale')
     .option('-w, --write [value]', 'write to disk the archive with generated files instead of upload them, path should be provided')
     .parse(process.argv);
+
 
 var redisClient = getRedisClient(function error(err) {
     console.log("[Redis] Error " + err);
@@ -62,92 +62,46 @@ var redisClient = getRedisClient(function error(err) {
 
 var basePath = (program.args[0]) ? path.join(process.cwd(), program.args[0]) : process.cwd();
 
-var connection = amqp.getConnection(config.amqp.credentials);
-var queues = helper.getQueNames(program, config.amqp);
-
-console.log('queues', queues);
-
-var generator = helper.createSubProcess(__dirname + '/generator/index.js'),
-    uploader = helper.createSubProcess(__dirname + '/uploader/index.js');
-
-console.log('Generator created pid:', generator.pid);
-console.log('Uploader created pid:', uploader.pid);
-
-var generatorRouter = new ProcessRouter(generator),
-    uploaderRouter = new ProcessRouter(uploader);
-
-
-var queueStreams = _.values(queues).map(function (queueName) {
-    return amqp.getStream({
-        queue: queueName,
-        exchange: 'amq.direct',
-        connection: connection,
-        shiftAfterReceive: true
-    });
-});
-
-var generateBucketName = function (data) {
-    var baseDomain = data.message.basedomain,
-        buckets = config.main.knox.buckets;
-    if (program.live || program.liveuncached) {
-        return buckets.live[baseDomain] || 'www.' + baseDomain;
-    }
-
-    return buckets.stage[baseDomain] || 'stage.' + baseDomain;
-};
-
-var isDomainInSkipList = function (domain) {
-    return config.main.skipDomains.indexOf(domain) >= 0;
-};
-
-var isMessageFormatCorrect = function (message) {
-    return (message.basedomain && !isDomainInSkipList(message.basedomain)) &&
-        ((message.url && message.page) || (!message.url && !message.page));
-};
-
 //main stream
+var mainStream = function (source, generator) {
+    source
+        .pipe(stream.filter(function (data) {
+            if (!helper.isMessageFormatCorrect(data.message)) {
+                console.error('something wrong with message fields');
+                return false;
+            }
+            data.basePath = basePath;
+            return true;
+        }))
+        .pipe(stream.log('[FILTERED:MESSAGE]'))
 
-console.log('worker started current process pid is', process.pid);
+        .pipe(configMerge.getConfigStream())
+        .pipe(messageHelper.pageLocaleSplitter())
 
-es.merge.apply(es, queueStreams)
-    .pipe(stream.log('[RECEIVED:MESSAGE]'))
-    .pipe(messageHelper.getMessageParser())
-    .pipe(stream.log('[PARSED:MESSAGE]'))
-    .pipe(stream.filter(function (data) {
-        if (!isMessageFormatCorrect(data.message)) {
-            console.error('something wrong with message fields');
-            return false;
-        }
-        data.basePath = basePath;
-        return true;
-    }))
-    .pipe(stream.log('[FILTERED:MESSAGE]'))
+        .pipe(es.through(function (data) {
+            console.log('[SPLITTER]', data.message);
+            this.emit('data', data);
+        }))
 
-    .pipe(configMerge.getConfigStream())
-    .pipe(messageHelper.pageLocaleSplitter())
+        //add page configs for those messages that did not have page key before splitting
+        .pipe(configMerge.getConfigStream())
+        .pipe(es.through(function (message) {
+            message.message = messageHelper.createMessage(message.message, program, message.config);
+            message.bucketName = helper.generateBucketName(message, program);
+            this.emit('data', message);
+        }))
+        .on('data', function (data) {
+            generator.send('new:message', data);
+        })
+        .on('error', function (err) {
+            console.log('ERROR', err);
+        });
+};
 
-    .pipe(es.through(function (data) {
-        console.log('[SPLITTER]', data.message);
-        this.emit('data', data);
-    }))
+var generatorRouter,
+    uploaderRouter;
 
-    //add page configs for those messages that did not have page key before splitting
-    .pipe(configMerge.getConfigStream())
-    .pipe(es.through(function (message) {
-        message.message = messageHelper.createMessage(message.message, program, message.config);
-        message.bucketName = generateBucketName(message);
-        this.emit('data', message);
-    }))
-    .on('data', function (data) {
-        generatorRouter.send('new:message', data);
-    })
-    .on('error', function (err) {
-        console.log('ERROR', err);
-    });
-
-
-
-generatorRouter.addRoutes({
+var generatorRoutes = {
     log: function (data) {
         console.log('[from generator]', data);
     },
@@ -172,9 +126,15 @@ generatorRouter.addRoutes({
         } else {
             destination = stream.accumulate(function(err, data, next) {
                 uploadFileList = [];
-                redisClient.rpush(config.redis.keys.list, JSON.stringify({url: message.url, data: data}), function () {
-                    next();
-                });
+                var result = {url: message.url, data: data};
+                if (program.queue) {
+                    return redisClient.rpush(config.redis.keys.list, JSON.stringify(result), function () {
+                        next();
+                    });
+                }
+                console.log('[WORKER] send message to upload', message.url);
+                uploaderRouter.send('pipe', result);
+                next();
             });
         }
 
@@ -186,10 +146,79 @@ generatorRouter.addRoutes({
                 console.log('sanded to uploader');
             });
     }
+};
+
+console.log('worker started current process pid is', process.pid);
+var args = _.clone(process.argv).splice(2);
+
+helper.createChildProcesses(args, function (err, result) {
+    if (err) {
+        console.log(err);
+        return;
+    }
+
+    var uploader = result.uploader,
+        generator = result.generator;
+
+    console.log('Generator created pid:', generator.pid);
+    console.log('Uploader created pid:', uploader.pid);
+
+    generatorRouter = new ProcessRouter(generator);
+    uploaderRouter = new ProcessRouter(uploader);
+
+    generatorRouter.addRoutes(generatorRoutes);
+
+    uploaderRouter.addRoutes({
+        log: function (data) {
+            console.log('[from uploader]', data);
+        }
+    });
+
+    var source;
+
+    if (program.queue) {
+        var connection = amqp.getConnection(config.amqp.credentials);
+        var queues = helper.getQueNames(program, config.amqp);
+
+        console.log('queues', queues);
+
+        var queueStreams = _.values(queues).map(function (queueName) {
+            return amqp.getStream({
+                queue: queueName,
+                exchange: 'amq.direct',
+                connection: connection,
+                shiftAfterReceive: true
+            });
+        });
+
+        source = es.merge.apply(es, queueStreams)
+            .pipe(stream.log('[RECEIVED:MESSAGE]'))
+            .pipe(messageHelper.getMessageParser())
+            .pipe(stream.log('[PARSED:MESSAGE]'));
+
+    } else {
+        var data = {
+            message: _.pick(program, ['basedomain', 'url', 'page', 'locale'])
+        };
+        var values = {};
+        if (program.values) {
+            values = JSON.parse(program.values);
+        } else {
+            values = _.pick(program, function (value, key) {
+                return (new RegExp('.*Id$', 'ig')).test(key);
+            });
+        }
+        data.message = _.assign(data.message, values);
+        source = es.readArray([data]);
+    }
+
+    mainStream(source, generatorRouter);
+
 });
 
-uploaderRouter.addRoutes({
-    log: function (data) {
-        console.log('[from uploader]', data);
-    }
+process.on('uncaughtException', function (err) {
+    console.log(clc.red('[ERROR IN WORKER]'));
+    console.log(clc.red(err));
+    console.log(clc.red(err.stack));
+    process.kill();
 });

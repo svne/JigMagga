@@ -6,6 +6,10 @@ var deepExtend = require("deep-extend");
 var http = require('http-get');
 var querystring = require("querystring");
 
+var httpMock = require('./httpMock');
+
+var http = (process.env.NODE_ENV === 'local') ? httpMock : http;
+
 var cachedCalls = {};
 
 var getRequestId = function (options) {
@@ -105,7 +109,7 @@ exports.doCall = function (options, callback) {
                 bufferType: "buffer",
                 headers: { "YD-X-Domain": options.db, "Accept-Language": options.language, 'User-Agent': 'ydFrontend_Worker' }
             };
-            console.log(getOptions);
+            console.log('[getOptions]', getOptions);
             http.get(getOptions, function (error, result) {
                 if (result) {
                     try {

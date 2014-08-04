@@ -33,7 +33,11 @@ var obtainTemplate = function (msg, basePath, callback) {
         country = msg.locale.substr(-2);
 
     function tplPath(pagePath) {
-        return path.join(pagePath, msg.page + '.html');
+        var page = msg.page;
+
+        page = page.split('/').reverse()[0];
+
+        return path.join(pagePath, page + '.html');
     }
 
     function next(err, res) {

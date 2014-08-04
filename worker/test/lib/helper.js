@@ -4,6 +4,7 @@
 
 var es = require('event-stream');
 var expect = require('chai').expect;
+var sinon = require('sinon');
 var helper = require('../../lib/helper');
 
 var konphyg = require('konphyg')(__dirname + '/../../config');
@@ -89,7 +90,27 @@ describe('helper', function () {
             expect(child.stdio[3].on).to.be.a('function');
         });
 
+        it('should create a process in async way', function (done) {
+            helper.createSubProcess(__dirname + '/../../testData/asyncProcess.js', function (err, child) {
+                expect(err).to.eql(null);
+                expect(child.send).to.be.a('function');
+                expect(child.on).to.be.a('function');
+                child.kill();
+                done();
+            });
+        });
+
+        it('should send an error if process will not send a message in 500 msec', function (done) {
+            var clock = sinon.useFakeTimers();
+            helper.createSubProcess(__dirname + '/../../testData/asyncProcess.js', function (err) {
+                expect(err).to.be.a('string');
+                expect(err).to.eql('child process did not send a ready message');
+                clock.restore();
+                done();
+            });
+            clock.tick(600);
+
+        });
+
     });
-
-
 });

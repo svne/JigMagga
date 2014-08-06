@@ -1,66 +1,119 @@
 'use strict';
 
-var _ = require('lodash'),
-    clc = require('cli-color'),
+var memwatch = require('memwatch'),
+    _ = require('lodash'),
+    async = require('async'),
     Uploader = require('jmUtil').ydUploader,
     getRedisClient = require('../lib/redisClient'),
     es = require('event-stream');
 
-var ProcessRouter  = require('../lib/router'),
+var log = require('../lib/logger')('uploader', {component: 'uploader', processId: String(process.pid)}),
+    ProcessRouter  = require('../lib/router'),
     stream = require('../lib/streamHelper');
 
 var config = require('../config');
+log('started, pid', process.pid);
 
 var uploader = new Uploader(config.main.knox);
 var router = new ProcessRouter(process);
 
 var messageStream = stream.duplex();
 
+var REDIS_CHECK_TIMEOUT = 100;
+
+var redisClient = getRedisClient(function error(err) {
+    log('redis Error %j', err, {redis: true});
+});
+
+var createRedisListStream = function (client, listKey) {
+
+    return es.readable(function (count, callback) {
+        var that = this;
+
+        async.waterfall([
+            function (next) {
+                setTimeout(function () {
+                    client.lrange(listKey, 0, 50, next);
+                }, REDIS_CHECK_TIMEOUT);
+            },
+            function (result, next) {
+                if (!result.length) {
+                    REDIS_CHECK_TIMEOUT *= 2;
+                    if (REDIS_CHECK_TIMEOUT > 5000) {
+                        REDIS_CHECK_TIMEOUT = 5000;
+                        that.pause();
+                    }
+                    return callback();
+                }
+                that.pause();
+                log('[createRedisListStream] obtained records length: %d', result.length);
+                that.emit('data', result);
+                client.ltrim(listKey, result.length, -1, next);
+            }
+        ], function (err) {
+            callback(err);
+        });
+   });
+};
+
+var redisListStream = createRedisListStream(redisClient, config.redis.keys.list);
+redisListStream.pause();
+
 router.addRoutes({
     pipe: function (data) {
         messageStream.write(data);
+    },
+    'reduce:timeout': function () {
+        REDIS_CHECK_TIMEOUT = 100;
+        redisListStream.resume();
     }
 });
 
 
-var redisClient = getRedisClient(function error(err) {
-    console.log("[Redis] Error " + err);
-});
+var uploadItem = function (data, callback) {
+    if (_.isString(data)) {
+        data = JSON.parse(data);
+    }
 
-var createRedisListStream = function (client, listKey) {
-   return es.readable(function (count, callback) {
-       var that = this;
-       client.lpop(listKey, function (err, data) {
-           if (data) {
-               router.send('log', 'new message in list');
-               that.emit('data', data.toString());
-           }
-
-           callback(err);
-       });
-   });
+    log('start uploading new file url: %s', data.url);
+    uploader.uploadContent(new Buffer(data.data), data.url, {
+        headers: {'X-Myra-Unzip': 1},
+        type: 'application/octet-stream'
+    }, function (err, res) {
+        if (err) {
+            log('fail', err, {upload: true, url: data.url});
+        } else {
+            log('success', res, {upload: true, url: data.url});
+        }
+        callback();
+    });
 };
 
-var uploadStream = function () {
+
+var uploadStream = function (source) {
     return es.map(function (data, callback) {
-        if (_.isString(data)) {
-            data = JSON.parse(data);
+        var next = function (err, res) {
+            if (source) {
+                source.resume();
+            }
+            callback(err, res);
+        };
+
+        if (_.isArray(data)) {
+            log('new data to upload type: array length:', data.length);
+            return async.each(data, uploadItem, next);
         }
 
-        console.log('start uploading new file', data.url, typeof data.data, _.isArray(data.data), Buffer.isBuffer(data.data));
-        uploader.uploadContent(new Buffer(data.data), data.url, callback, callback, {
-            headers: {'X-Myra-Unzip': 1},
-            type: 'application/octet-stream'
-        });
+        log('new data to upload type: string');
+        uploadItem(data, next);
     });
 };
 
 
 redisClient.on('ready', function () {
-    console.log('[uploader:Redis] client is ready');
+    log('redis client is ready', {redis: true});
 
-    createRedisListStream(redisClient, config.redis.keys.list)
-        .pipe(uploadStream());
+    redisListStream.pipe(uploadStream(redisListStream));
 
     process.send({ready: true});
 });
@@ -69,8 +122,11 @@ messageStream.pipe(uploadStream());
 
 
 process.on('uncaughtException', function (err) {
-    console.log(clc.red('[ERROR IN UPLOADER]'));
-    console.log(clc.red(err));
-    console.log(clc.red(err.stack));
+    console.log(err, err.stack);
+    log('error', '%s %j', err, err.stack, {uncaughtException: true});
     process.kill();
+});
+
+memwatch.on('leak', function(info) {
+    log('warning', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
 });

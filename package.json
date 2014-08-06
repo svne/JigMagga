@@ -31,18 +31,20 @@
   ],
   "devDependencies": {
     "bower": "1.2.8",
+    "can-compile": "^0.6.0",
+    "chai": "~1.9.1",
     "grunt": "~0.4.1",
     "grunt-cli": "^0.1.13",
     "grunt-contrib-connect": "^0.7.1",
     "grunt-prompt": "0.1.2",
-    "can-compile": "^0.6.0",
     "marked": "0.3.2",
-    "testem": "^0.6.16",
-    "mustache": "~0.8.1",
+    "memwatch": "^0.2.2",
     "mocha": "~1.20.1",
-    "chai": "~1.9.1",
+    "mustache": "~0.8.1",
+    "rewire": "~2.1.0",
     "sinon": "~1.10.3",
-    "rewire": "~2.1.0"
+    "testem": "^0.6.16",
+    "winston": "^0.7.3"
   },
   "licenses": [
     {
@@ -78,6 +80,8 @@
     "readable-stream": "~1.0.27-1",
     "redis": "^0.11.0",
     "stream-transform": "0.0.2",
-    "walk": "~2.3.3"
+    "walk": "~2.3.3",
+    "winston": "^0.7.3",
+    "winston-loggly": "^1.0.1"
   }
 }

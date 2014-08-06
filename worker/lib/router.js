@@ -5,8 +5,9 @@ var _ = require('lodash'),
 
 var LAST_CHUNK_IDENTIFIER = '!!@#$!!';
 
+var regExp = new RegExp('!!@#\\$!!$', 'ig');
+
 var isLastChunkIn = function (chunk) {
-    var regExp = new RegExp('!!@#\\$!!$', 'ig');
     return regExp.test(chunk);
 };
 
@@ -46,9 +47,10 @@ ProcessRouter.prototype._createPipeHandler = function (handler) {
             messages;
         buffer += data;
         if (isLastChunkIn(buffer)) {
-            messages = buffer.split(LAST_CHUNK_IDENTIFIER);
-            _.compact(messages).forEach(handler.bind(that));
-
+            messages = _.compact(buffer.split(LAST_CHUNK_IDENTIFIER));
+            for  (var i = 0; i < messages.length; i++) {
+                handler.call(that, messages[i]);
+            }
             buffer = '';
             messages = [];
         }

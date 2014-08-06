@@ -1,14 +1,15 @@
 #! /usr/local/bin/node
 'use strict';
 
-var clc = require('cli-color'),
-    _ = require('lodash'),
+var _ = require('lodash'),
     es = require('event-stream'),
     path = require('path'),
     getRedisClient = require('./lib/redisClient'),
     program = require('commander');
 
 var amqp = require('./lib/amqp'),
+    memwatch = require('memwatch'),
+    log = require('./lib/logger')('worker', {component: 'worker', processId: String(process.pid)}),
     ProcessRouter = require('./lib/router'),
     configMerge = require('./lib/configMerge'),
     messageHelper = require('./lib/message'),
@@ -19,9 +20,11 @@ var amqp = require('./lib/amqp'),
 var config = require('./config');
 
 if (config.main.nodetime) {
-    console.log('connect to nodetime for profiling', config.main.nodetime);
+    log('connect to nodetime for profiling');
     require('nodetime').profile(config.main.nodetime);
 }
+
+log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
 
 program
     .option('-c, --cityId <n>', 'define location by cityId', parseInt)
@@ -55,9 +58,9 @@ program
 
 
 var redisClient = getRedisClient(function error(err) {
-    console.log("[Redis] Error " + err);
+    log('redis Error %j', err, {redis: true});
 }, function success() {
-    console.log("[Redis] client is ready");
+    log('redis client is ready', {redis: true});
 });
 
 var basePath = (program.args[0]) ? path.join(process.cwd(), program.args[0]) : process.cwd();
@@ -67,21 +70,16 @@ var mainStream = function (source, generator) {
     source
         .pipe(stream.filter(function (data) {
             if (!helper.isMessageFormatCorrect(data.message)) {
-                console.error('something wrong with message fields');
+                log('error', 'something wrong with message fields');
                 return false;
             }
             data.basePath = basePath;
             return true;
         }))
-        .pipe(stream.log('[FILTERED:MESSAGE]'))
+        .pipe(stream.log(log, '[FILTERED:MESSAGE]'))
 
         .pipe(configMerge.getConfigStream())
         .pipe(messageHelper.pageLocaleSplitter())
-
-        .pipe(es.through(function (data) {
-            console.log('[SPLITTER]', data.message);
-            this.emit('data', data);
-        }))
 
         //add page configs for those messages that did not have page key before splitting
         .pipe(configMerge.getConfigStream())
@@ -91,10 +89,15 @@ var mainStream = function (source, generator) {
             this.emit('data', message);
         }))
         .on('data', function (data) {
+            if (data.queueShift) {
+                data.queueShift();
+                delete data.queueShift;
+            }
+            log('send to generator', {page: data.message.page, url: data.message.url, locale: data.message.locale});
             generator.send('new:message', data);
         })
         .on('error', function (err) {
-            console.log('ERROR', err);
+            log('error', 'main stream %j', err, {error: true});
         });
 };
 
@@ -102,9 +105,6 @@ var generatorRouter,
     uploaderRouter;
 
 var generatorRoutes = {
-    log: function (data) {
-        console.log('[from generator]', data);
-    },
     pipe: function (data) {
         var uploadFileList,
             archiverStream,
@@ -113,11 +113,13 @@ var generatorRoutes = {
 
         data = JSON.parse(data);
         message = data.message;
-        console.log('message from pipe generator pipe', message.page, message.url, message.locale);
+        var metadata = {page: message.page, url: message.url, locale: message.locale};
+        log('message from pipe generator', metadata);
 
         uploadFileList = data.json.reduce(function (result, currentItem) {
             return result.concat(currentItem);
         }, data.html);
+
         data = null;
         archiverStream = archiver.bulkArchive(uploadFileList);
 
@@ -128,12 +130,20 @@ var generatorRoutes = {
                 uploadFileList = [];
                 var result = {url: message.url, data: data};
                 if (program.queue) {
+                    uploaderRouter.send('reduce:timeout');
                     return redisClient.rpush(config.redis.keys.list, JSON.stringify(result), function () {
                         next();
+                        log('generated message sended to redis', metadata)
+                        result = null;
+                        data = null;
+                        archiverStream = null;
                     });
                 }
-                console.log('[WORKER] send message to upload', message.url);
+                log('[WORKER] send message to upload', metadata);
                 uploaderRouter.send('pipe', result);
+                result = null;
+                data = null;
+                archiverStream = null;
                 next();
             });
         }
@@ -148,7 +158,6 @@ var generatorRoutes = {
     }
 };
 
-console.log('worker started current process pid is', process.pid);
 var args = _.clone(process.argv).splice(2);
 
 helper.createChildProcesses(args, function (err, result) {
@@ -160,19 +169,10 @@ helper.createChildProcesses(args, function (err, result) {
     var uploader = result.uploader,
         generator = result.generator;
 
-    console.log('Generator created pid:', generator.pid);
-    console.log('Uploader created pid:', uploader.pid);
-
     generatorRouter = new ProcessRouter(generator);
     uploaderRouter = new ProcessRouter(uploader);
 
     generatorRouter.addRoutes(generatorRoutes);
-
-    uploaderRouter.addRoutes({
-        log: function (data) {
-            console.log('[from uploader]', data);
-        }
-    });
 
     var source;
 
@@ -180,21 +180,23 @@ helper.createChildProcesses(args, function (err, result) {
         var connection = amqp.getConnection(config.amqp.credentials);
         var queues = helper.getQueNames(program, config.amqp);
 
-        console.log('queues', queues);
+        log('queues %j', queues, {});
 
         var queueStreams = _.values(queues).map(function (queueName) {
-            return amqp.getStream({
+            var amqpStream = amqp.getStream({
                 queue: queueName,
                 exchange: 'amq.direct',
-                connection: connection,
-                shiftAfterReceive: true
+                connection: connection
             });
+            amqpStream.on('ready', function (queue) {
+                log('%s is connected', queue);
+            });
+            return amqpStream;
         });
 
         source = es.merge.apply(es, queueStreams)
-            .pipe(stream.log('[RECEIVED:MESSAGE]'))
             .pipe(messageHelper.getMessageParser())
-            .pipe(stream.log('[PARSED:MESSAGE]'));
+            .pipe(stream.log(log, '[PARSED:MESSAGE]'));
 
     } else {
         var data = {
@@ -217,8 +219,10 @@ helper.createChildProcesses(args, function (err, result) {
 });
 
 process.on('uncaughtException', function (err) {
-    console.log(clc.red('[ERROR IN WORKER]'));
-    console.log(clc.red(err));
-    console.log(clc.red(err.stack));
+    log('error', '%s %j', err, err.stack, {uncaughtException: true});
     process.kill();
+});
+
+memwatch.on('leak', function(info) {
+    log('warning', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
 });

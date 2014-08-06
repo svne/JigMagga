@@ -22,7 +22,6 @@ exports.get = function (options, callback) {
         result = {},
         mock;
 
-    console.log('[mock] options', options);
     mocks.some(function (item) {
         if(item.regexp.test(url)) {
             mock = item;
@@ -35,7 +34,6 @@ exports.get = function (options, callback) {
         return http.get(options, callback);
     }
     result.buffer = new Buffer(JSON.stringify(mock.data));
-    console.log('[mock data returned]');
     process.nextTick(function () {
         callback(null, result);
     });

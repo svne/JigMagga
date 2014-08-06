@@ -1,10 +1,13 @@
 'use strict';
 var amqp = require('amqp');
 var _ = require('lodash');
-var EventEmitter = require('events').EventEmitter;
-var emitStream = require('emit-stream');
+var stream = require('./streamHelper');
+
+
 
 exports.getStream = function (options) {
+
+    var duplex = stream.duplex();
 
     var _source =  {
         queue: options.queue,
@@ -17,44 +20,36 @@ exports.getStream = function (options) {
         autoDelete: false
     };
 
-    var createEmitter = function () {
-        var emitter = new EventEmitter();
 
+    _source.connection.on('ready', function () {
+        var exchange = _source.connection.exchange('amq.direct', {type: 'direct'});
 
-        _source.connection.on('ready', function () {
-            console.log(options.queue, 'connection is ready');
-            var exchange = _source.connection.exchange('amq.direct', {type: 'direct'});
+        exchange.on('open', function () {
 
-            exchange.on('open', function () {
-                console.log(options.queue, 'exchange is open');
+            _source.connection.queue(_source.queue, queueOptions, function (queue) {
+                duplex.emit('ready', _source.queue);
+                queue.bind(_source.exchange, _source.queue);
 
-                _source.connection.queue(_source.queue, queueOptions, function (queue) {
-                    console.log(options.queue, 'queue is connected');
-                    queue.bind(_source.exchange, _source.queue);
+                queue.subscribe({ack: true, prefetchCount: 1}, function (data) {
 
-                    queue.subscribe({ack: true, prefetchCount: 1}, function (data) {
+                    if (options.shiftAfterReceive) {
+                        duplex.write(data);
+                        return queue.shift();
+                    }
 
-                        if (options.shiftAfterReceive) {
-                            emitter.emit(data);
-                            return queue.shift();
-                        }
-
-                        if (_.isArray(data) && data.length === 1) {
-                            data[0].queue = queue;
-                        } else {
-                            data.queue = queue;
-                        }
-
-                        emitter.emit(data);
-                    });
+                    if (_.isArray(data) && data.length === 1) {
+                        data[0].queueShift = queue.shift.bind(queue);
+                    } else {
+                        data.queueShift = queue.shift.bind(queue);
+                    }
+                    duplex.write(data);
+                    data = null;
                 });
             });
         });
+    });
 
-        return emitter;
-    };
-
-    return emitStream(createEmitter());
+    return duplex;
 };
 
 

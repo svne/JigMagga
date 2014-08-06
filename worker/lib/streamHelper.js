@@ -1,6 +1,8 @@
 'use strict';
 
 var es = require('event-stream');
+var _ = require('lodash');
+
 
 module.exports = {
     filter: function (predicate) {
@@ -27,11 +29,11 @@ module.exports = {
         });
     },
 
-    log: function (prefix, level) {
-        level = level || 'log';
+    log: function (client, prefix, level) {
+        level = level || 'info';
 
         return es.through(function (message) {
-            console[level](prefix, message);
+            client(level, prefix + ' %j', message, _.pick(message.message, ['url', 'page', 'locale']));
             this.emit('data', message);
         });
     },

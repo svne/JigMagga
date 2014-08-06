@@ -81,6 +81,7 @@ module.exports = {
     getMessageParser: function () {
         return es.through(function (data) {
             var message, result;
+            console.log('start parsing');
             if (_.isArray(data) && data.length === 1) {
                 data = data[0];
             }

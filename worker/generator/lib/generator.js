@@ -6,6 +6,7 @@
  * To change this template use File | Settings | File Templates.
  */
 
+var EventEmitter = require('events').EventEmitter;
 var fs = require('fs');
 var async = require('async');
 var util = require('util');
@@ -44,7 +45,6 @@ exports.generatePage = function (origConfig, callback) {
         html = "",
         predefinedVarString;
     try {
-        console.log("Processing page " + url, config["pagePath"]);
         if (viewContainer["shtml"]) {
             viewContainer.filename = fs.realpathSync(config["pagePath"].replace(/\/$/, "") + ".shtml");
             config["pagePath"] = config["pagePath"].replace(/\/[^\/]*$/, "");
@@ -53,7 +53,6 @@ exports.generatePage = function (origConfig, callback) {
         config["template"] = ejs.render(config["template"], viewContainer);
         viewContainer.Yd = {config: config, predefined: config["predefined"]};
         viewContainer._ = global._ = gt._;
-        console.log('[viewContainer._]', viewContainer._);
         viewContainer._n = gt._n;
         for (var key in config) {
             if (key === "predefined") continue;
@@ -145,7 +144,6 @@ exports.generatePage = function (origConfig, callback) {
                 }
             }
         }
-        console.log("--->" , config["scriptName"])
         script += '</script>';
         script += util.format('<!--[if !IE]> --><script id="yd-application-script" type="text/javascript" src="/%s"></script><!-- <![endif]-->', config["scriptName"]);
         script += util.format('<!--[if IE 7]><script id="yd-application-script-ie7" type="text/javascript" src="/%s"></script><![endif]-->', config["scriptName"].replace('/production-', '/production-msie7.0-'));
@@ -300,7 +298,7 @@ var uploadFileS3 = function (conf, cb) {
     });
     pageCounter++;
 };
-var apiCalls = function (configs, callback, readyConfigs, dontCheckPlaceholders) {
+var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlaceholders) {
     var config = configs.shift(),
         nextConfigs,
         configPlaceholders,
@@ -313,6 +311,12 @@ var apiCalls = function (configs, callback, readyConfigs, dontCheckPlaceholders)
             "base": config.apiConfig.base,
             "db":  config.domain
         };
+
+    if (typeof emitter === 'function') {
+        callback = emitter;
+        emitter = new EventEmitter();
+    }
+
     readyConfigs = readyConfigs || [];
     if (config["predefined"] && !dontCheckPlaceholders) {
         // console.log("Getting Placeholders");
@@ -321,7 +325,7 @@ var apiCalls = function (configs, callback, readyConfigs, dontCheckPlaceholders)
             if (configPlaceholders.pageNum) {
                 delete configPlaceholders.pageNum;
             }
-            //console.log("Placeholders ", configPlaceholders);
+
             nextConfigs = placeholderHelper.replaceConfigPlaceholders(config, configPlaceholders);
             if (nextConfigs.length === 1) {
                 config = nextConfigs[0];
@@ -332,7 +336,6 @@ var apiCalls = function (configs, callback, readyConfigs, dontCheckPlaceholders)
                 apiCalls(configs, callback, readyConfigs, true);
                 return;
             } else {
-                console.log("No next config for placeholders");
                 if (configs.length === 0) {
                     callback(null, readyConfigs);
                 } else {
@@ -343,6 +346,8 @@ var apiCalls = function (configs, callback, readyConfigs, dontCheckPlaceholders)
         }
     }
     config["viewContainer"]["url"] = config["url"];
+
+    //TODO: move it to the generatePage
     if (config["child-page-path"]) {
         config["predefined"]["child-page-path"] = config["child-page-path"];
         config["viewContainer"]["parentUrl"] = config["viewContainer"]["url"];
@@ -372,7 +377,7 @@ var apiCalls = function (configs, callback, readyConfigs, dontCheckPlaceholders)
         }
         // adding all predefined variables to gather from api
         for (var apicall in jig.apicalls) {
-            console.log("Parsing API calls for jigs", apicall, jig.apicalls[apicall]);
+            emitter.emit('call:parsing', apicall, jig.apicalls[apicall]);
             if (jig.apicalls.hasOwnProperty(apicall)) {
                 if (jig.apicalls[apicall].predefined == true) {
                     callbackContainer.push(restHelper.addCall(apicall, jig, config.predefined, apiconfig));
@@ -395,7 +400,6 @@ var apiCalls = function (configs, callback, readyConfigs, dontCheckPlaceholders)
     // work through all calls and wait for all to finish
     // console.log("Make all API calls for jigs");
     async.map(callbackContainer, restHelper.doCall, function (err, results) {
-        // console.log("Processing calls");
         var failedCalls = [],
             nextConfig;
         try {
@@ -404,8 +408,8 @@ var apiCalls = function (configs, callback, readyConfigs, dontCheckPlaceholders)
                     if (results[key].success == false) {
                         failedCalls.push("Error in rest call: " + results[key].path + " " + JSON.stringify(results[key].query));
                     } else {
-                        //console.log("predefined", results[key].viewParam, results[key].result);
                         config["predefined"][results[key].viewParam] = results[key].result;
+                        emitter.emit('call:success', results[key].requestId);
                     }
                 }
             }
@@ -424,7 +428,6 @@ var apiCalls = function (configs, callback, readyConfigs, dontCheckPlaceholders)
                             if (nextConfig.triggerGt) {
                                 triggerValue = placeholderHelper.getParamByString(nextConfig.triggerGt.field.replace(/[{}]/g, ""), config["predefined"]);
                                 if (triggerValue !== undefined && triggerValue <= nextConfig.triggerGt.value) {
-                                    console.log("Trigger Value not reached", triggerValue);
                                     delete nextConfig;
                                 } else {
                                     configs.unshift(nextConfig);
@@ -452,7 +455,8 @@ var apiCalls = function (configs, callback, readyConfigs, dontCheckPlaceholders)
                 }
             }
             readyConfigs.push(config);
-            console.log("Config", readyConfigs.length, "von", configs.length + 1, config["viewContainer"]["url"]);
+            emitter.emit('config:ready', readyConfigs.length, configs.length, config["viewContainer"]["url"]);
+//            console.log("Config", readyConfigs.length, "von", + 1, config["viewContainer"]["url"]);
             if (configs.length === 0) {
                 callback(null, readyConfigs);
             } else {
@@ -462,6 +466,7 @@ var apiCalls = function (configs, callback, readyConfigs, dontCheckPlaceholders)
         catch (err) {
             callback({message: "failed to parse configs: " + err, err: err});
         }
+
     });
 };
 exports.apiCalls = apiCalls;

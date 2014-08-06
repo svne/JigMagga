@@ -93,46 +93,46 @@ exports.addCall = function (apicall, config, paramsFromQueue, apiconfig) {
 exports.doCall = function (options, callback) {
     var requestId;
     if (options.success === false) {
-        callback(null, options);
-    } else {
-        requestId = getRequestId(options);
-        console.log("API Call", requestId);
-        if (cachedCalls[requestId]) {
-            cachedCalls[requestId].promise.done(function(o) {
-                console.log("Cached Call ready", requestId);
-                callback(null, o);
-            });
-        } else {
-            cachedCalls[requestId] = Q.defer();
-            var getOptions = {
-                url: options.path + (options.query ? "?" + querystring.stringify(options.query) : ""),
-                bufferType: "buffer",
-                headers: { "YD-X-Domain": options.db, "Accept-Language": options.language, 'User-Agent': 'ydFrontend_Worker' }
-            };
-            console.log('[getOptions]', getOptions);
-            http.get(getOptions, function (error, result) {
-                if (result) {
-                    try {
-                        options.result = JSON.parse(result.buffer.toString());
-                        options.success = true;
-                        cachedCalls[requestId].resolve(deepExtend({},options));
-                    }
-                    catch (err) {
-                        options.success = false;
-                        options.error = err;
-                        cachedCalls[requestId].resolve(options);
-                    }
-                } else {
-                    options.resultCode = (error && error.code) ? error.code : error;
-                    options.error = error;
-                    options.success = false;
-                    cachedCalls[requestId].resolve(options);
-                }
-            });
-            cachedCalls[requestId].promise.done(function(o) {
-                console.log("Call ready", requestId);
-                callback(null, o);
-            });
-        }
+        return callback(null, options);
     }
+    requestId = getRequestId(options);
+
+    if (cachedCalls[requestId]) {
+        return cachedCalls[requestId].promise.done(function(result) {
+            result.requestId = result.requestId || requestId;
+            callback(null, result);
+        });
+    }
+
+    cachedCalls[requestId] = Q.defer();
+    var getOptions = {
+        url: options.path + (options.query ? "?" + querystring.stringify(options.query) : ""),
+        bufferType: "buffer",
+        headers: { "YD-X-Domain": options.db, "Accept-Language": options.language, 'User-Agent': 'ydFrontend_Worker' }
+    };
+    http.get(getOptions, function (error, result) {
+        if (result) {
+            try {
+                options.result = JSON.parse(result.buffer.toString());
+                options.success = true;
+                cachedCalls[requestId].resolve(deepExtend({},options));
+            }
+            catch (err) {
+                options.success = false;
+                options.error = err;
+                cachedCalls[requestId].resolve(options);
+            }
+        } else {
+            options.resultCode = (error && error.code) ? error.code : error;
+            options.error = error;
+            options.success = false;
+            cachedCalls[requestId].resolve(options);
+        }
+    });
+    cachedCalls[requestId].promise.done(function(result) {
+        result.requestId = result.requestId || requestId;
+        callback(null, result);
+    });
+
+
 };

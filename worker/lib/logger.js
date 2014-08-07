@@ -8,8 +8,8 @@ require('winston-loggly');
 
 //winston.add(winston.transports.File, config.main.logger.file);
 
-var logLevels = _.assign(winston.config.syslog.levels, config.main.logger.customLevels);
-
+var logLevels = _.assign(winston.config.cli.levels, config.main.logger.customLevels);
+var colors = _.assign(winston.config.cli.colors, config.main.logger.colors);
 module.exports = function (component, metadata) {
     metadata = metadata || {};
 
@@ -30,7 +30,7 @@ module.exports = function (component, metadata) {
         logger.add(winston.transports.Loggly, config.main.logger.loggly);
     }
 
-    winston.addColors(config.main.logger.colors);
+    winston.addColors(colors);
 
     return function () {
         var args = _.toArray(arguments);

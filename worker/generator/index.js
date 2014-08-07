@@ -1,7 +1,6 @@
 'use strict';
 
 var EventEmitter = require('events').EventEmitter,
-    memwatch = require('memwatch'),
     _ = require('lodash'),
     async = require('async'),
     path = require('path'),
@@ -16,6 +15,10 @@ var log = require('../lib/logger')('generator', {component: 'generator', process
 
 var router = new ProcessRouter(process);
 log('started, pid', process.pid);
+
+if (process.env.NODE_ENV === 'local') {
+    var memwatch = require('memwatch');
+}
 
 var config = require('../config');
 
@@ -114,10 +117,13 @@ messageStream
 process.send({ready: true});
 
 process.on('uncaughtException', function (err) {
+    console.log(err, err.stack);
     log('error', '%s %j', err, err.stack, {uncaughtException: true});
     process.kill();
 });
 
-memwatch.on('leak', function(info) {
-    log('warning', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
-});
+if (process.env.NODE_ENV === 'local') {
+    memwatch.on('leak', function (info) {
+        log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
+    });
+}

@@ -100,7 +100,7 @@ describe('helper', function () {
             });
         });
 
-        it('should send an error if process will not send a message in 500 msec', function (done) {
+        it('should send an error if process will not send a message in 5000 msec', function (done) {
             var clock = sinon.useFakeTimers();
             helper.createSubProcess(__dirname + '/../../testData/asyncProcess.js', function (err) {
                 expect(err).to.be.a('string');
@@ -108,7 +108,7 @@ describe('helper', function () {
                 clock.restore();
                 done();
             });
-            clock.tick(600);
+            clock.tick(5100);
 
         });
 

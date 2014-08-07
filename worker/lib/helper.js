@@ -64,10 +64,13 @@ module.exports = {
             return child;
         }
 
-        waitTime = setTimeout(function () {
-            callback('child process did not send a ready message');
-            child.kill();
-        }, 1000);
+        waitTime = (function (path) {
+            return setTimeout(function () {
+                callback('child process did not send a ready message :' + path);
+                child.kill();
+            }, 15000);
+        }(modulePath));
+
 
         child.on('message', function (data) {
             if (!data.ready) {

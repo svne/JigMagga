@@ -1,7 +1,6 @@
 'use strict';
 
-var memwatch = require('memwatch'),
-    _ = require('lodash'),
+var _ = require('lodash'),
     async = require('async'),
     Uploader = require('jmUtil').ydUploader,
     getRedisClient = require('../lib/redisClient'),
@@ -13,6 +12,10 @@ var log = require('../lib/logger')('uploader', {component: 'uploader', processId
 
 var config = require('../config');
 log('started, pid', process.pid);
+
+if (process.env.NODE_ENV === 'local') {
+    var memwatch = require('memwatch');
+}
 
 var uploader = new Uploader(config.main.knox);
 var router = new ProcessRouter(process);
@@ -127,6 +130,8 @@ process.on('uncaughtException', function (err) {
     process.kill();
 });
 
-memwatch.on('leak', function(info) {
-    log('warning', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
-});
+if (process.env.NODE_ENV === 'local') {
+    memwatch.on('leak', function (info) {
+        log('warning', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
+    });
+}

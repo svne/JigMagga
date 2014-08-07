@@ -6,7 +6,7 @@
  * To change this template use File | Settings | File Templates.
  */
 var deepExtend = require("deep-extend");
-var _ = require("underscore");
+var _ = require("lodash");
 
 var deepReplace = function (obj, search, replace) {
     if (typeof obj === "object" && obj !== null && obj.constructor !== Array) {

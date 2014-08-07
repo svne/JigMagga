@@ -1,14 +1,15 @@
 #! /usr/local/bin/node
 'use strict';
 
+
 var _ = require('lodash'),
+    fs = require('fs'),
     es = require('event-stream'),
     path = require('path'),
     getRedisClient = require('./lib/redisClient'),
     program = require('commander');
 
 var amqp = require('./lib/amqp'),
-    memwatch = require('memwatch'),
     log = require('./lib/logger')('worker', {component: 'worker', processId: String(process.pid)}),
     ProcessRouter = require('./lib/router'),
     configMerge = require('./lib/configMerge'),
@@ -22,6 +23,10 @@ var config = require('./config');
 if (config.main.nodetime) {
     log('connect to nodetime for profiling');
     require('nodetime').profile(config.main.nodetime);
+}
+
+if (process.env.NODE_ENV === 'local') {
+    var memwatch = require('memwatch');
 }
 
 log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
@@ -65,6 +70,10 @@ var redisClient = getRedisClient(function error(err) {
 
 var basePath = (program.args[0]) ? path.join(process.cwd(), program.args[0]) : process.cwd();
 
+var getMeta = function (msg) {
+    return _.pick(msg, ['page', 'url', 'locale']);
+};
+
 //main stream
 var mainStream = function (source, generator) {
     source
@@ -74,26 +83,23 @@ var mainStream = function (source, generator) {
                 return false;
             }
             data.basePath = basePath;
+            log('filtered message', getMeta(data.message));
             return true;
         }))
-        .pipe(stream.log(log, '[FILTERED:MESSAGE]'))
-
         .pipe(configMerge.getConfigStream())
         .pipe(messageHelper.pageLocaleSplitter())
 
         //add page configs for those messages that did not have page key before splitting
         .pipe(configMerge.getConfigStream())
-        .pipe(es.through(function (message) {
-            message.message = messageHelper.createMessage(message.message, program, message.config);
-            message.bucketName = helper.generateBucketName(message, program);
-            this.emit('data', message);
-        }))
         .on('data', function (data) {
+            data.message = messageHelper.createMessage(data.message, program, data.config);
+            data.bucketName = helper.generateBucketName(data, program);
+
             if (data.queueShift) {
                 data.queueShift();
                 delete data.queueShift;
             }
-            log('send to generator', {page: data.message.page, url: data.message.url, locale: data.message.locale});
+            log('send to generator', getMeta(data.message));
             generator.send('new:message', data);
         })
         .on('error', function (err) {
@@ -113,7 +119,7 @@ var generatorRoutes = {
 
         data = JSON.parse(data);
         message = data.message;
-        var metadata = {page: message.page, url: message.url, locale: message.locale};
+        var metadata = _.pick(message, ['page', 'url', 'locale']);
         log('message from pipe generator', metadata);
 
         uploadFileList = data.json.reduce(function (result, currentItem) {
@@ -128,33 +134,27 @@ var generatorRoutes = {
         } else {
             destination = stream.accumulate(function(err, data, next) {
                 uploadFileList = [];
+                var cb =  function () {
+                    result = null;
+                    data = null;
+                    archiverStream = null;
+                    next();
+                };
                 var result = {url: message.url, data: data};
                 if (program.queue) {
                     uploaderRouter.send('reduce:timeout');
                     return redisClient.rpush(config.redis.keys.list, JSON.stringify(result), function () {
-                        next();
-                        log('generated message sended to redis', metadata)
-                        result = null;
-                        data = null;
-                        archiverStream = null;
+                        log('generated message sended to redis', metadata);
+                        cb();
                     });
                 }
                 log('[WORKER] send message to upload', metadata);
                 uploaderRouter.send('pipe', result);
-                result = null;
-                data = null;
-                archiverStream = null;
-                next();
+                cb();
             });
         }
 
-        archiverStream.pipe(destination)
-            .on('finish', function () {
-                if (program.write) {
-                    return console.log('saved!!');
-                }
-                console.log('sanded to uploader');
-            });
+        archiverStream.pipe(destination);
     }
 };
 
@@ -203,6 +203,7 @@ helper.createChildProcesses(args, function (err, result) {
             message: _.pick(program, ['basedomain', 'url', 'page', 'locale'])
         };
         var values = {};
+
         if (program.values) {
             values = JSON.parse(program.values);
         } else {
@@ -219,10 +220,13 @@ helper.createChildProcesses(args, function (err, result) {
 });
 
 process.on('uncaughtException', function (err) {
+    console.log(err, err.stack);
     log('error', '%s %j', err, err.stack, {uncaughtException: true});
     process.kill();
 });
 
-memwatch.on('leak', function(info) {
-    log('warning', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
-});
+if (process.env.NODE_ENV === 'local') {
+    memwatch.on('leak', function(info) {
+        log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
+    });
+}

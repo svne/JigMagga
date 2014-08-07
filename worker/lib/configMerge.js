@@ -11,7 +11,6 @@ module.exports = {
     getConfigStream: function () {
         return es.map(function (data, callback) {
             var message = data.message,
-                result,
                 basePath = data.basePath;
 
             if (data.isPageConfigLoaded) {
@@ -25,7 +24,7 @@ module.exports = {
                     return callback(err);
                 }
 
-                result = _.cloneDeep(data);
+                var result = _.cloneDeep(data);
                 result.config = config;
                 result.isPageConfigLoaded = (message.page) ? true : false;
 

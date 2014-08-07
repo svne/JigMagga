@@ -19,7 +19,7 @@ var restHelper = require("./rest.js");
 var placeholderHelper = require("./placeholders.js");
 var slots = require('./slots');
 var http = require('http-get');
-var _ = require('underscore');
+var _ = require('lodash');
 var Uploader = require('jmUtil').ydUploader;
 var zlib = require('zlib');
 var gt;

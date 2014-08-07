@@ -59,6 +59,7 @@
     "prepublish": "node node_modules/bower/bin/bower install steal=git://github.com/bitovi/legacy-steal.git --config.directory=."
   },
   "dependencies": {
+    "MD5": "^1.2.1",
     "amqp": "^0.2.0",
     "archiver": "^0.10.1",
     "async": "^0.9.0",

@@ -10,17 +10,17 @@
         },
         /**
          * will remove a jig when browser is not supported
-         * if steal.config("isBuild") is true it will skip this function and will handle browser stuff in build process
+         * if steal.config("isBuild") is true it will include all browser stuff and provide steal information to filter ist via build
          * @param jig
          * @returns {*}
          */
-        browserSupport = function (jig) {
-            if (!steal.config("isBuild") && jig && jig.browser && window.$) {
-                var $browser = window.$.browser,
+        browserSupport = function (jig, config) {
+            if (jig && jig.browser) {
+                var $browser = window.$ ? window.$.browser : steal.config("browser"),
                     versionconf,
                     k,
                     key,
-                    version = $browser.version,
+                    version = $browser ? $browser.version : null,
                     browserconf = jig.browser;
                 //noinspection JSLint
                 for (k in browserconf) {
@@ -50,16 +50,14 @@
          */
         browserIncludes = function (config) {
             var key,
-                browser = window.$ ? window.$.browser : "",
-                isBuild = steal.config("isBuild");
+                browser = window.$ ? window.$.browser : steal.config("browser");
             if (config && browser && config.browserincludes) {
                 for (key in config.browserincludes) {
                     for (var includeKey in config.browserincludes[key]) {
-                        if (isBuild || key in browser) {
+                        if (key in browser) {
                             config.includes.push({id: config.browserincludes[key][includeKey], browser: key});
                         }
                     }
-
                 }
             }
         },
@@ -187,7 +185,7 @@
                 if (jig.css) {
                     jig.options.css = "//" + jig.css;
                 }
-                browserSupport(jig);
+                browserSupport(jig, config);
                 renderJig(jig, jigKey, config);
                 /**
                  * check if jig has includes that are config special
@@ -206,7 +204,7 @@
 
                 // include controller
                 if (jig && jig.render && jig.path) {
-                    config.includes.push({id: jig.path, jig: jig});
+                    config.includes.push({id: jig.path});
                 }
             }
         },
@@ -359,7 +357,7 @@
             }
         },
         /**
-         * check jig config for slot logic and execute ist
+         * check jig config for slot logic and execute it
          * eg.
          *  "slot" : {
          *
@@ -643,6 +641,7 @@
             }
         },
         /**
+         * TODO: use node config merger to have the same codebase (middleware grunt server)
          * get all config paths
          * @param path
          * @returns {Array}
@@ -662,8 +661,7 @@
                         }
                     }
                 };
-            //TODO use regex that do not require yd/ path and will work with all page paths
-            setConfigs(path.replace(/.*\.[a-z]{2,3}\//, "/yd/page/default/"));
+            setConfigs(path.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/"));
             setConfigs(path);
             return configs;
         },
@@ -795,7 +793,7 @@
             if (!conf.locale) {
                 console.warn("Locale is not set in config (locale)");
             }
-            conf.namespace = conf.namespace || "";
+            conf.namespace = conf.namespace || "Jm";
             conf.sass[conf.namespace + "-domain"] = conf.domain ? conf.domain.replace(/\./g, "_") : "default";
             conf.sass[conf.namespace + "-locale"] = conf.locale;
             return conf;
@@ -806,9 +804,6 @@
      * Type definition of .conf files
      *
      */
-
-
-
     steal.type("conf js", function (options, success, error) {
         var domain,
             stealToUri,
@@ -817,6 +812,7 @@
         if (!config) {
             error("Config can't be parsed");
         }
+        options.ignore = true;
         if (!config.includes) {
             config.includes = [];
         }
@@ -842,6 +838,7 @@
             mergedConfig.locale = steal.config("init-locale") || steal.config().env === 'development' && !steal.config("isBuild") && readCookie("yd-dev-locale") || mergedConfig["init-locale"] || (mergedConfig.locales && mergedConfig.locales[0]) || "default";
 
             var messagePOFile = (mergedConfig.namespace || "") + "/locales/" + mergedConfig.domain + "/" + mergedConfig.locale + "/messages.po";
+            mergedConfig.localePath = messagePOFile;
             mergedConfig.includes.unshift(messagePOFile);
 
 

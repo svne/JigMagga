@@ -1,7 +1,8 @@
 var path = require("path"),
     util = require("util"),
     es = require('event-stream'),
-    extend = require('node.extend');
+    extend = require('node.extend'),
+    fs = require('fs');
 module.exports = {
 
     /**
@@ -18,6 +19,7 @@ module.exports = {
             program.basePath = self.getBasePath(program.basepath);
             program.defaultPath = program.basePath + "/default";
             program.domain = program.basedomain;
+            program.minify = program.minify === 0 || program.minify === 1 ? program.minify : true;
             if (!program.domain) {
                 throw new Error("no domain");
             }
@@ -83,12 +85,25 @@ module.exports = {
     splitPagesIntoSingleStreams: function () {
         return es.through(function write(data) {
             for (var i = 0; i < data.length; i++) {
-                // deep copy dirty
                 var dataCopy = extend(true, {}, data[i]);
                 this.emit('data', dataCopy);
             }
         })
 
+    },
+    /**
+     * join all pages to one single array stream
+     * @returns {*}
+     */
+    joinPagesIntoSingleStreams: function () {
+        var arry = [];
+        return es.through(function (data) {
+                arry.push(data)
+            },
+            function () {
+                this.emit('data', arry);
+                this.emit('end')
+            });
     },
     /**
      * dublicat one page object into many browser and locales
@@ -107,6 +122,47 @@ module.exports = {
                 }
             }
         })
+    },
+    /**
+     *
+     * @returns {*}
+     */
+    bufferAllPagesAndWaitingForDoneEvent: function () {
+        var selfHelper = this,
+            buffer = [];
+        return es.through(function write(data) {
+                buffer.push(data)
+            },
+            function end() { //optional
+                var self = this;
+                var timer = setInterval(function () {
+                    if (buffer.length && !selfHelper.inProgress) {
+                        selfHelper.inProgress = true;
+                        self.emit('data', buffer.pop())
+                    } else if (!buffer.length) {
+                        clearInterval(timer);
+                        self.emit('end');
+                    }
+                }, 100)
+            }
+        );
+    },
+    triggerDonePageEvent: function () {
+        var selfHelper = this;
+        return es.map(function (data, callback) {
+            console.log("DONE : ", data.build.page);
+            selfHelper.inProgress = false;
+            callback(null, data);
+        })
+    },
+    loadFileFromStealOptions: function (options) {
+        var src = typeof options.src === "string" ? options.src : options.src.path;
+        return fs.readFileSync(src, {
+            encoding: "utf8"
+        });
     }
-}
-;
+
+
+
+
+};

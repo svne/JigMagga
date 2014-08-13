@@ -1,36 +1,118 @@
 var fs = require('fs'),
     UglifyJS = require("uglify-js"),
     CleanCSS = require('clean-css'),
-    es = require('event-stream');
+    es = require('event-stream'),
+    sass = require('node-sass'),
+    async = require('async'),
+    stealLib = require('./steal.js'),
+    helper = require('./helper.js'),
+    canCompile = require('./can-compile/can-compile.js'),
+    sassHelper = require('./../../steal-types/sass/sass-helper.js');
 
 
 var builder = {
     makePackage: function () {
         return es.map(function (data, callback) {
-            callback(null,  makeStealPackage(data.build.dependencies));
+            data.build.package = makeStealPackage(data.build.dependencies);
+            callback(null, data);
         });
     },
-
     view: {
         compile: function () {
+            var internalCache = {};
             return es.map(function (data, callback) {
-                callback(null, data);
+                async.mapSeries(data.build.dependencies, function (item, cb) {
+                    if (item.type === "mustache" || item.type === "ejs") {
+                        if (internalCache[item.id.path]) {
+                            item.text = internalCache[item.id.path];
+                            cb(null, item);
+                        } else {
+                            canCompile({
+                                filename: item.id.path,
+                                fileContent: item.text,
+                                version: "2.0.7"
+                            }, function (error, output) {
+                                if (error) {
+                                    cb(error, item);
+
+                                } else {
+                                    internalCache[item.id.path] = item.text = output;
+                                    cb(null, item);
+                                }
+                            });
+                        }
+                    } else {
+                        cb(null, item);
+                    }
+                }, function (err, results) {
+                    if (err) {
+                        throw Error(error);
+                    } else {
+                        data.build.dependencies = results;
+                        callback(null, data);
+                    }
+                });
             });
         }
     },
-
     css: {
         minify: function (path, cb) {
+            var internalCache = {};
             return es.map(function (data, callback) {
-                callback(null, new CleanCSS({
-                    processImport: false
-                }).minify(data));
+                if (data.build.minify) {
+                    async.mapSeries(data.build.dependencies, function (item, cb) {
+                        if (item.buildType === "css") {
+                            if (internalCache[item.id.path]) {
+                                item.text = internalCache[item.id.path];
+                            } else {
+                                internalCache[item.id.path] = item.text = new CleanCSS({
+                                    processImport: false
+                                }).minify(item.text);
+                            }
+                        }
+                        cb(null, item);
+                    }, function (err, results) {
+                        data.build.dependencies = results;
+                        callback(null, data);
+                    })
+                } else {
+                    callback(null, data);
+                }
             });
 
         },
         compileSCSS: function () {
+            var internalCache = {};
             return es.map(function (data, callback) {
-                callback(null, data);
+                async.mapSeries(data.build.dependencies, function (item, cb) {
+                    if (item.type === "scss") {
+                        var sassImport = sassHelper.sassImportFn(data.sass);
+                        if (internalCache[item.id.path] && internalCache[item.id.path].sassImport === sassImport) {
+                            item.text = internalCache[item.id.path].text;
+                            cb(null, item);
+                        } else {
+                            sass.render({
+                                data: sassImport + "\n" + item.text,
+                                success: function (css) {
+                                    internalCache[item.id.path] = {};
+                                    internalCache[item.id.path].sassImport = sassImport;
+                                    internalCache[item.id.path].text = item.text = css;
+                                    cb(null, item);
+                                },
+                                error: function (error) {
+                                    throw Error(error);
+                                },
+                                outputStyle: 'compressed'
+                            });
+                        }
+                    } else {
+                        cb(null, item);
+                    }
+
+                }, function (err, results) {
+                    data.build.dependencies = results;
+                    callback(null, data);
+                })
             });
         },
         makePackage: function (steals, where) {
@@ -52,28 +134,72 @@ var builder = {
             }
         }
     },
-
     js: {
-        minify: function (path, cb) {
+        translate: function () {
             return es.map(function (data, callback) {
-                callback(null, UglifyJS.minify(data, {fromString: true}));
+                var namespace = data.build.steal.config().namespace,
+                    localePath = data.build.steal.config(namespace).localePath;
+                stealLib.stealAFile(localePath, data, function (err, dataNew, window) {
+                    async.mapSeries(data.build.dependencies, function (item, cb) {
+                        if (item.buildType === "js") {
+                            window.gettext.textdomain(data.build.locale);
+                            item.text = window.replaceGettextUnderscore(item.text);
+                        }
+                        cb(null, item);
+                    }, function (err, results) {
+                        data.build.dependencies = results;
+                        callback(null, data);
+                    });
+                });
             });
         },
-        clean: function (fileString) {
-            if (fileString) {
-                if (steal.config("YD") && steal.config("YD").ENV === "production") {
-                    fileString = fileString.replace(new RegExp('^\\s*\/\/!steal-remove-start(\\n|.)*?\/\/!steal-remove-end.*$', 'gm'), "");
-                    fileString = fileString.replace(new RegExp('^\\s*\/\/!steal-remove-on-live-start(\\n|.)*?\/\/!steal-remove-on-live-end.*$', 'gm'), "");
+        minify: function () {
+            var internalCache = {};
+            return es.map(function (data, callback) {
+                if (data.build.minify) {
+                    var browser = data.build.steal.config().browser;
+                    async.mapSeries(data.build.dependencies, function (item, cb) {
+                        if (item.buildType === "js") {
+                            if (internalCache[item.id.path]) {
+                                internalCache[item.id.path] = item.text;
+                            } else {
+                                internalCache[item.id.path] = item.text = UglifyJS.minify(item.text, {fromString: true, screw_ie8: browser.msie ? false : true }).code;
+                            }
+                        }
+                        cb(null, item);
+                    }, function (err, results) {
+                        data.build.dependencies = results;
+                        callback(null, data);
+                    });
                 } else {
-                    fileString = fileString.replace(new RegExp('^\\s*\/\/!steal-remove-start(\\n|.)*?\/\/!steal-remove-end.*$', 'gm'), "");
+                    callback(null, data);
                 }
-            }
-            return fileString;
+            });
+        },
+        clean: function () {
+            return es.map(function (data, callback) {
+                async.mapSeries(data.build.dependencies, function (item, cb) {
+                    if (item.buildType === "js") {
+                        var fileString = item.text;
+                        if (fileString) {
+                            if (data.build.live) {
+                                fileString = fileString.replace(new RegExp('^\\s*\/\/!steal-remove-start(\\n|.)*?\/\/!steal-remove-end.*$', 'gm'), "");
+                                fileString = fileString.replace(new RegExp('^\\s*\/\/!steal-remove-on-live-start(\\n|.)*?\/\/!steal-remove-on-live-end.*$', 'gm'), "");
+                            } else {
+                                fileString = fileString.replace(new RegExp('^\\s*\/\/!steal-remove-start(\\n|.)*?\/\/!steal-remove-end.*$', 'gm'), "");
+                            }
+                        }
+                        item.text = fileString;
+                    }
+                    cb(null, item);
+                }, function (err, results) {
+                    data.build.dependencies = results;
+                    callback(null, data);
+                })
+            })
         }
 
     }
-
-
 };
 
 

@@ -1,4 +1,4 @@
-var stealBuild = require("./steal-build/lib/index.js"),
+var stealBuild = require("steal"),
     es = require('event-stream'),
     helper = require('./helper.js'),
     async = require('async'),
@@ -19,6 +19,7 @@ function setupStealconfig(steal, item) {
             encoding: "utf8"
         });
     };
+    global.window = {};
     global.navigator = {
         userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"
     };
@@ -27,32 +28,38 @@ function setupStealconfig(steal, item) {
         root: item.build.jigMaggaPath,
         pathToBuild: "/" + helper.getRelativePathFromStealRootPath(item.build.pageHTMLPath, item.build.jigMaggaPath),
         isBuild: true,
+        "init-locale": item.build.locale,
+        browser: item.build.browser,
         types: {
             text: function (options, success) {
                 options.text = loadFile(options);
                 success()
             },
-            ejs: function (options, success) {
+            "ejs js": function (options, success) {
                 options.text = loadFile(options);
                 success();
             },
             js: function (options, success) {
-                options.text = loadFile(options);
+                if (!options.text) {
+                    options.text = loadFile(options);
+                }
                 var stealInFile = /steal\(/.test(options.text);
                 if (stealInFile || options.id.path.indexOf("steal-types") !== -1) {
                     eval(options.text);
                 }
                 success();
             },
-            scss: function (options, success) {
+            "scss css": function (options, success) {
                 options.text = loadFile(options);
                 success();
             },
             css: function (options, success) {
-                options.text = loadFile(options);
+                if (!options.text) {
+                    options.text = loadFile(options);
+                }
                 success();
             },
-            mustache: function (options, success) {
+            "mustache js": function (options, success) {
                 options.text = loadFile(options);
                 success();
             },
@@ -63,8 +70,8 @@ function setupStealconfig(steal, item) {
                 }
                 success();
             },
-            "po": function (options, success) {
-                success();
+            "po": function () {
+                console.log(arguments)
             }
         }
     });
@@ -117,17 +124,6 @@ function getAllDependencies(steals) {
 }
 
 
-function removeDuplicateDependencies(dependencies) {
-    var arrayOfPaths = [];
-    for (var i = 0; i < dependencies.length; i++) {
-        if (arrayOfPaths.indexOf(dependencies[i].id.path) === -1) {
-            arrayOfPaths.push(dependencies[i].id.path);
-        } else {
-            dependencies.splice(i + 1, 1);
-        }
-    }
-}
-
 module.exports = {
 
     /**
@@ -136,9 +132,7 @@ module.exports = {
      */
     getJSAndHTMLFilePath: function () {
         var defaultPathJSFile,
-            domainPathJSFile,
-            domainPathHTMLFile,
-            defaultPathHTMLFile;
+            domainPathJSFile;
         return es.map(function (data, callback) {
             if (!data.length) {
                 throw Error("Stream is not an array of pages conf");
@@ -163,97 +157,27 @@ module.exports = {
             })
         })
     },
-
     /**
      *
      * @returns {*}
      */
-    openPagesAndGrepDependencies: function () {
+    openPageAndGrepDependencies: function () {
         return es.map(function (data, callback) {
             steal.one("done", function () {
-                if (!data.length) {
-                    throw Error("Stream is not an array of pages conf");
+                if (!data.build || !data.build.pageJSPath) {
+                    throw Error("Stream need build object with {pageJSPath: \"\"} ")
                 }
-                async.mapLimit(data, 1, function (item, cb) {
-                    if (!item.build || !item.build.pageJSPath) {
-                        throw Error("Stream need build object with {pageJSPath: \"\"} ")
-                    }
-                    var openerSteal = steal.clone();
-                    setupStealconfig(openerSteal, item);
-
-                    openerSteal.one("end", function (rootsteal) {
-                        item.build.dependencies = getAllDependencies(rootsteal.dependencies);
-                        cb(null, item);
-                    });
-                    openerSteal(helper.getRelativePathFromStealRootPath(item.build.pageJSPath, item.build.jigMaggaPath));
-                }, function (err, result) {
-                    callback(null, result);
-                })
+                var openerSteal = steal.clone();
+                setupStealconfig(openerSteal, data);
+                openerSteal.one("end", function (rootsteal) {
+                    data.build.steal = openerSteal;
+                    data.build.dependencies = getAllDependencies(rootsteal.dependencies);
+                    callback(null, data);
+                });
+                var page = helper.getRelativePathFromStealRootPath(data.build.pageJSPath, data.build.jigMaggaPath);
+                console.log("\nOpen page: ", page, " with Browser: ", data.build.browser, " and locale: ", data.build.locale, "\n");
+                openerSteal(page);
             })
-        })
-    },
-    /**
-     * get current view for locale
-     * @returns {*}
-     */
-    getCurrentView: function () {
-        return es.map(function (data, callback) {
-            var dependencies = data.build.dependencies;
-            for (var i = 0; i < dependencies.length; i++) {
-                if (dependencies[i].locale) {
-                    if (dependencies[i].jig.template[data.build.locale]) {
-                        dependencies[i].text = fs.readFileSync(data.build.jigMaggaPath + "/" + dependencies[i].jig.template[data.build.locale], {encoding: "utf8"});
-                    }
-                }
-            }
-            callback(null, data);
-        })
-    },
-    /**
-     * TODO do this on the plain dependencies tree not on the sorted or remove dependencies from old controller
-     * @returns {*}
-     */
-    checkDependenciesForBrowserSupport: function () {
-        return es.map(function (data, callback) {
-            var index = 0;
-            async.mapSeries(data.build.dependencies, function (item, cb) {
-                index++;
-                if (item.jig && item.jig.browser) {
-                    var confBrowser = item.jig.browser,
-                        browsers = Object.keys(confBrowser);
-                    for (var j = 0; j < browsers.length; j++) {
-                        if (data.build.browser[browsers[j]] && confBrowser[browsers[j]].version.indexOf(data.build.browser.version) !== -1) {
-                            if (confBrowser[browsers[j]].controller) {
-                                var path = confBrowser[browsers[j]].controller.toLowerCase().replace(/\./g, "/");
-                                var openerSteal = steal.clone();
-                                setupStealconfig(openerSteal, data);
-                                openerSteal.one("end", function (rootsteal) {
-                                    // insert and concat new dependencies
-                                    var newDependencies = getAllDependencies(rootsteal.dependencies),
-                                        spliceOptions = [index, 0];
-                                    spliceOptions.concat(newDependencies);
-                                    data.build.dependencies.splice.apply(data.build.dependencies, spliceOptions);
-                                    removeDuplicateDependencies(data.build.dependencies);
-                                    item.ignore = true;
-                                    cb(null, item);
-                                });
-                                openerSteal(path);
-                            } else {
-                                item.ignore = true;
-                                cb(null, item);
-                            }
-                        } else {
-                            cb(null, item);
-                        }
-                    }
-                } else {
-                    cb(null, item);
-                }
-            }, function (err, results) {
-                data.build.dependencies = results;
-                callback(null, data);
-            });
-
         })
     },
     /**
@@ -262,7 +186,25 @@ module.exports = {
      */
     setCurrentSCSSVariables: function () {
         return es.map(function (data, callback) {
+            var config = data.build.steal.config();
+            var sass = config[config.namespace].sass;
+            sass[data.namespace + "-locale"] = data.build.locale;
+            sass = util._extend(data.sass, sass);
+            data.sass = sass;
             callback(null, data);
+        })
+    },
+    stealAFile: function (page, data, cb) {
+        steal.one("done", function () {
+            if (!data.build) {
+                throw Error("Stream need build object")
+            }
+            var openerSteal = steal.clone();
+            setupStealconfig(openerSteal, data);
+            openerSteal.one("end", function (rootsteal) {
+                cb(null, data, window);
+            });
+            openerSteal(page);
         })
     }
 };

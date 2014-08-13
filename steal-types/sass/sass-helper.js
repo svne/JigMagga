@@ -23,16 +23,11 @@
         return sassText;
     }
 
-    function getCachedSassPath(scssPath, page, domain, locale) {
-        return scssPath.replace(".scss", "-" +  page.replace(/\/|\./g, "_") + "-" + domain.replace(/\./g, "_") + "-" + locale + "-cached.css" );
-    }
-
 //steal export
     if (typeof steal !== 'undefined') {
         steal(function () {
             return {
-                sassImportFn : sassImportFn,
-                getCachedSassPath : getCachedSassPath
+                sassImportFn : sassImportFn
             };
         });
     }
@@ -40,8 +35,7 @@
 //node export
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = {
-            sassImportFn : sassImportFn,
-            getCachedSassPath : getCachedSassPath
+            sassImportFn : sassImportFn
         };
     }
 

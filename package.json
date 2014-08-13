@@ -74,6 +74,11 @@
     "jmUtil": "git://github.com/yourdelivery/JigMaggaUtilities",
     "uglify-js": "^2.4.15",
     "clean-css": "^2.2.12",
-    "node.extend": "^1.0.10"
+    "node.extend": "^1.0.10",
+    "node-sass": "^0.9.3",
+    "can-compile": "^0.7.0",
+    "steal": "git+ssh://git@github.com:bitovi/steal-build.git",
+    "handlebars": "^2.0.0-alpha.4",
+    "jsdom": "^0.11.1"
   }
 }

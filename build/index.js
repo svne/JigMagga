@@ -21,7 +21,9 @@ program
     .option('-j, --js', 'generate only js')
     .option('-n, --namespace', 'the namespace of your project')
     .option('-b, --basePath', 'the basepath to your page directory')
+    .option('-m, --minify <n>', 'minify css and js Default true', parseInt)
     .parse(process.argv);
+
 
 
 helper.createStreamWithSettings(program)
@@ -29,21 +31,25 @@ helper.createStreamWithSettings(program)
     .pipe(configMerger.getPagesThatMatchThePageParam())
     .pipe(configMerger.getAllMergedConfigsFromPages())
     .pipe(steal.getJSAndHTMLFilePath())
-    .pipe(steal.openPagesAndGrepDependencies())
     .pipe(helper.splitPagesIntoSingleStreams())
     .pipe(helper.duplicatePagesForLocalesAndBrowsers())
-    .pipe(steal.checkDependenciesForBrowserSupport())
-    .pipe(steal.getCurrentView())
+    .pipe(helper.bufferAllPagesAndWaitingForDoneEvent())
+    .pipe(steal.openPageAndGrepDependencies())
     .pipe(builder.view.compile())
     .pipe(steal.setCurrentSCSSVariables())
     .pipe(builder.css.compileSCSS())
+    .pipe(builder.js.clean())
+    .pipe(builder.js.translate())
+    .pipe(builder.js.minify())
+    .pipe(builder.css.minify())
     .pipe(builder.makePackage())
-    .pipe(es.map(function (data, callback) {
-//        console.log(data.js)
-//        console.log("-------------------");
-        callback(null, data)
+    .pipe(helper.triggerDonePageEvent())
+    .pipe(helper.joinPagesIntoSingleStreams())
+    .pipe(es.map(function(data, callback){
+        data.forEach(function(item){
+            console.log(item.build.page, "||", item.build.locale, "||", item.build.browser);
+//            console.log(item.build.package)
+        });
     }));
-
-
 
 

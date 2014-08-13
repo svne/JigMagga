@@ -1,18 +1,26 @@
 'use strict';
 
+/**
+ * Generator module. Obtains new message from worker,
+ * Call api, generate JSON and HTML files
+ */
+
 var EventEmitter = require('events').EventEmitter,
+    fs = require('fs'),
     _ = require('lodash'),
-    async = require('async'),
     path = require('path'),
     es = require('event-stream');
 
-var log = require('../lib/logger')('generator', {component: 'generator', processId: String(process.pid)}),
+var log = require('../lib/logger')('generator', {component: 'generator', processId: process.pid}),
+    archiver = require('../lib/archiver'),
+    helper = require('../lib/helper'),
     stream = require('../lib/streamHelper'),
     ydGetText = require('jmUtil').ydGettext,
     generateConfig = require('./lib/generateConfig'),
     generator = require('./lib/generator'),
     ProcessRouter = require('../lib/router');
 
+//init process router
 var router = new ProcessRouter(process);
 log('started, pid', process.pid);
 
@@ -23,102 +31,139 @@ if (process.env.NODE_ENV === 'local') {
 var config = require('../config');
 
 var messageStream = stream.duplex();
-var ps = es.pause();
+
 router.addRoutes({
+    /**
+     * write to message stream the message that comes from generator
+     * @param  {Object} data
+     */
     'new:message': function (data) {
         messageStream.write(data);
     }
 });
 
+
+/**
+ * merge all configs and create viewContainer
+ * @param  {object}   data [data from worker]
+ * @param  {Function} next
+ * @return {stream}
+ */
+var configStream = es.map(function (data, next) {
+    generateConfig(data, config, next);
+});
+
+var emitter = new EventEmitter();
+emitter.on('call:parsing', function (name, config) {
+    log('Parsing call for jig %s config: %j', name, config, {api:true});
+});
+emitter.on('call:success', function (requestId) {
+    log('Api call success for %s', requestId, {api: true});
+});
+
+emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
+    log('Config %d of %d for %s', readyConfigsLength, configsLength, url, {api: true});
+});
+
+/**
+ * makes an api call for each message that comming to stream
+ * returns the same data object with api call results in apiCallResult field
+ * 
+ * @param  {object}   data
+ * @param  {Function} next
+ */
+var apiStream = es.map(function (data, next) {
+    log('[*] send api request', helper.getMeta(data.message));
+    generator.apiCalls([data.config], emitter, function (err, res) {
+        if (err) {
+            return log('error', 'error in apiCall %j %j ', err, res, {error: true});
+            // return next(err);
+        }
+        data.apiCallResult = res;
+        return next(null, data);
+    });
+});
+
 var lastLocale = '';
-
-var useLocale = function (data, callback) {
+/**
+ * loads locale file for each message if the file for that locale was not 
+ * loaded before
+ * 
+ * @param  {object}   data
+ * @param  {Function} callback
+ */
+var loadLocale = es.map(function (data, callback) {
     var domain = data.message.domain,
-        locale = data.message.locale,
-        result = _.cloneDeep(data),
-        mainLocale = data.config['init-locale'] || data.config.locales[0];
-
-    function next() {
-        result.locale = locale;
-        result.isMainLocale = locale === mainLocale;
-        callback(null, result);
+        locale = data.message.locale;
+    if (lastLocale === domain + locale) {
+        return callback(null, data);
     }
+    ydGetText.locale(data.basePath, domain, locale, function () {
+        lastLocale = domain + locale;
+        callback(null, data);
+    });
 
-    if (lastLocale !== domain + locale) {
-        log('locale obtained %s', domain + locale);
-        ydGetText.locale(data.basePath, domain, locale, function () {
-            lastLocale = domain + locale;
-            next();
-        });
-    } else {
-        next();
-    }
-};
-
+});
 
 messageStream
-    .pipe(ps)
-    .pipe(es.through(function (data, callback) {
+    .pipe(configStream)
+    .pipe(apiStream)
+    .pipe(loadLocale)
+    .pipe(es.through(function (data) {
         var that = this,
             saveDiskPath = path.join(data.basePath, '..'),
             knox = config.main.knox;
 
         knox.S3_BUCKET = knox.S3_BUCKET || data.bucketName;
 
+        ydGetText.setLocale(data.message.locale);
         generator.init(knox, ydGetText, saveDiskPath);
-        ps.pause();
-        var emitter = new EventEmitter();
-        async.waterfall([
-            function (next) {
-                useLocale(data, next);
-            },
-            function (data, next) {
-                generateConfig(data, config, next);
-            },
-            function (data, next) {
-                emitter.on('call:parsing', function (name, config) {
-                    log('Parsing call for jig %s config: %j', name, config, {api:true});
-                });
-                emitter.on('call:success', function (requestId) {
-                    log('Api call success for %s', requestId, {api: true});
-                });
 
-                emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
-                    log('Config %d of %d for %s', readyConfigsLength, configsLength, url, {api: true});
-                });
+        // generate json and html files
+        var json = _.map(data.apiCallResult, generator.generateJsonPage); 
+        var html = _.map(data.apiCallResult, function (config) {
+                log('Processing page url: %s pagePath: %s', config.uploadUrl, config.pagePath);
+                return generator.generatePage(config);
+            });
 
-                generator.apiCalls([data.config], emitter, next);
-            }
-        ], function (err, res) {
-            if (err) {
-                log('error', 'apiCall %j %s', err, err.stack, {});
-                return callback(err);
-            }
+        var result = {
+            message: data.message,
+            key: data.key || undefined
+        };
 
-            var result = {
-                json: _.map(res, generator.generateJsonPage),
-                html: _.map(res, function (config) {
-                    log('Processing page url: %s pagePath: %s', config.uploadUrl, config.pagePath);
-                    return generator.generatePage(config);
-                }),
-                message: data.message
-            };
-            log('!!content generated', {page: data.message.page, url: data.message.url, locale: data.message.locale});
+        //create list of files to upload
+        result.uploadList = html.concat(_.flatten(json, true));
 
-            ps.resume();
+        log('upload list length %d', result.uploadList.length);
+        
+        //if html files amount is less then 200 send them to the worker 
+        if (html.length < 200) {
             that.emit('data', '');
             router.send('pipe', result);
-            result = null;
-            emitter.removeAllListeners(['call:parsing', 'call:success', 'config:ready']);
-        });
+            return;
+        }
 
+        //if the amount is more then 200 create an archive write it to disck and
+        //send to the worker the archive link
+        var archiveStream = archiver.bulkArchive(result.uploadList);
+
+        log('creating zip file for message', helper.getMeta(data.message));
+        var zipPath = helper.getZipName({}, data.message, data.basePath);
+        archiveStream
+            .pipe(fs.createWriteStream(zipPath))
+            .on('finish', function () {
+                log('[!] saved to %s', zipPath);
+                delete result.uploadList;
+                result.zipPath = zipPath;
+                router.send('new:zip', result);
+            });
     }));
 
 process.send({ready: true});
 
 process.on('uncaughtException', function (err) {
-    console.log(err, err.stack);
-    log('error', '%s %j', err, err.stack, {uncaughtException: true});
+    var stack = err.err ? err.err.stack : err.stack;
+    log('error', '%s %j', err, stack, {uncaughtException: true});
     process.kill();
 });
 

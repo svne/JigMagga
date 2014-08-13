@@ -1,65 +1,76 @@
 'use strict';
-var amqp = require('amqp');
-var _ = require('lodash');
+var format = require('util').format;
 var stream = require('./streamHelper');
 
+var amqplib = require('amqplib');
 
+/**
+ * module representing an amqp
+ * @module amqp
+ */
 
+/**
+ * returns a stream from a amqp queue each message from the 
+ * queue is throwed to the stream
+ * - shiftAfterReceive means whether the message shoud be shifted from queue just after receiving
+ *   or queueShift method should be added to the message object
+ * - prefetch is an amount of message that should be consumed by the amqp client without acknowledge
+ * 
+ * @param  {{connection: Promise, exchange: string, queue: string, prefetch: number, shiftAfterReceive: boolean}} options
+ * @return {Stream}
+ */
 exports.getStream = function (options) {
 
     var duplex = stream.duplex();
+    var connection = options.connection;
 
-    var _source =  {
-        queue: options.queue,
-        connection: options.connection,
-        exchange: options.exchange
-    };
+    options.exchange = options.exchange || 'amq.direct';
+    
+    connection.then(function (connected) {
+        return connected.createChannel().then(function (channel) {
+            var ok = channel.assertQueue(options.queue, {durable: true});
+            if (options.prefetch) {
+                ok = ok.then(function () {
+                    channel.prefetch(options.prefetch);
+                });
+            }
 
-    var queueOptions = {
-        durable: true,
-        autoDelete: false
-    };
-
-
-    _source.connection.on('ready', function () {
-        var exchange = _source.connection.exchange('amq.direct', {type: 'direct'});
-
-        exchange.on('open', function () {
-
-            _source.connection.queue(_source.queue, queueOptions, function (queue) {
-                duplex.emit('ready', _source.queue);
-                queue.bind(_source.exchange, _source.queue);
-
-                queue.subscribe({ack: true, prefetchCount: 1}, function (data) {
+            ok = ok.then(function () {
+                duplex.emit('ready', options.queue);
+                channel.consume(options.queue, function (message) {
+                    if (!message) {
+                        return;
+                    }
 
                     if (options.shiftAfterReceive) {
-                        duplex.write(data);
-                        return queue.shift();
+                        duplex.write(message);
+                        return channel.ack(message);
                     }
-
-                    if (_.isArray(data) && data.length === 1) {
-                        data[0].queueShift = queue.shift.bind(queue);
-                    } else {
-                        data.queueShift = queue.shift.bind(queue);
-                    }
-                    duplex.write(data);
-                    data = null;
+                    
+                    message.queueShift = channel.ack.bind(channel, message);
+                    return duplex.write(message);
                 });
+                
             });
+            return ok;
         });
     });
+
 
     return duplex;
 };
 
 
+/**
+ * returns amqp connection promise
+ * 
+ * @param  {{login: string, password: string, host: string, vhost: string}} config
+ * @return {Promise}
+ */
 exports.getConnection = function (config) {
-    config.heartbeat = 30;
 
-    return amqp.createConnection(
-        config,
-        {
-            reconnect: false
-        }
-    );
+    var amqpUrl = format('amqp://%s:%s@%s/%s',
+        config.login, config.password, config.host, config.vhost);
+
+    return amqplib.connect(amqpUrl);
 };

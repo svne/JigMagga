@@ -5,11 +5,20 @@ var winston = require('winston');
 var config = require('../config');
 
 require('winston-loggly');
-
-//winston.add(winston.transports.File, config.main.logger.file);
-
+//extend default winston log levels with custom
 var logLevels = _.assign(winston.config.cli.levels, config.main.logger.customLevels);
+
+//extend default winston colors with custom
 var colors = _.assign(winston.config.cli.colors, config.main.logger.colors);
+
+/**
+ * returns a log function for current component
+ * metadata if passed is added to each log message
+ * 
+ * @param  {string} component
+ * @param  {object} metadata
+ * @return {function}
+ */
 module.exports = function (component, metadata) {
     metadata = metadata || {};
 
@@ -32,6 +41,40 @@ module.exports = function (component, metadata) {
 
     winston.addColors(colors);
 
+    /**
+     * first argument could be one of the log levels
+     * like:
+     *  info,
+     *  fail
+     *  success,
+     *  warn,
+     *  error,
+     *  debug
+     *  alert
+     *
+     * if the first argument is not one of those string it used like log message.
+     * log level in this case is 'info'
+     * @example
+     * log('info', 'foo bar');
+     * is the same as
+     * log('foo bar');
+     *
+     * If the last argument is the object it's perceived like a metadata
+     * all other arguments could be used like in util.format function
+     *
+     * @example
+     * log('foo %d foo %s', 1, 'bar') // foo 1 foo bar, metadata = {}
+     *
+     * but if you want to insert an object in to string you have to add some additional empty object
+     * in order to prevent the usage of your object like a metadata
+     * 
+     * @example
+     * //wrong
+     * log('foo: %j', {a: 1}) // 'foo %j', metadata = {a: 1}
+     * //correct
+     * log('foo: %j', {a: 1}, {}) // 'foo {a: 1}', metadata = {}
+     * 
+     */
     return function () {
         var args = _.toArray(arguments);
         var meta = args.pop();

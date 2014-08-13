@@ -4,6 +4,12 @@ var konphyg = require('konphyg')(__dirname + '/../config'),
 
 var config = konphyg.all();
 
+/**
+ * create a redis client with a
+ * @param  {[type]} error   [description]
+ * @param  {[type]} success [description]
+ * @return {[type]}         [description]
+ */
 module.exports = function (error, success) {
     success = success || function () {};
     error = error || function () {};

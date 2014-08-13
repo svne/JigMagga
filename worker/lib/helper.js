@@ -1,5 +1,6 @@
 'use strict';
 var _ = require('lodash'),
+    walk = require('walk'),
     async = require('async'),
     format = require('util').format,
     fs = require('fs'),
@@ -9,6 +10,14 @@ var _ = require('lodash'),
 var config = require('../config');
 
 module.exports = {
+    /**
+     * returns a an object with main queue and error queue names 
+     * based on program priority keys, basedomain and prefix
+     * 
+     * @param  {object} program
+     * @param  {object} config
+     * @return {{amqpQueue: string, amqpErrorQueue: string}}
+     */
     getQueNames: function (program, config) {
 
         var amqpQueue = config.queueBaseName;
@@ -46,6 +55,16 @@ module.exports = {
         };
     },
 
+    /**
+     * create sub process based on child_process spawn command
+     * with pipe and ipc channels enabled.
+     * if callback is present it waits for ready message from a child 
+     * end return process instance in callback
+     * 
+     * @param  {string}   modulePath - path to js file that will be executed like a process
+     * @param  {array}    args       - arguments that will be passed to a module
+     * @param  {Function} callback
+     */
     createSubProcess: function (modulePath, args, callback) {
         if (_.isFunction(args)) {
             callback = args;
@@ -81,7 +100,17 @@ module.exports = {
         });
     },
 
-    createSaveZipStream: function (program, message, basePath) {
+    /**
+     * returns a name of zip archive for a message based on page name, url, locale
+     * and current date
+     * if write key is a string it uses it like a relative path to the folder with zip files
+     * 
+     * @param  {{write: boolean}} program
+     * @param  {{page: string, url: string, locale: string}} message
+     * @param  {string} basePath
+     * @return {string}
+     */
+    getZipName: function (program, message, basePath) {
         var page = encodeURIComponent(message.page),
             url = encodeURIComponent(message.url);
 
@@ -91,10 +120,28 @@ module.exports = {
         destinationPath = (_.isString(program.write)) ?
             path.join(process.cwd(), program.write) : path.join(basePath, 'tmp');
 
-        return fs.createWriteStream(path.join(destinationPath, zipFileName));
+        return path.join(destinationPath, zipFileName);
 
     },
 
+    /**
+     * returns stream that write input to the zip file name created by getZipName method
+     * 
+     * @param  {{write: boolean}} program
+     * @param  {{page: string, url: string, locale: string}} message
+     * @param  {string} basePath
+     * @return {Writable}
+     */
+    createSaveZipStream: function (program, message, basePath) {
+        return fs.createWriteStream(this.getZipName(program, message, basePath));
+    },
+
+    /**
+     * creates a generator and uploader process in asynchronous mode
+     *
+     * @param  {array}   args      - array that throw to each process
+     * @param  {Function} callback
+     */
     createChildProcesses: function (args, callback) {
         if (_.isFunction(args)) {
             callback = args;
@@ -111,6 +158,14 @@ module.exports = {
         }, callback);
     },
 
+    /**
+     * generate the name of bucket using message basedomain and
+     * knox.buckets list from config
+     * 
+     * @param  {{message: {basedomain: string}}} data    [description]
+     * @param  {{live: boolean, liveuncached: boolean}} program [description]
+     * @return {string}
+     */
     generateBucketName: function (data, program) {
         var baseDomain = data.message.basedomain,
             buckets = config.main.knox.buckets;
@@ -125,8 +180,66 @@ module.exports = {
         return config.main.skipDomains.indexOf(domain) >= 0;
     },
 
+    /**
+     * check correctness of message object. It must have basedomain field and this 
+     * domain should not be in the skip list. It should have both url and page fields
+     * or should not have both of them
+     * 
+     * @param  {object}  message
+     * @return {Boolean}
+     */
     isMessageFormatCorrect: function (message) {
         return (message.basedomain && !this.isDomainInSkipList(message.basedomain)) &&
             ((message.url && message.page) || (!message.url && !message.page));
+    },
+
+    /**
+     * create a meta data for log message from message object
+     * 
+     * @param  {object} msg
+     * @return {object}
+     */
+    getMeta: function (msg) {
+        return _.pick(msg, ['page', 'url', 'locale']);
+    },
+
+    /**
+     * get a list of file from folder recursively
+     * predicate param is a function that allow to filter files
+     * 
+     * @param  {string}      folderPath  - path to folder
+     * @param  {?Function}   predicate   - if exists executed for each file if it returns true file is included to result
+     * @param  {Function}    callback
+     */
+    getFolderFiles: function (folderPath, predicate, callback) {
+        if (!callback) {
+            callback = predicate;
+            predicate = null;
+        }
+        var walker = walk.walk(folderPath, {});
+        var files = [];
+
+        walker.on('files', function (root, stats, next) {
+            stats = stats.map(function (stat) {
+                stat.path = path.join(root, stat.name);
+                return stat;
+            });
+
+            if (_.isFunction(predicate)) {
+                stats = stats.filter(predicate);
+            }
+
+            files = files.concat(stats);
+            next();
+        }); 
+
+        walker.on('errors', function (root, nodeStatsArray, next) {
+            next('error while getting all files');
+        });
+
+        walker.on('end', function () {
+            callback(null, files);
+        });
+
     }
 };

@@ -26,6 +26,24 @@ var gt;
 var pageCounter = 0;
 var knoxConfig;
 var saveDiskPath;
+
+var childPageUploadUrl = function (config) {
+    var childUrl = '';
+    if (config['child-page-path']) {
+        for (var i = 0, l = config['child-page-path'].length; i < l; i++) {
+            if (config['child-page-path'][i].url) {
+                childUrl += '/' + gt._(config['child-page-path'][i].url);
+            } else if (i === 0) {
+                childUrl += config.pages[config.viewContainer.page][config.locale].replace('{url}', config.url);
+
+            }
+        }
+        config.uploadUrl = childUrl;
+    }
+    return config;
+};
+
+
 exports.init = function (knoxConf, gettext, diskSavePath) {
     gt = gettext;
     knoxConfig = knoxConf;
@@ -38,6 +56,8 @@ exports.clearApiCache = function () {
     restHelper.clearCache();
 };
 exports.generatePage = function (origConfig, callback) {
+    origConfig = childPageUploadUrl(origConfig);
+
     var config = deepExtend({}, origConfig),
         filename,
         viewContainer = config["viewContainer"],
@@ -45,11 +65,22 @@ exports.generatePage = function (origConfig, callback) {
         html = "",
         predefinedVarString;
     try {
+
+        if (config["child-page-path"]) {
+            config["child-page-path"] = _.map(config["child-page-path"], function (page) {
+                return {
+                    url: page.url,
+                    name:  gt._("yd-core-page", page.url)
+                };
+            });
+            config.predefined["child-page-path"] = config["child-page-path"];
+        }
         if (viewContainer["shtml"]) {
             viewContainer.filename = fs.realpathSync(config["pagePath"].replace(/\/$/, "") + ".shtml");
             config["pagePath"] = config["pagePath"].replace(/\/[^\/]*$/, "");
         }
         // TODO: Needed for pages?
+
         config["template"] = ejs.render(config["template"], viewContainer);
         viewContainer.Yd = {config: config, predefined: config["predefined"]};
         viewContainer._ = global._ = gt._;
@@ -123,6 +154,7 @@ exports.generatePage = function (origConfig, callback) {
                 script += 'Yd.predefined["' + predefinedVar + '"] = ' + predefinedVarString + ";\n";
             }
         }
+
         script += 'Yd.predefined["child-page-path"] = ' + JSON.stringify(config["child-page-path"]) + ";\n";
         viewContainer.this = viewContainer;
         delete viewContainer.this.this;
@@ -155,7 +187,13 @@ exports.generatePage = function (origConfig, callback) {
             saveDiskPath + "/production." + url.replace(/\//g, "_") :
             path.join(config["pagePath"], "production." + url.replace(/\//g, "_"));
 
-        return {path: filename, content: finalHtml, url: url};
+
+        return {
+            path: filename,
+            content: finalHtml,
+            url: url,
+            time: config.apiCallTime
+        };
     }
     catch (err) {
         console.log(err);
@@ -169,6 +207,7 @@ exports.generateJsonPage = function (config) {
         mainUrl = (viewContainer["parentUrl"] || viewContainer["url"]) + config["jsonUrlPostfix"],
         toUpload = [],
         alreadyInArray = [];
+
     var recursive = function (results, options) {
         _.each(_.isArray(results) ? results : [results], function (result, index) {
             var toUrl, copy = {},
@@ -275,7 +314,12 @@ exports.generateJsonPage = function (config) {
             saveDiskPath + "/production." + upload[0].replace(/\//g, "_") :
             config.pagePath + "production." + upload[0].replace(/\//g, "_");
 
-        return {path: filename, content: JSON.stringify(upload[1]), url: upload[0]};
+        return {
+            path: filename,
+            content: JSON.stringify(upload[1]),
+            url: upload[0],
+            time: config.apiCallTime
+        };
     });
 };
 
@@ -333,13 +377,13 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
                 nextConfigs.forEach(function (nextConfig) {
                     configs.unshift(nextConfig);
                 });
-                apiCalls(configs, callback, readyConfigs, true);
+                apiCalls(configs, emitter, callback, readyConfigs, true);
                 return;
             } else {
                 if (configs.length === 0) {
                     callback(null, readyConfigs);
                 } else {
-                    apiCalls(configs, callback, readyConfigs);
+                    apiCalls(configs, emitter, callback, readyConfigs);
                 }
                 return;
             }
@@ -347,19 +391,10 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
     }
     config["viewContainer"]["url"] = config["url"];
 
-    //TODO: move it to the generatePage
+
     if (config["child-page-path"]) {
         config["predefined"]["child-page-path"] = config["child-page-path"];
         config["viewContainer"]["parentUrl"] = config["viewContainer"]["url"];
-        for (var i = 0, l = config["child-page-path"].length; i < l; i++) {
-            if (config["child-page-path"][i].url) {
-                childUrl += "/" + gt._(config["child-page-path"][i].url);
-            } else if (i === 0) {
-                childUrl += config.pages[config["viewContainer"]["page"]][config.locale].replace("{url}", config["url"]);
-
-            }
-        }
-        config["uploadUrl"] = childUrl;
     }
 
 
@@ -409,10 +444,14 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
                         failedCalls.push("Error in rest call: " + results[key].path + " " + JSON.stringify(results[key].query));
                     } else {
                         config["predefined"][results[key].viewParam] = results[key].result;
+
                         emitter.emit('call:success', results[key].requestId);
                     }
                 }
             }
+            config.apiCallTime = Date.now();
+
+
             if (failedCalls.length) {
                 callback({message: "Doing nothing further for " + config["viewContainer"]["url"] + "\n(" + failedCalls.join(";\n") + ")"});
                 return;
@@ -447,7 +486,8 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
                             nextConfig["pagination-number"] = i;
                             nextConfig["predefined"].pageNum = i;
                             nextConfig["child-page-path"] = nextConfig["child-page-path"] || [];
-                            nextConfig["child-page-path"].push({name: gt._("yd-core-page", i), url: i});
+//                            nextConfig["child-page-path"].push({name: gt._("yd-core-page", i), url: i});
+                            nextConfig["child-page-path"].push({url: i});
                             nextConfig["pagination-dependency"] = false;
                             configs.unshift(nextConfig);
                         }
@@ -460,10 +500,11 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
             if (configs.length === 0) {
                 callback(null, readyConfigs);
             } else {
-                apiCalls(configs, callback, readyConfigs);
+                apiCalls(configs, emitter, callback, readyConfigs);
             }
         }
         catch (err) {
+            console.log(err, err.stack);
             callback({message: "failed to parse configs: " + err, err: err});
         }
 

@@ -2,24 +2,37 @@
 'use strict';
 
 
+/**
+ * Main application module
+ *
+ * Responsibilities:
+ * 
+ * - analyze application arguments
+ * - creates generator and uploader child process
+ * - creates a message source stream 
+ * - parse message add config to it and send them to generator
+ * - obtain generated pages from generator process
+ * - creates a zip for them if needed 
+ * - push them to the uploader via reddis or directly
+ * 
+ * @module worker
+ */
+
 var _ = require('lodash'),
-    fs = require('fs'),
-    es = require('event-stream'),
     path = require('path'),
     getRedisClient = require('./lib/redisClient'),
     program = require('commander');
 
-var amqp = require('./lib/amqp'),
-    log = require('./lib/logger')('worker', {component: 'worker', processId: String(process.pid)}),
+var log = require('./lib/logger')('worker', {component: 'worker', processId: String(process.pid)}),
     ProcessRouter = require('./lib/router'),
     configMerge = require('./lib/configMerge'),
     messageHelper = require('./lib/message'),
     archiver = require('./lib/archiver'),
     helper = require('./lib/helper'),
-    stream = require('./lib/streamHelper');
+    stream = require('./lib/streamHelper'),
+    messageSource = require('./lib/messageSource');
 
 var config = require('./config');
-
 if (config.main.nodetime) {
     log('connect to nodetime for profiling');
     require('nodetime').profile(config.main.nodetime);
@@ -43,7 +56,6 @@ program
     .option('-q, --queue', 'start program to listen on queue')
     .option('-e, --errorqueue', 'use error queue')
     .option('-E, --errorerrorqueue', 'use errorerror queue')
-    .option('-i, --static', 'generate all new static pages (info-center)')
     .option('-y, --staticold', 'generate all old static pages (sem)')
     .option('-d, --basedomain [value]', 'specify the domain')
     .option('-p, --page [value]', 'define the template to be generated')
@@ -61,7 +73,7 @@ program
     .option('-w, --write [value]', 'write to disk the archive with generated files instead of upload them, path should be provided')
     .parse(process.argv);
 
-
+// get redis Client
 var redisClient = getRedisClient(function error(err) {
     log('redis Error %j', err, {redis: true});
 }, function success() {
@@ -70,11 +82,17 @@ var redisClient = getRedisClient(function error(err) {
 
 var basePath = (program.args[0]) ? path.join(process.cwd(), program.args[0]) : process.cwd();
 
-var getMeta = function (msg) {
-    return _.pick(msg, ['page', 'url', 'locale']);
-};
+var messageKeyStorage = {};
 
-//main stream
+var getMeta = helper.getMeta;
+
+/**
+ * Pipes message from source stream to filter stream then to configuration
+ * then split them by locale or pages and then send a messages to generator process 
+ * 
+ * @param  {Readable} source
+ * @param  {object}   generator
+ */
 var mainStream = function (source, generator) {
     source
         .pipe(stream.filter(function (data) {
@@ -84,6 +102,11 @@ var mainStream = function (source, generator) {
             }
             data.basePath = basePath;
             log('filtered message', getMeta(data.message));
+
+            if(_.isFunction(data.queueShift) && data.key) {
+                messageKeyStorage[data.key] = data.queueShift;
+            }
+
             return true;
         }))
         .pipe(configMerge.getConfigStream())
@@ -95,15 +118,8 @@ var mainStream = function (source, generator) {
             data.message = messageHelper.createMessage(data.message, program, data.config);
             data.bucketName = helper.generateBucketName(data, program);
 
-            if (data.queueShift) {
-                data.queueShift();
-                delete data.queueShift;
-            }
             log('send to generator', getMeta(data.message));
             generator.send('new:message', data);
-        })
-        .on('error', function (err) {
-            log('error', 'main stream %j', err, {error: true});
         });
 };
 
@@ -111,29 +127,40 @@ var generatorRouter,
     uploaderRouter;
 
 var generatorRoutes = {
+    /**
+     * generator pipe handler. Invokes for all messages that passes from
+     * generator process via pipe. 
+     * Creates a zip archive from upload file list and write it to a disk
+     * or send it to the uploader regarding to the value write key of application
+     * 
+     * @param  {{uploadList: Object[], message: object, key: string}} data [description]
+     */
     pipe: function (data) {
-        var uploadFileList,
-            archiverStream,
+        var archiverStream,
             destination,
             message;
 
         data = JSON.parse(data);
         message = data.message;
-        var metadata = _.pick(message, ['page', 'url', 'locale']);
-        log('message from pipe generator', metadata);
 
-        uploadFileList = data.json.reduce(function (result, currentItem) {
-            return result.concat(currentItem);
-        }, data.html);
+        log('message from pipe generator, key %s', data.key,  getMeta(message));
 
+        if (data.key && _.isFunction(messageKeyStorage[data.key])) {
+            log('shift message from amqp queue');
+            messageKeyStorage[data.key]();
+            delete messageKeyStorage[data.key];
+        }
+
+        archiverStream = archiver.bulkArchive(data.uploadList);
         data = null;
-        archiverStream = archiver.bulkArchive(uploadFileList);
 
         if (program.write) {
             destination = helper.createSaveZipStream(program, message, basePath);
+            destination.once('finish', function () {
+                log('saved on disk', getMeta(message));
+            });
         } else {
             destination = stream.accumulate(function(err, data, next) {
-                uploadFileList = [];
                 var cb =  function () {
                     result = null;
                     data = null;
@@ -144,22 +171,34 @@ var generatorRoutes = {
                 if (program.queue) {
                     uploaderRouter.send('reduce:timeout');
                     return redisClient.rpush(config.redis.keys.list, JSON.stringify(result), function () {
-                        log('generated message sended to redis', metadata);
+                        log('generated message sended to redis', getMeta(message));
                         cb();
                     });
                 }
-                log('[WORKER] send message to upload', metadata);
+                log('[WORKER] send message to upload', getMeta(message));
                 uploaderRouter.send('pipe', result);
                 cb();
             });
         }
 
         archiverStream.pipe(destination);
+    },
+    /**
+     * if zip is creating in the generator. Generator just send a link to it
+     * to the worker and worker proxies this message to uploader
+     * 
+     * @param  {{zipPath: string, message: object}} data
+     */
+    'new:zip': function (data) {
+        log('new zip saved by generator', helper.getMeta(data.message));
+        uploaderRouter.send('new:zip', {url: data.message.url, zipPath: data.zipPath});
     }
 };
 
 var args = _.clone(process.argv).splice(2);
 
+// Creates a generator and uploader child processes,
+// creates a router for them
 helper.createChildProcesses(args, function (err, result) {
     if (err) {
         console.log(err);
@@ -176,51 +215,19 @@ helper.createChildProcesses(args, function (err, result) {
 
     var source;
 
+    //creates a message source and pass it to the mainStream function
     if (program.queue) {
-        var connection = amqp.getConnection(config.amqp.credentials);
-        var queues = helper.getQueNames(program, config.amqp);
-
-        log('queues %j', queues, {});
-
-        var queueStreams = _.values(queues).map(function (queueName) {
-            var amqpStream = amqp.getStream({
-                queue: queueName,
-                exchange: 'amq.direct',
-                connection: connection
-            });
-            amqpStream.on('ready', function (queue) {
-                log('%s is connected', queue);
-            });
-            return amqpStream;
-        });
-
-        source = es.merge.apply(es, queueStreams)
-            .pipe(messageHelper.getMessageParser())
-            .pipe(stream.log(log, '[PARSED:MESSAGE]'));
-
+        source = messageSource.getQueueSource(program, log);
+    } else if (program.staticold) {
+        source = messageSource.getStaticOldSource(program, log, basePath);
     } else {
-        var data = {
-            message: _.pick(program, ['basedomain', 'url', 'page', 'locale'])
-        };
-        var values = {};
-
-        if (program.values) {
-            values = JSON.parse(program.values);
-        } else {
-            values = _.pick(program, function (value, key) {
-                return (new RegExp('.*Id$', 'ig')).test(key);
-            });
-        }
-        data.message = _.assign(data.message, values);
-        source = es.readArray([data]);
+        source = messageSource.getDefaultSource(program, log);
     }
 
     mainStream(source, generatorRouter);
-
 });
 
 process.on('uncaughtException', function (err) {
-    console.log(err, err.stack);
     log('error', '%s %j', err, err.stack, {uncaughtException: true});
     process.kill();
 });

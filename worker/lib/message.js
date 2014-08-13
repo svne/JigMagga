@@ -1,6 +1,7 @@
 'use strict';
 
 var es = require('event-stream'),
+    md5 = require('MD5'),
     _ = require('lodash');
 
 
@@ -50,7 +51,7 @@ module.exports = {
     },
 
     /**
-     * push push all pages frm config as messages to data list
+     * push push all pages from config as messages to data list
      * @param {array} dataArr
      * @param {object} message
      * @param {object} pagesConf
@@ -78,35 +79,71 @@ module.exports = {
         return result;
     },
 
+    /**
+     * create a unique key for message
+     * 
+     * @param  {object} message
+     * @return {string}
+     */
+    createMessageKey: function (message) {
+        var random = String(Math.round(Math.random() * 1000));
+        return md5(JSON.stringify(message) + Date.now() + random);
+    },
+
+    
     getMessageParser: function () {
+        var that = this;
+        /**
+         * returns stream that parses each message from rabbit
+         * 
+         * @param {{content: Buffer, properties: {contentType: string}}} data
+         * @return {{message: object, key: string, queueShift: function}}
+         */
         return es.through(function (data) {
-            var message, result;
-            console.log('start parsing');
+            var message,
+                result = {},
+                contentType = data.properties.contentType;
+
             if (_.isArray(data) && data.length === 1) {
                 data = data[0];
             }
 
-            if (data.contentType === 'text/plain') {
+            if (contentType === 'text/plain') {
                 try {
-                    message = JSON.parse(data.data.toString('utf-8'));
+                    message = JSON.parse(data.content.toString('utf-8'));
                 } catch (e) {
-                    this.emit('error', 'Date from queue is not JSON ' + data.data.toString('utf-8'));
+                    this.emit('error', 'Date from queue is not JSON ' + data.content.toString('utf-8'));
                 }
             }
-            if (data.contentType === 'text/json' || (!data.contentType && _.isPlainObject(data))) {
-                message = data.data;
+            if (contentType === 'text/json' || (!contentType && _.isPlainObject(data))) {
+                message = data.content;
             }
 
             if (message) {
-                result = _.cloneDeep(data);
-                delete result.data;
                 result.message = message;
+                result.key = that.createMessageKey(message);
+                if (data.queueShift) {
+                    result.queueShift = data.queueShift;
+                }
+
                 this.emit('data', result);
             }
         });
     },
 
     pageLocaleSplitter: function () {
+        /**
+         * stream that analyze the messages. If there is no locale key inside
+         * it emits one message for each locale from the message config
+         *
+         * The same for page property if there is no page field stream will 
+         * emit one message for each static page inside config.
+         * 
+         * If in the message there are page and locale it just emit this message
+         * 
+         * @param  {{config: object, message: object}} data
+         * @return {object}
+         */
         return es.through(function (data) {
             var that = this,
                 result = [],

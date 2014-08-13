@@ -1,5 +1,13 @@
 'use strict';
 
+/**
+ * represent a module that listen for new message
+ * from pipe ipc and reddis and upload them using 
+ * upload content or upload file method
+ *
+ * @module uploader
+ */
+
 var _ = require('lodash'),
     async = require('async'),
     Uploader = require('jmUtil').ydUploader,
@@ -28,6 +36,17 @@ var redisClient = getRedisClient(function error(err) {
     log('redis Error %j', err, {redis: true});
 });
 
+/**
+ * create a stream that read a messages from reddis if there is no 
+ * new messages in reddis to upload it increase the timeout between reads
+ * if the timeout is more then 5 sec it pauses stream
+ * Method tries to find a messages in the redis list and take 50 first of them
+ * by range. After obtaining some amount of messages it removes them from the list 
+ * 
+ * @param  {object} client
+ * @param  {string} listKey [description]
+ * @return {Redable}
+ */
 var createRedisListStream = function (client, listKey) {
 
     return es.readable(function (count, callback) {
@@ -66,33 +85,56 @@ router.addRoutes({
     pipe: function (data) {
         messageStream.write(data);
     },
+    'new:zip': function (data) {
+        messageStream.write(data);
+    },
     'reduce:timeout': function () {
         REDIS_CHECK_TIMEOUT = 100;
         redisListStream.resume();
     }
 });
 
+var uploadsAmount = 0;
 
+/**
+ * upload item using uploadFile method if there is a zipPath field 
+ * and uploadContent if there is a data field
+ * 
+ * @param  {data}   data
+ * @param  {Function} callback [description]
+ */
 var uploadItem = function (data, callback) {
     if (_.isString(data)) {
         data = JSON.parse(data);
     }
 
-    log('start uploading new file url: %s', data.url);
-    uploader.uploadContent(new Buffer(data.data), data.url, {
-        headers: {'X-Myra-Unzip': 1},
-        type: 'application/octet-stream'
-    }, function (err, res) {
+    var next = function (err, res) {
         if (err) {
             log('fail', err, {upload: true, url: data.url});
         } else {
-            log('success', res, {upload: true, url: data.url});
+            uploadsAmount += 1;
+            log('success', res, {upload: true, url: data.url, uploadsAmount: uploadsAmount});
         }
         callback();
-    });
+    };
+
+    log('start uploading new file url: %s', data.url);
+
+    if (data.zipPath) {
+        return uploader.uploadFile(data.zipPath, data.url, {deleteAfter: true}, next);
+    }
+
+    uploader.uploadContent(new Buffer(data.data), data.url, {
+        headers: {'X-Myra-Unzip': 1},
+        type: 'application/octet-stream'
+    }, next);
 };
 
-
+/**
+ * returns stream that upload each message or array of messages
+ * 
+ * @param  {object} source
+ */
 var uploadStream = function (source) {
     return es.map(function (data, callback) {
         var next = function (err, res) {

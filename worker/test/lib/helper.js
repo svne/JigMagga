@@ -4,6 +4,7 @@
 
 var es = require('event-stream');
 var expect = require('chai').expect;
+var sinon = require('sinon');
 var helper = require('../../lib/helper');
 
 var konphyg = require('konphyg')(__dirname + '/../../config');
@@ -89,46 +90,26 @@ describe('helper', function () {
             expect(child.stdio[3].on).to.be.a('function');
         });
 
-    });
-
-
-    describe('#streamFilter', function () {
-
-        it('should filter in sync mode', function (done) {
-            var correctMessage = {a: 1},
-                incorrectMessage = {a: 2};
-
-            var stream = helper.streamFilter(function (data) {
-                return data.a === 1;
-            });
-
-            stream.on('data', function (data) {
-                expect(data).to.eql(correctMessage);
+        it('should create a process in async way', function (done) {
+            helper.createSubProcess(__dirname + '/../../testData/asyncProcess.js', function (err, child) {
+                expect(err).to.eql(null);
+                expect(child.send).to.be.a('function');
+                expect(child.on).to.be.a('function');
+                child.kill();
                 done();
             });
-
-            stream.write(incorrectMessage);
-            stream.end(correctMessage);
         });
 
-        it('should filter in async mode', function (done) {
-            var correctMessage = {a: 1},
-                incorrectMessage = {a: 2};
-
-            var filter = helper.streamFilter(function (data, next) {
-                return process.nextTick(function () {
-                    next(null, data.a === 1);
-                });
+        it('should send an error if process will not send a message in 500 msec', function (done) {
+            var clock = sinon.useFakeTimers();
+            helper.createSubProcess(__dirname + '/../../testData/asyncProcess.js', function (err) {
+                expect(err).to.be.a('string');
+                expect(err).to.eql('child process did not send a ready message');
+                clock.restore();
+                done();
             });
+            clock.tick(600);
 
-            es.readArray([incorrectMessage, correctMessage])
-                .pipe(filter)
-                .pipe(es.writeArray(function (err, res) {
-                    expect(err).to.eql(null);
-                    expect(res).to.have.length(1);
-                    expect(res[0]).to.eql(correctMessage);
-                    done();
-                }));
         });
 
     });

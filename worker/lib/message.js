@@ -24,15 +24,14 @@ module.exports = {
         domainConfig = domainConfig || {};
 
         var params = options.values || {
-            cityId: message.cityId || undefined,
-            regionId: message.regionId || undefined,
-            districtId: message.districtId || undefined,
-            restaurantId: message.restaurantId || undefined,
-            linkId: message.linkId || undefined,
-            reset: !options.liveuncached ? true : false
-        };
-
-        var locale = options.locale || message.locale;
+                cityId: message.cityId || undefined,
+                regionId: message.regionId || undefined,
+                districtId: message.districtId || undefined,
+                restaurantId: message.restaurantId || undefined,
+                linkId: message.linkId || undefined,
+                reset: !options.liveuncached ? true : false
+            },
+            locale = options.locale || message.locale;
 
         return {
             basedomain: message.basedomain,
@@ -82,12 +81,17 @@ module.exports = {
     getMessageParser: function () {
         return es.through(function (data) {
             var message, result;
+            console.log('start parsing');
             if (_.isArray(data) && data.length === 1) {
                 data = data[0];
             }
 
             if (data.contentType === 'text/plain') {
-                message = JSON.parse(data.data.toString('utf-8'));
+                try {
+                    message = JSON.parse(data.data.toString('utf-8'));
+                } catch (e) {
+                    this.emit('error', 'Date from queue is not JSON ' + data.data.toString('utf-8'));
+                }
             }
             if (data.contentType === 'text/json' || (!data.contentType && _.isPlainObject(data))) {
                 message = data.data;
@@ -102,12 +106,19 @@ module.exports = {
         });
     },
 
-    getSplitter: function () {
+    pageLocaleSplitter: function () {
         return es.through(function (data) {
             var that = this,
                 result = [],
                 message = data.message,
                 config = data.config;
+
+            function filterLinks(locale) {
+                return function (page) {
+                    var pageLink = config.pages[page][locale];
+                    return pageLink && pageLink.indexOf('http://') === -1 && pageLink.indexOf('{url}') === -1;
+                };
+            }
 
             if (message.url && message.page) {
 
@@ -125,12 +136,6 @@ module.exports = {
                         });
                 }
             } else if (!message.page && config.pages) {
-                var filterLinks = function (locale) {
-                    return function (page) {
-                        var pageLink = config.pages[page][locale];
-                        return pageLink && pageLink.indexOf('http://') === -1 && pageLink.indexOf('{url}') === -1;
-                    };
-                };
 
                 if (message.locale) {
                     result = Object.keys(config.pages)

@@ -1,7 +1,12 @@
 'use strict';
 var _ = require('lodash'),
-    es = require('event-stream'),
+    async = require('async'),
+    format = require('util').format,
+    fs = require('fs'),
+    path = require('path'),
     spawn = require('child_process').spawn;
+
+var config = require('../config');
 
 module.exports = {
     getQueNames: function (program, config) {
@@ -41,45 +46,84 @@ module.exports = {
         };
     },
 
-    createSubProcess: function (modulePath, args) {
+    createSubProcess: function (modulePath, args, callback) {
+        if (_.isFunction(args)) {
+            callback = args;
+            args = [];
+        }
         args = args || [];
 
-        var options = {stdio: [0, 1, 2, 'pipe', 'ipc']};
+        var options = {stdio: [0, 1, 2, 'pipe', 'ipc']},
+            child,
+            waitTime;
+
         args.unshift(modulePath);
 
-        return spawn(process.execPath, args, options);
-    },
-
-    streamFilter: function (predicate) {
-        var isAsync = (predicate.length === 2);
-
-        if (!isAsync) {
-            return es.through(function (data) {
-                if (predicate(data)) {
-                    this.emit('data', data);
-                }
-            });
+        child = spawn(process.execPath, args, options);
+        if (!_.isFunction(callback)) {
+            return child;
         }
 
-        return es.map(function (data, callback) {
-            predicate(data, function (err, res) {
-                if (err) {
-                    return callback(err);
-                }
-                if (res) {
-                    return callback(null, data);
-                }
-                callback();
-            });
+        waitTime = setTimeout(function () {
+            callback('child process did not send a ready message');
+            child.kill();
+        }, 1000);
+
+        child.on('message', function (data) {
+            if (!data.ready) {
+                return;
+            }
+            callback(null, child);
+            clearTimeout(waitTime);
         });
     },
-    streamLog: function (prefix, level) {
-        level = level || 'log';
 
-        return es.through(function (message) {
-            console[level](prefix, message);
-            this.emit('data', message);
-        });
+    createSaveZipStream: function (program, message, basePath) {
+        var page = encodeURIComponent(message.page),
+            url = encodeURIComponent(message.url);
+
+        var zipFileName = format('%s-%s-%s-%d.zip', page, url, message.locale, Date.now()),
+            destinationPath;
+
+        destinationPath = (_.isString(program.write)) ?
+            path.join(process.cwd(), program.write) : path.join(basePath, 'tmp');
+
+        return fs.createWriteStream(path.join(destinationPath, zipFileName));
+
+    },
+
+    createChildProcesses: function (args, callback) {
+        if (_.isFunction(args)) {
+            callback = args;
+            args = [];
+        }
+        var that = this;
+        async.parallel({
+            generator: function (next) {
+                that.createSubProcess(__dirname + '/../generator/index.js', args, next);
+            },
+            uploader: function (next) {
+                that.createSubProcess(__dirname + '/../uploader/index.js', args, next);
+            }
+        }, callback);
+    },
+
+    generateBucketName: function (data, program) {
+        var baseDomain = data.message.basedomain,
+            buckets = config.main.knox.buckets;
+        if (program.live || program.liveuncached) {
+            return buckets.live[baseDomain] || 'www.' + baseDomain;
+        }
+
+        return buckets.stage[baseDomain] || 'stage.' + baseDomain;
+    },
+
+    isDomainInSkipList: function (domain) {
+        return config.main.skipDomains.indexOf(domain) >= 0;
+    },
+
+    isMessageFormatCorrect: function (message) {
+        return (message.basedomain && !this.isDomainInSkipList(message.basedomain)) &&
+            ((message.url && message.page) || (!message.url && !message.page));
     }
-
 };

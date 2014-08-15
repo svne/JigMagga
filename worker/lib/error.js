@@ -1,10 +1,10 @@
 'use strict';
 var inherits = require('util').inherits;
 
-var WorkerError = function (message, originalMaessage, messageKey) {
+var WorkerError = function (message, originalMessage, messageKey) {
     this.name = 'WorkerError';  
 
-    this.originalMaessage = originalMaessage;
+    this.originalMessage = originalMessage;
     this.messageKey = messageKey;
     this.message = message;
     Error.call(this, message);

@@ -105,20 +105,21 @@ var getMeta = helper.getMeta;
  */
 var workerErrorHandler = function (err) {
     console.log('workerErrorHandler');
-    log('error', 'Error while processing message: %j',  err, err.originalMaessage, {});
+    log('error', 'Error while processing message: %j',  err, err.originalMessage, {});
     if (!program.queue) {
         return;
     }
+
     //if there is shift function for this message in the storage shift message from main queue
     helper.executeAck(err.messageKey);
 
-    var originalMaessage = err.originalMaessage || {};
-    originalMaessage.error = err.message;
+    var originalMessage = err.originalMessage || {};
+    originalMessage.error = err.message;
 
-    queuePool.amqpErrorQueue.publish(originalMaessage);
+    queuePool.amqpErrorQueue.publish(originalMessage);
 
-    if (!program.live) {
-        queuePool.amqpDoneQueue.publish(originalMaessage);
+    if (!program.live && !originalMessage.upload) {
+        queuePool.amqpDoneQueue.publish(originalMessage);
     }
 };
 
@@ -135,7 +136,6 @@ var mainStream = function (source, generator) {
 
     tc(source)
         .pipe(es.through(function (data) {
-            console.log('filter', data);
             if (!helper.isMessageFormatCorrect(data.message)) {
                 if (_.isFunction(data.queueShift)) {
                     data.queueShift();
@@ -190,6 +190,8 @@ var generatorRoutes = {
 
         log('shift message from amqp queue');
         helper.executeAck(data.key);
+        //send message to done queue
+        queuePool.amqpDoneQueue.publish(message.origMessage);
 
         archiverStream = archiver.bulkArchive(data.uploadList);
         data = null;

@@ -16,7 +16,10 @@ var _ = require('lodash'),
 
 var log = require('../lib/logger')('uploader', {component: 'uploader', processId: String(process.pid)}),
     ProcessRouter  = require('../lib/router'),
-    stream = require('../lib/streamHelper');
+    stream = require('../lib/streamHelper'),
+    error = require('../lib/error');
+
+var WorkerError = error.WorkerError;
 
 var config = require('../config');
 log('started, pid', process.pid);
@@ -36,9 +39,16 @@ var redisClient = getRedisClient(function error(err) {
     log('redis Error %j', err, {redis: true});
 });
 
+var handleError = function (text, data) {
+    log('error', text, {error: true});
+
+    return router.send('error', new WorkerError(text, data.message.origMessage, data.key));
+};
+
+
 /**
- * create a stream that read a messages from reddis if there is no 
- * new messages in reddis to upload it increase the timeout between reads
+ * create a stream that read a messages from redis if there is no 
+ * new messages in redis to upload it increase the timeout between reads
  * if the timeout is more then 5 sec it pauses stream
  * Method tries to find a messages in the redis list and take 50 first of them
  * by range. After obtaining some amount of messages it removes them from the list 
@@ -110,7 +120,7 @@ var uploadItem = function (data, callback) {
 
     var next = function (err, res) {
         if (err) {
-            log('fail', err, {upload: true, url: data.url});
+            handleError(err, {upload: true, url: data.url});
         } else {
             uploadsAmount += 1;
             log('success', res, {upload: true, url: data.url, uploadsAmount: uploadsAmount});
@@ -166,11 +176,9 @@ redisClient.on('ready', function () {
 messageStream.pipe(uploadStream());
 
 
-process.on('uncaughtException', function (err) {
-    console.log(err, err.stack);
-    log('error', '%s %j', err, err.stack, {uncaughtException: true});
-    process.kill();
-});
+process.on('uncaughtException', error.getErrorHandler(log, function (err) {
+    router.send('error', err);
+}));
 
 if (process.env.NODE_ENV === 'local') {
     memwatch.on('leak', function (info) {

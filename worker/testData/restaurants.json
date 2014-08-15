@@ -1,0 +1,702 @@
+[
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 16804,
+        "url": "1-pizza-station-laatzen-laatzen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21946,
+        "url": "100-pizza-goettingen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12740,
+        "url": "12-apostel-charlottenburg-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12741,
+        "url": "12-apostel-mitte-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20086,
+        "url": "123-asia-hamburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20910,
+        "url": "123-kiosk-ratingen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22763,
+        "url": "1a-bringservice-fuerth"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 18740,
+        "url": "1a-bringservice-nuernberg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22195,
+        "url": "1st-uyghur-restaurant-frankfurt-am-main"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24980,
+        "url": "2-con-lounge-koeln"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 17583,
+        "url": "2-con-lounge-koeln-inaktiv"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21365,
+        "url": "3d-restaurant-bar-muenchen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21746,
+        "url": "4-jahreszeiten-recklinghausen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 25075,
+        "url": "4-jahreszeiten-recklinghausen-herner-strasse"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22947,
+        "url": "5inque-regensburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23023,
+        "url": "7-days-pizza-dreieich"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 17849,
+        "url": "7-days-pizza-obertshausen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 14897,
+        "url": "7-giorni-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22419,
+        "url": "7days-pizza-rodgau"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20938,
+        "url": "8-corners-berlin-friedrichshain"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22996,
+        "url": "8-euro-shop-muenchen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 25797,
+        "url": "8-euro-shop-muenchen-muenchen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20014,
+        "url": "a-everybodys-pizza-hamburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22493,
+        "url": "a-express-koeln"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 18873,
+        "url": "a-la-italia-hamm"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20135,
+        "url": "a-mai-lieferservice-stelle"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22308,
+        "url": "a-one-pizza-mannheim"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23611,
+        "url": "a-petit-restaurant-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20136,
+        "url": "a-pizzeria-martini-oldenburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20164,
+        "url": "a-pizzeria-piccolino-oldenburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12674,
+        "url": "a-posto-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24311,
+        "url": "a1-foodservice-bochum"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 18543,
+        "url": "a1-foodservice-frankfurt-am-main"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22211,
+        "url": "aanjal-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 15563,
+        "url": "aapka-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22026,
+        "url": "aarna-indisches-restaurant-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 28511,
+        "url": "aaron-s-grill-gronau--westfalen---bismarck"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22808,
+        "url": "abc-pizza-wuerzburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23773,
+        "url": "abdull-restaurant-orientalischer-imbiss-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21120,
+        "url": "aber-hallo-linnich"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 14586,
+        "url": "abhol-u-lieferservice-muecke-buchen-odenwald"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20093,
+        "url": "abi-china-imbiss-moenchengladbach"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22268,
+        "url": "abi-china-restaurant-moenchengladbach"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 19419,
+        "url": "abramo-pizzeria-ristorante-bamberg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20615,
+        "url": "absolut-eggenstein-leopoldshafen-eggenstein"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 25047,
+        "url": "absolut-pizza-doener-heimservice-dachau"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22973,
+        "url": "abus-imbiss-lehrte"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 13015,
+        "url": "acasa-pizza-luebeck"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 17092,
+        "url": "achims-pizza-heimservice-trier"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 19841,
+        "url": "acitrezza-osnabrueck"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23366,
+        "url": "acubi-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 19459,
+        "url": "acubi-berlin-acubi"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21371,
+        "url": "ada-grill-espelkamp"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22656,
+        "url": "ada-grill-herne"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22257,
+        "url": "ada-grill-moehnesee"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 13160,
+        "url": "adams-lieferservice-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23390,
+        "url": "adana-grill-doener-pizza-pasta-baugette-luenen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21123,
+        "url": "adana-restaurant-koblenz"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24302,
+        "url": "adersh-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12287,
+        "url": "adil-altun-schnell-imbiss-bremen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 13385,
+        "url": "adler-bremen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22167,
+        "url": "adler-drive-karlsdorf-neuthard"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21668,
+        "url": "adler-international-waldshut-tiengen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 15233,
+        "url": "adler-pizza-service-bremen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24112,
+        "url": "adler-restaurant-pizzeria-esslingen-am-neckar"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 16155,
+        "url": "adonis-grill-halle"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 17906,
+        "url": "adria-heimservice-homburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 16030,
+        "url": "adria-heimservice-regensburg-inaktiv-inaktiv"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 19322,
+        "url": "adria-lieferservice-trier"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 14667,
+        "url": "adria-pizza-express-echzell"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 15312,
+        "url": "adria-pizzaservice-karlsruhe"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 16753,
+        "url": "adria-restaurant-pizzeria-duisburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 25450,
+        "url": "adria-restaurant-pizzeria-regensburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24337,
+        "url": "adrian-pizzeria-hannover"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24400,
+        "url": "adrian-pizzeria-hannover-neustaedter-str"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 13168,
+        "url": "adriano-wiesbaden"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 25775,
+        "url": "affenzahn---die-pizza-profis-hannover"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 13446,
+        "url": "affenzahn-hannover"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 17632,
+        "url": "african-way-augsburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 19088,
+        "url": "afrin-grill-bocholt"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22552,
+        "url": "aglaias-welt-griechisches-grill-restaurant-bielefeld"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23108,
+        "url": "agora-bad-oeynhausen-inaktiv"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12873,
+        "url": "agra-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21184,
+        "url": "agra-indisch-retaurant-frankfurt-am-main"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20367,
+        "url": "agra-indische-spezialitaeten-bad-oldesloe"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24621,
+        "url": "agra-pak-indian-cuisine-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22142,
+        "url": "agrah-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 25749,
+        "url": "ahn-quan-haren"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 13236,
+        "url": "ahsa-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 15135,
+        "url": "aires-pizza-dormagen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23278,
+        "url": "aisa-china-thai-imbiss-essen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 29411,
+        "url": "aisa-pizza-villa-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12261,
+        "url": "akash-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12618,
+        "url": "akash-muenchen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24931,
+        "url": "akcay-grill-kebap-augsburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23684,
+        "url": "akcay-grill-kebap-augsburg-inaktiv"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21627,
+        "url": "akdeniz-home-service-wilhelmshaven"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 19373,
+        "url": "aki-sushi-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 11918,
+        "url": "aki-tatsu-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 9289,
+        "url": "aki-tatsu-sushi-und-more-berlin"
+    }
+]

@@ -81,7 +81,6 @@ var getStream = exports.getStream = function (options) {
             });
 
             channel.consume(queue, function (message) {
-                console.log('MESSAGE', message);
                 if (!message) {
                     return;
                 }

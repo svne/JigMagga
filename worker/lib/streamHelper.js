@@ -17,7 +17,7 @@ module.exports = {
         if (!isAsync) {
             return es.through(function (data) {
                 try {
-                    if (predicate(data)) {
+                    if (predicate.call(this, data)) {
                         this.emit('data', data);
                     }
                 } catch (e) {
@@ -94,11 +94,12 @@ module.exports = {
                 buffer = new Buffer(0);
             }
 
-            callback(null, buffer, next);
+            callback.call(that, null, buffer, next);
         });
     },
-    tryCatch: function () {
+    tryCatch: function (eventName) {
         var streams = [];
+        eventName = eventName || 'error';
 
         var tryCatch = function (stream) {
             streams.push(stream);
@@ -107,7 +108,7 @@ module.exports = {
 
         tryCatch.catch = function (handler) {
             _.each(streams, function (stream) {
-                stream.on('error', handler);
+                stream.on(eventName, handler);
             });
         };
 

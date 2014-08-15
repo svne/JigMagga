@@ -9,7 +9,38 @@ var _ = require('lodash'),
 
 var config = require('../config');
 
+// @type {Object.<string, function>} - storage of message acknowledge functions
+var messageAckStorage = {};
+
 module.exports = {
+    /**
+     * save queueShift function for some message to message 
+     * acknowledge functions storage
+     * 
+     * @param {{queueShift: ?function, key: ?string}} data
+     */
+    setAckToStorage: function (data) {
+        if(!_.isFunction(data.queueShift) || !data.key) {
+            return;
+        }
+        messageAckStorage[data.key] = data.queueShift;
+    },
+
+    /**
+     * execute queue acknowledge function and shift message from the queue 
+     * by message key
+     * 
+     * @param  {string} messageKey
+     */
+    executeAck: function (messageKey) {
+        if (!messageKey || !_.isFunction(messageAckStorage[messageKey])) {
+            return;
+        }
+
+        messageAckStorage[messageKey]();
+        delete messageAckStorage[messageKey];
+    },
+
     /**
      * returns a an object with main queue and error queue names 
      * based on program priority keys, basedomain and prefix
@@ -51,7 +82,8 @@ module.exports = {
 
         return {
             amqpQueue: amqpQueue,
-            amqpErrorQueue: amqpErrorQueue
+            amqpErrorQueue: amqpErrorQueue,
+            amqpDoneQueue: 'pages.generate.done'
         };
     },
 

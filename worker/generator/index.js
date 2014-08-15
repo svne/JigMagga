@@ -6,6 +6,7 @@
  */
 
 var EventEmitter = require('events').EventEmitter,
+    format = require('util').format,
     fs = require('fs'),
     _ = require('lodash'),
     path = require('path'),
@@ -18,7 +19,10 @@ var log = require('../lib/logger')('generator', {component: 'generator', process
     ydGetText = require('jmUtil').ydGettext,
     generateConfig = require('./lib/generateConfig'),
     generator = require('./lib/generator'),
-    ProcessRouter = require('../lib/router');
+    ProcessRouter = require('../lib/router'),
+    error = require('../lib/error');
+
+var WorkerError = error.WorkerError;
 
 //init process router
 var router = new ProcessRouter(process);
@@ -42,7 +46,11 @@ router.addRoutes({
     }
 });
 
+var handleError = function (text, data) {
+    log('error', text, {error: true});
 
+    return router.send('error', new WorkerError(text, data.message.origMessage, data.key));
+};
 /**
  * merge all configs and create viewContainer
  * @param  {object}   data [data from worker]
@@ -50,7 +58,14 @@ router.addRoutes({
  * @return {stream}
  */
 var configStream = es.map(function (data, next) {
-    generateConfig(data, config, next);
+    var callback = function (err, res) {
+        if (err) {
+            handleError(err.stack || err, data);
+            return next();
+        }
+        next(null, res);
+    };
+    generateConfig(data, config, callback);
 });
 
 var emitter = new EventEmitter();
@@ -76,8 +91,8 @@ var apiStream = es.map(function (data, next) {
     log('[*] send api request', helper.getMeta(data.message));
     generator.apiCalls([data.config], emitter, function (err, res) {
         if (err) {
-            return log('error', 'error in apiCall %j %j ', err, res, {error: true});
-            // return next(err);
+            var errorText = format('error in apiCall %j %j ', err, res); 
+            return handleError(errorText, data);
         }
         data.apiCallResult = res;
         return next(null, data);
@@ -115,16 +130,20 @@ messageStream
             knox = config.main.knox;
 
         knox.S3_BUCKET = knox.S3_BUCKET || data.bucketName;
+        try {
 
-        ydGetText.setLocale(data.message.locale);
-        generator.init(knox, ydGetText, saveDiskPath);
+            ydGetText.setLocale(data.message.locale);
+            generator.init(knox, ydGetText, saveDiskPath);
 
-        // generate json and html files
-        var json = _.map(data.apiCallResult, generator.generateJsonPage); 
-        var html = _.map(data.apiCallResult, function (config) {
-                log('Processing page url: %s pagePath: %s', config.uploadUrl, config.pagePath);
-                return generator.generatePage(config);
-            });
+            // generate json and html files
+            var json = _.map(data.apiCallResult, generator.generateJsonPage); 
+            var html = _.map(data.apiCallResult, function (config) {
+                    log('Processing page url: %s pagePath: %s', config.uploadUrl, config.pagePath);
+                    return generator.generatePage(config);
+                });
+        } catch (err) {
+            handleError(err.stack || err, data);
+        }
 
         var result = {
             message: data.message,
@@ -161,11 +180,9 @@ messageStream
 
 process.send({ready: true});
 
-process.on('uncaughtException', function (err) {
-    var stack = err.err ? err.err.stack : err.stack;
-    log('error', '%s %j', err, stack, {uncaughtException: true});
-    process.kill();
-});
+process.on('uncaughtException', error.getErrorHandler(log, function (err) {
+    router.send('error', err);
+}));
 
 if (process.env.NODE_ENV === 'local') {
     memwatch.on('leak', function (info) {

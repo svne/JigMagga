@@ -4,6 +4,7 @@ var es = require('event-stream'),
     md5 = require('MD5'),
     _ = require('lodash');
 
+var WorkerError = require('./error').WorkerError;
 
 
 var isPageInConfig = function (config, page) {
@@ -112,7 +113,10 @@ module.exports = {
                 try {
                     message = JSON.parse(data.content.toString('utf-8'));
                 } catch (e) {
-                    this.emit('error', 'Date from queue is not JSON ' + data.content.toString('utf-8'));
+                    if (_.isFunction(data.queueShift)) {
+                        data.queueShift();
+                    }
+                    this.emit('err', new WorkerError('Date from queue is not JSON', data.content.toString('utf-8')));
                 }
             }
             if (contentType === 'text/json' || (!contentType && _.isPlainObject(data))) {
@@ -125,7 +129,7 @@ module.exports = {
                 if (data.queueShift) {
                     result.queueShift = data.queueShift;
                 }
-
+                console.log('getMessageParser', result);
                 this.emit('data', result);
             }
         });
@@ -156,49 +160,53 @@ module.exports = {
                     return pageLink && pageLink.indexOf('http://') === -1 && pageLink.indexOf('{url}') === -1;
                 };
             }
+            try {
+                if (message.url && message.page) {
 
-            if (message.url && message.page) {
-
-                if (message.locale) {
-                    result.push(data);
-                } else if (isPageInConfig(config, message.page)) {
-                    result = config.locales
-                        .filter(function (locale) {
-                            return config.pages[message.page][locale];
-                        })
-                        .map(function (locale) {
-                            var res = _.cloneDeep(data);
-                            res.message.locale = locale;
-                            return res;
-                        });
-                }
-            } else if (!message.page && config.pages) {
-
-                if (message.locale) {
-                    result = Object.keys(config.pages)
-                        .filter(filterLinks(message.locale))
-                        .map(function (page) {
-                            var res = _.cloneDeep(data);
-                            res.message.page = page;
-                            res.message.url = page;
-                            return res;
-                        });
-                } else {
-                    result = config.locales.reduce(function (currentResult, locale) {
-                        var localePages = Object.keys(config.pages)
-                            .filter(filterLinks(locale))
-                            .map(function (page) {
+                    if (message.locale) {
+                        result.push(data);
+                    } else if (isPageInConfig(config, message.page)) {
+                        result = config.locales
+                            .filter(function (locale) {
+                                return config.pages[message.page][locale];
+                            })
+                            .map(function (locale) {
                                 var res = _.cloneDeep(data);
-
-                                res.message.page = page;
-                                res.message.url = page;
                                 res.message.locale = locale;
                                 return res;
                             });
-                        return currentResult.concat(localePages);
-                    }, []);
-                }
+                    }
+                } else if (!message.page && config.pages) {
+
+                    if (message.locale) {
+                        result = Object.keys(config.pages)
+                            .filter(filterLinks(message.locale))
+                            .map(function (page) {
+                                var res = _.cloneDeep(data);
+                                res.message.page = page;
+                                res.message.url = page;
+                                return res;
+                            });
+                    } else {
+                        result = config.locales.reduce(function (currentResult, locale) {
+                            var localePages = Object.keys(config.pages)
+                                .filter(filterLinks(locale))
+                                .map(function (page) {
+                                    var res = _.cloneDeep(data);
+
+                                    res.message.page = page;
+                                    res.message.url = page;
+                                    res.message.locale = locale;
+                                    return res;
+                                });
+                            return currentResult.concat(localePages);
+                        }, []);
+                    }
+                }   
+            } catch (err) {
+                this.emit('err', new WorkerError(err.message || err, data.message, data.key));
             }
+
 
             result.forEach(function (item) {
                 that.emit('data', item);

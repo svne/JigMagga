@@ -1,6 +1,7 @@
 'use strict';
 
 var es = require('event-stream'),
+    WorkerError = require('./error').WorkerError,
     _ = require('lodash'),
     configMerge = require('jmUtil').configMerge,
     path = require('path');
@@ -33,26 +34,28 @@ module.exports = {
          * @param  {{message: WorkerMessage, basePath: string, isPageConfigLoaded: boolean}}   data
          * @param  {Function} callback
          */
-        return es.map(function (data, callback) {
-            var message = data.message,
+        return es.through(function (data) {
+
+            var that = this,
+                message = data.message,
                 basePath = data.basePath;
 
             if (data.isPageConfigLoaded) {
-                return callback(null, data);
+                return that.emit('data', data);
             }
 
             basePath = path.join(basePath, 'page');
 
             configMerge.getPageConfig(basePath, message.basedomain, message.page, function (err, config) {
                 if (err) {
-                    return callback(err);
+                    return that.emit('err', new WorkerError(err.message || err, data.message, data.key));
                 }
 
                 var result = _.cloneDeep(data);
                 result.config = config;
                 result.isPageConfigLoaded = (message.page) ? true : false;
 
-                callback(null, result);
+                that.emit('data', result);
             });
         });
     }

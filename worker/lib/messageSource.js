@@ -11,9 +11,7 @@
 var path = require('path');
 var es = require('event-stream');
 var _ = require('lodash');
-var amqp = require('./amqp');
 
-var config = require('../config');
 var stream = require('./streamHelper');
 var helper = require('./helper');
 var messageHelper = require('./message');
@@ -28,33 +26,22 @@ module.exports = {
      * 
      * @param  {object} program
      * @param  {Functon} log     - function that could be used for logging
+     * @param {object} queuePool
      * @return {Readable}
      */
-    getQueueSource: function (program, log) {
-        var connection = amqp.getConnection(config.amqp.credentials);
-        var queues = helper.getQueNames(program, config.amqp);
+    getQueueSource: function (program, log, queuePool) {
+        if (!queuePool.amqpQueue || !_.isFunction(queuePool.amqpQueue.getStream)) {
+            throw new Error('There is no amqpQueue in queuePool');
+        }
 
-        log('queues %j', queues, {});
-
-        var queueStreams = _.values(queues).map(function (queueName) {
-            var amqpStream = amqp.getStream({
-                queue: queueName,
-                exchange: 'amq.direct',
-                connection: connection,
-                prefetch: config.amqp.prefetch
-            });
-            amqpStream.on('ready', function (queue) {
-                log('%s is connected', queue);
-            });
-            return amqpStream;
+        var queueStream = queuePool.amqpQueue.getStream();
+        queueStream.on('ready', function (queue) {
+            log('%s queue stream is ready', queue);
         });
 
-        return es.merge.apply(es, queueStreams)
-            .pipe(messageHelper.getMessageParser())
-            .pipe(es.through(function (data) {
-                log('message parsed %j', data, helper.getMeta(data.message));
-                this.emit('data', data);
-            }));
+
+        return queueStream
+            .pipe(messageHelper.getMessageParser());
     },
 
     /**

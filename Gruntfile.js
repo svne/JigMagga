@@ -1,6 +1,7 @@
 "use strict";
 var fs = require("fs"),
-    path = require('path');
+    path = require('path'),
+    ssInclude = new (require("ssi"));
 
 var createWalker = require('./generate/walker');
 var config = require('./grunt.config');
@@ -233,16 +234,31 @@ module.exports = function(grunt) {
                                     });
                                 }
                                 res.end();
-                            } else if (req.url && req.url.search(/\.html/) !== -1) {
-                                var filename = options.base[0] + req.url,
-                                    defaultBase = filename.replace(/\/page\/[^\/]*\//, '/page/default/');
+                            } else if (req.url && req.url.search(/\.[s]{0,1}html/) !== -1) {
+                                var cwd = options.base[0] + "/",
+                                    filename = req.url,
+                                    filenameSHTML = cwd + filename.replace(/\.html/, ".shtml"),
+                                    defaultBase = cwd + filename.replace(/.*\.[a-z]{2,3}\//, 'yd/page/default/'),
+                                    defaultBaseSHTML = cwd + filename.replace(/.*\.[a-z]{2,3}\//, 'yd/page/default/').replace(/\.html/, ".shtml");
                                 if (fs.existsSync(filename)) {
-                                    res.end(fs.readFileSync(filename, {encoding: "utf8"}));
+                                    res.end(ssInclude.parse(filename, fs.readFileSync(filename, {
+                                        encoding: "utf8"
+                                    })).contents);
+                                } else if (fs.existsSync(filenameSHTML)) {
+                                    res.end(ssInclude.parse(filenameSHTML, fs.readFileSync(filenameSHTML, {
+                                        encoding: "utf8"
+                                    })).contents);
                                 } else if (fs.existsSync(defaultBase)) {
-                                    res.end(fs.readFileSync(defaultBase, {encoding: "utf8"}));
-
+                                    res.end(ssInclude.parse(defaultBase, fs.readFileSync(defaultBase, {
+                                        encoding: "utf8"
+                                    })).contents);
+                                } else if (fs.existsSync(defaultBaseSHTML)) {
+                                    res.end(ssInclude.parse(defaultBaseSHTML, fs.readFileSync(defaultBaseSHTML, {
+                                        encoding: "utf8"
+                                    })).contents);
                                 } else {
                                     next();
+
                                 }
                             } else {
                                 next();

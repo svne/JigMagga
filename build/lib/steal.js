@@ -12,7 +12,7 @@ var stealBuild = require("steal"),
  * @param item
  */
 
-function setupStealconfig(steal, item) {
+function setupStealconfig(steal, item, cb) {
     var loadFile = function (options) {
         var src = typeof options.src === "string" ? options.src : options.src.path;
         return fs.readFileSync(src, {
@@ -20,14 +20,12 @@ function setupStealconfig(steal, item) {
         });
     };
     global.window = {};
-    global.navigator = {
-        userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"
-    };
     global.window = global;
     steal.config({
         root: item.build.jigMaggaPath,
         pathToBuild: "/" + helper.getRelativePathFromStealRootPath(item.build.pageHTMLPath, item.build.jigMaggaPath),
         isBuild: true,
+        jmEnvironment : item.build.live ? "production" : "stage",
         "init-locale": item.build.locale,
         browser: item.build.browser,
         types: {
@@ -69,11 +67,12 @@ function setupStealconfig(steal, item) {
 
                 }
                 success();
-            },
-            "po": function () {
-                console.log(arguments)
             }
         }
+    });
+    steal.one("end", function (rootsteal) {
+        eval(steal.resources["stealconfig.js"].options.text);
+        cb();
     });
 }
 
@@ -168,15 +167,19 @@ module.exports = {
                     throw Error("Stream need build object with {pageJSPath: \"\"} ")
                 }
                 var openerSteal = steal.clone();
-                setupStealconfig(openerSteal, data);
-                openerSteal.one("end", function (rootsteal) {
-                    data.build.steal = openerSteal;
-                    data.build.dependencies = getAllDependencies(rootsteal.dependencies);
-                    callback(null, data);
+                setupStealconfig(openerSteal, data, function () {
+                    openerSteal.one("end", function (rootsteal) {
+                        var config =  openerSteal.config();
+                        // remove circular structure to use JSON.stringify
+                        config.win = null;
+                        data.build.stealConfig = openerSteal.config();
+                        data.build.dependencies = getAllDependencies(rootsteal.dependencies);
+                        callback(null, data);
+                    });
+                    var page = helper.getRelativePathFromStealRootPath(data.build.pageJSPath, data.build.jigMaggaPath);
+                    console.log("\nOpen page: ", page, " with Browser: ", data.build.browser, " and locale: ", data.build.locale, "\n");
+                    openerSteal(page);
                 });
-                var page = helper.getRelativePathFromStealRootPath(data.build.pageJSPath, data.build.jigMaggaPath);
-                console.log("\nOpen page: ", page, " with Browser: ", data.build.browser, " and locale: ", data.build.locale, "\n");
-                openerSteal(page);
             })
         })
     },
@@ -186,11 +189,13 @@ module.exports = {
      */
     setCurrentSCSSVariables: function () {
         return es.map(function (data, callback) {
-            var config = data.build.steal.config();
-            var sass = config[config.namespace].sass;
-            sass[data.namespace + "-locale"] = data.build.locale;
-            sass = util._extend(data.sass, sass);
-            data.sass = sass;
+            if (data.build.cssgenerate) {
+                var config = data.build.stealConfig;
+                var sass = config[config.namespace].sass;
+                sass[data.namespace + "-locale"] = data.build.locale;
+                sass = util._extend(data.sass, sass);
+                data.sass = sass;
+            }
             callback(null, data);
         })
     },
@@ -200,11 +205,12 @@ module.exports = {
                 throw Error("Stream need build object")
             }
             var openerSteal = steal.clone();
-            setupStealconfig(openerSteal, data);
-            openerSteal.one("end", function (rootsteal) {
-                cb(null, data, window);
+            setupStealconfig(openerSteal, data, function () {
+                openerSteal.one("end", function (rootsteal) {
+                    cb(null, data, window);
+                });
+                openerSteal(page);
             });
-            openerSteal(page);
         })
     }
 };

@@ -25,7 +25,7 @@
                 //noinspection JSLint
                 for (k in browserconf) {
                     //noinspection JSLint
-                    if (k && k in $browser && browserconf[k].version) {
+                    if (k && $browser && k in $browser && browserconf[k].version) {
                         versionconf = browserconf[k].version;
                         //noinspection JSLint
                         for (key in versionconf) {

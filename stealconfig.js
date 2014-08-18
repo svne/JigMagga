@@ -2,7 +2,7 @@ steal.config({
     jmENV : "development",
     map: {
         "*": {
-            "jquery/jquery.js": steal.config("browser") && steal.config("browser").msie ? "bower_components/jquery-old/jquery.js" :  "bower_components/jquery/jquery.min.js",
+            "jquery/jquery.js": steal.config("browser") && steal.config("browser").msie  && steal.config("browser").version < 10? "bower_components/jquery-old/dist/jquery.js" :  "bower_components/jquery/jquery.min.js",
             "jquery/jstorage": "bower_components/jstorage",
             "funcunit" : "bower_components/funcunit/dist/"
         }

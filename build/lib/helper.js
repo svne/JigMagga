@@ -2,7 +2,9 @@ var path = require("path"),
     util = require("util"),
     es = require('event-stream'),
     extend = require('node.extend'),
-    fs = require('fs');
+    fs = require('fs-extra'),
+    jmUtil = require('jmUtil');
+
 module.exports = {
 
     /**
@@ -13,21 +15,27 @@ module.exports = {
     createStreamWithSettings: function (program) {
         var self = this;
         return es.readable(function (count, callback) {
-            program.namespace = program.namespace || "yd";
-            program.namespacePath = path.normalize(__dirname + "/../../" + program.namespace);
-            program.jigMaggaPath = path.normalize(__dirname + "/../..");
-            program.basePath = self.getBasePath(program.basepath);
-            program.defaultPath = program.basePath + "/default";
-            program.domain = program.basedomain;
-            program.minify = program.minify === 0 || program.minify === 1 ? program.minify : true;
-            if (!program.domain) {
+            var options = {};
+            options.namespace = program.namespace || "yd";
+            options.namespacePath = path.normalize(__dirname + "/../../" + options.namespace);
+            options.jigMaggaPath = path.normalize(__dirname + "/../..");
+            options.basePath = self.getBasePath(program.basepath);
+            options.defaultPath = options.basePath + "/default";
+            options.domain = program.basedomain;
+            options.jsgenerate = program.jsgenerate || program.jsgenerate === undefined ? true : false;
+            options.cssgenerate = program.cssgenerate || program.cssgenerate === undefined ? true : false;
+            options.minify = program.minify || program.minify === undefined ? true : false;
+            options.page = program.page;
+            options.versionnumber = program.versionnumber;
+            options.live = program.live;
+            if (!options.domain) {
                 throw new Error("no domain");
             }
-            if (!program.page) {
+            if (!options.page) {
                 throw new Error("no page");
             }
             var data = {
-                build: program
+                build: options
             };
             this.emit('data', data);
             this.emit('end');
@@ -115,8 +123,8 @@ module.exports = {
             data.locales = data.locales || [];
             data.browsers = data.browsers || [];
             for (var i = 0; i < data.locales.length; i++) {
-                for (var y = 0; y < data.browsers.length; y++) {
-                    data.build.browser = data.browsers[y];
+                for (var y = -1; y < data.browsers.length; y++) {
+                    data.build.browser = data.browsers[y] || null;
                     data.build.locale = data.locales[i];
                     this.emit('data', extend(true, {}, data));
                 }
@@ -160,9 +168,70 @@ module.exports = {
         return fs.readFileSync(src, {
             encoding: "utf8"
         });
+    },
+    saveFileToDiskOrUpload: function () {
+        return es.map(function (data, callback) {
+            var fullPath,
+                browser,
+                name;
+            data.forEach(function (item) {
+                browser = item.build.browser ? Object.keys(item.build.browser).filter(function (a) {
+                    return a !== "version"
+                }).join() + item.build.browser.version : null;
+                name = [];
+                browser && name.push(browser);
+                item.build.locale && name.push(item.build.locale);
+                item.build.versionnumber && name.push(item.build.versionnumber);
+                fullPath = item.build.pageHTMLPath.replace(/[^/]*$/, "") + "production-" + name.join("-");
+                if (!item.build.upload) {
+                    if(item.build.jsgenerate){
+                        fs.outputFileSync(fullPath + ".js", item.build.package.js);
+                    }
+                    if(item.build.cssgenerate){
+                        fs.outputFileSync(fullPath + ".css", item.build.package.css);
+                    }
+                    console.log("Save Files to: ", fullPath);
+                } else {
+                    console.warn("Not implement");
+                }
+            });
+            callback(null, data);
+        })
+    },
+    stdoutSingleObjectWithBumper: function () {
+        return es.map(function (data, callback) {
+            if(typeof data !== "string"){
+                data = JSON.stringify(data);
+            }
+            process.stdout.write("\n-||JSON||-\n");
+            process.stdout.write(data);
+            process.stdout.write("\n-||JSON||-\n");
+            callback(null, data);
+        });
+    },
+    bufferStringifyStreamWithBumperAndParseSingleObject: function () {
+        var buffer = [],
+            split,
+            join;
+        return es.through(function write(data) {
+            split = data.split("\n-||JSON||-\n");
+            if(split.length > 1){
+                for(var i = 0; i < split.length; i++){
+                    buffer.push(split[i]);
+                    if(i !== (split.length -1)){
+                        join = buffer.join("");
+                        buffer = [];
+                        if(join.length){
+                            var a = JSON.parse(join)
+                            //process.stdout.write("--->" + JSON.stringify(a.build.dependencies[0].id) + "\n");
+                            this.emit("data", a);
+                        }
+                    }
+                }
+            }else{
+                buffer.push(split.join(""));
+            }
+
+        })
     }
-
-
-
-
 };

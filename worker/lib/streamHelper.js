@@ -97,6 +97,12 @@ module.exports = {
             callback.call(that, null, buffer, next);
         });
     },
+    /**
+     * wrap streams and add an error listener  for each of them
+     * 
+     * @param  {string} eventName event to listen
+     * @return {stream}
+     */
     tryCatch: function (eventName) {
         var streams = [];
         eventName = eventName || 'error';

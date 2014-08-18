@@ -1,20 +1,19 @@
 'use strict';
-var konphyg = require('konphyg')(__dirname + '/../config'),
-    redis = require('redis');
+var redis = require('redis');
 
-var config = konphyg.all();
 
 /**
  * create a redis client with a
- * @param  {[type]} error   [description]
- * @param  {[type]} success [description]
- * @return {[type]}         [description]
+ * @param  {{port: number, host: string, options: object}} config
+ * @param  {function} error
+ * @param  {function} success
+ * @return {object}
  */
-module.exports = function (error, success) {
+module.exports = function (config, error, success) {
     success = success || function () {};
     error = error || function () {};
 
-    var redisClient = redis.createClient(config.redis.port, config.redis.host, config.redis.options);
+    var redisClient = redis.createClient(config.port, config.host, config.options);
 
     redisClient.on('ready', success);
     redisClient.on('error', error);

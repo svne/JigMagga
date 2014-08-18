@@ -1,8 +1,9 @@
-/*global describe, it, beforeEach, before, after: true*/
+/*global describe, it, beforeEach, before, after, afterEach: true*/
 
 'use strict';
 
 var expect = require('chai').expect;
+var rewire = require('rewire');
 var sinon = require('sinon');
 var helper = require('../../lib/helper');
 
@@ -140,6 +141,63 @@ describe('helper', function () {
                 expect(err).to.eql(null);
                 expect(res).to.have.length(0);
                 done();
+            });
+        });
+    });
+
+    describe('messageAckStorage', function () {
+        var helper = rewire('../../lib/helper');
+        afterEach(function () {
+            helper.__set__('messageAckStorage', {});
+        });
+
+        describe('#setAckToStorage', function () {
+            it('should increase count if it has the same key in storage', function () {
+                var data = {
+                    queueShift: function () {},
+                    key: 'foo'
+                };
+                helper.setAckToStorage(data);
+                helper.setAckToStorage(data);
+                var messageAckStorage = helper.__get__('messageAckStorage');
+                expect(messageAckStorage[data.key]).to.be.an('object');
+
+                expect(messageAckStorage[data.key].count).to.eql(2);
+            });            
+        });
+
+        describe('#executeAck', function () {
+            it('should reduce the count and do not execute queueShift (ack) function if it more then 1', function () {
+                var data = {
+                    queueShift: sinon.spy(),
+                    key: 'foo'
+                };
+                helper.setAckToStorage(data);
+                helper.setAckToStorage(data);
+                helper.setAckToStorage(data);
+                helper.executeAck(data.key);
+
+                var messageAckStorage = helper.__get__('messageAckStorage');
+                expect(messageAckStorage[data.key]).to.be.an('object');
+
+                expect(messageAckStorage[data.key].count).to.eql(2);
+                expect(messageAckStorage[data.key].queueShift.called).to.not.eql(true);
+            });
+
+            it('should reduce the count and execute function if it count  eql 1', function () {
+                var data = {
+                    queueShift: sinon.spy(),
+                    key: 'foo'
+                };
+                helper.setAckToStorage(data);
+                helper.setAckToStorage(data);
+                helper.executeAck(data.key);
+                helper.executeAck(data.key);
+
+                var messageAckStorage = helper.__get__('messageAckStorage');
+                expect(messageAckStorage[data.key]).to.eql(undefined);
+
+                expect(data.queueShift.calledOnce).to.eql(true);
             });
         });
     });

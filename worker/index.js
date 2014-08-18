@@ -18,8 +18,7 @@
  * @module worker
  */
 
-var domain = require('domain'),
-    es = require('event-stream'),
+var es = require('event-stream'),
     _ = require('lodash'),
     path = require('path'),
     getRedisClient = require('./lib/redisClient'),
@@ -79,7 +78,7 @@ program
     .parse(process.argv);
 
 // get redis Client
-var redisClient = getRedisClient(function error(err) {
+var redisClient = getRedisClient(config.redis, function error(err) {
     log('redis Error %j', err, {redis: true});
 }, function success() {
     log('redis client is ready', {redis: true});
@@ -135,7 +134,7 @@ var mainStream = function (source, generator) {
     var tc = stream.tryCatch('err');
 
     tc(source)
-        .pipe(es.through(function (data) {
+        .pipe(tc(es.through(function (data) {
             if (!helper.isMessageFormatCorrect(data.message)) {
                 if (_.isFunction(data.queueShift)) {
                     data.queueShift();
@@ -143,15 +142,18 @@ var mainStream = function (source, generator) {
 
                 return this.emit('err', new WorkerError('something wrong with message fields', data.message));
             }
+
             data.basePath = basePath;
             log('filtered message', getMeta(data.message));
 
+            this.emit('data', data);
+        })))
+        .pipe(tc(configMerge.getConfigStream()))
+        .pipe(tc(messageHelper.pageLocaleSplitter()))
+        .pipe(es.through(function (data) {
             helper.setAckToStorage(data);
             this.emit('data', data);
         }))
-        .pipe(tc(configMerge.getConfigStream()))
-        .pipe(tc(messageHelper.pageLocaleSplitter()))
-
         //add page configs for those messages that did not have page key before splitting
         .pipe(tc(configMerge.getConfigStream()))
         .on('data', function (data) {
@@ -210,7 +212,7 @@ var generatorRoutes = {
                     archiverStream = null;
                     next();
                 };
-                var result = {url: message.url, data: data};
+                var result = {url: message.url, data: data, messageKey: data.key};
                 if (program.queue) {
                     uploaderRouter.send('reduce:timeout');
                     return redisClient.rpush(config.redis.keys.list, JSON.stringify(result), function (err) {
@@ -244,6 +246,13 @@ var generatorRoutes = {
     error: workerErrorHandler
 };
 
+var uploaderRoutes = {
+    'message:uploaded': function (key) {
+        helper.executeAck(key);
+    },
+    error: workerErrorHandler
+};
+
 var args = _.clone(process.argv).splice(2);
 
 // Creates a generator and uploader child processes,
@@ -260,7 +269,7 @@ helper.createChildProcesses(args, function (err, result) {
     uploaderRouter = new ProcessRouter(uploader);
 
     generatorRouter.addRoutes(generatorRoutes);
-    uploaderRouter.addRoutes({error: workerErrorHandler});
+    uploaderRouter.addRoutes(uploaderRoutes);
 
     var source;
 

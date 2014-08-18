@@ -35,7 +35,7 @@ var messageStream = stream.duplex();
 
 var REDIS_CHECK_TIMEOUT = 100;
 
-var redisClient = getRedisClient(function error(err) {
+var redisClient = getRedisClient(config.redis, function error(err) {
     log('redis Error %j', err, {redis: true});
 });
 
@@ -124,6 +124,7 @@ var uploadItem = function (data, callback) {
         } else {
             uploadsAmount += 1;
             log('success', res, {upload: true, url: data.url, uploadsAmount: uploadsAmount});
+            router.send('message:uploaded', data.messageKey);
         }
         callback();
     };

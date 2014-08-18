@@ -129,7 +129,6 @@ module.exports = {
                 if (data.queueShift) {
                     result.queueShift = data.queueShift;
                 }
-                console.log('getMessageParser', result);
                 this.emit('data', result);
             }
         });

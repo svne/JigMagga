@@ -9,7 +9,7 @@ var _ = require('lodash'),
 
 var config = require('../config');
 
-// @type {Object.<string, function>} - storage of message acknowledge functions
+// @type {Object.<string, {count: number, queueShift: function}>} - storage of message acknowledge functions
 var messageAckStorage = {};
 
 module.exports = {
@@ -23,7 +23,15 @@ module.exports = {
         if(!_.isFunction(data.queueShift) || !data.key) {
             return;
         }
-        messageAckStorage[data.key] = data.queueShift;
+        if (!messageAckStorage[data.key]) {
+            messageAckStorage[data.key] = {
+                count: 1,
+                queueShift: data.queueShift
+            };
+        } else {
+            messageAckStorage[data.key].count += 1;
+        }
+
     },
 
     /**
@@ -33,11 +41,16 @@ module.exports = {
      * @param  {string} messageKey
      */
     executeAck: function (messageKey) {
-        if (!messageKey || !_.isFunction(messageAckStorage[messageKey])) {
+        if (!messageKey || !_.isPlainObject(messageAckStorage[messageKey])) {
             return;
         }
 
-        messageAckStorage[messageKey]();
+        if (messageAckStorage[messageKey].count !== 1) {
+            messageAckStorage[messageKey].count -= 1;
+            return;
+        }
+
+        messageAckStorage[messageKey].queueShift();
         delete messageAckStorage[messageKey];
     },
 

@@ -30,7 +30,7 @@
     }
   ],
   "devDependencies": {
-    "bower": "1.2.8",
+    "bower": "1.3.9",
     "can-compile": "^0.6.0",
     "chai": "~1.9.1",
     "grunt": "~0.4.1",

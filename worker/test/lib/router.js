@@ -1,4 +1,4 @@
-/*global describe, it, beforeEach, before, after: true*/
+/*global describe, it, beforeEach, before, after, afterEach: true*/
 
 'use strict';
 
@@ -68,6 +68,7 @@ describe('ProcessRouter', function () {
                 messagesCount = 0,
                 first,
                 second;
+
 
             router.addRoutes({
                 pipe: function (data) {

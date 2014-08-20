@@ -276,16 +276,4 @@ module.exports = function (data, workerConfig, callback) {
             next(null, data);
         }
     ], callback);
-
-//    if (exc) {
-//        localConfig["upload-worker"] = function (message) {
-//            message.bucket = knoxConf.S3_BUCKET;
-//            message.domain = domain;
-//            message.deleteAfter = true;
-//            console.log("Writing to upload queue", message.from);
-//            exc.publish(amqpQueueUploder, JSON.stringify(message), { contentType: 'application/json'});
-//        };
-//    } else {
-//        localConfig["upload-worker"] = false;
-//    }
 };

@@ -54,6 +54,7 @@
   ],
   "main": "home",
   "scripts": {
+    "coverage": " istanbul cover _mocha -- -R spec --recursive ./worker/test",
     "test": "mocha -R spec --recursive ./worker/test",
     "install": "node node_modules/bower/bin/bower install --config.cwd=bower_components --config.directory=.",
     "prepublish": "node node_modules/bower/bin/bower install steal=git://github.com/bitovi/legacy-steal.git --config.directory=."

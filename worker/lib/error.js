@@ -22,10 +22,10 @@ exports.WorkerError = WorkerError;
  */
 exports.getErrorHandler = function (log, callback) {
     return function (err) {
-        console.log('getErrorHandler');
+
         if (!(err instanceof WorkerError)) {
             log('error', 'Fatal error. process will be terminated %s, %s', err.message, err.stack, {uncaughtException: true});
-            process.kill();
+            return process.kill();
         }
         callback(err);
     };

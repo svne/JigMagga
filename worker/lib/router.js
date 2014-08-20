@@ -5,17 +5,23 @@ var _ = require('lodash'),
 
 var LAST_CHUNK_IDENTIFIER = '!!@#$!!';
 
-var regExp = new RegExp('!!@#\\$!!$', 'ig');
+var LAST_CHUNK_IDENTIFIER_BUFFER = new Buffer(LAST_CHUNK_IDENTIFIER);
 
 /**
  * check if there is the last chunk by checking if there is a LAST_CHUNK_IDENTIFIER
  * in the chunk
  * 
- * @param  {string}  chunk
+ * @param  {Buffer}  chunk
  * @return {Boolean}
  */
 var isLastChunkIn = function (chunk) {
-    return regExp.test(chunk);
+    var length = chunk.length;
+    var checkBuffer = chunk.slice(length - LAST_CHUNK_IDENTIFIER_BUFFER.length, length);
+    return LAST_CHUNK_IDENTIFIER === checkBuffer.toString();
+};
+
+var removeIdentifier = function (chunk) {
+    return chunk.slice(0, chunk.length - LAST_CHUNK_IDENTIFIER_BUFFER.length);
 };
 
 /**
@@ -68,21 +74,18 @@ var ProcessRouter = function (processInstance, pipeFdNumber) {
  * @param  {Function} handler
  */
 ProcessRouter.prototype._createPipeHandler = function (handler) {
-    var that = this,
-        buffer = '';
+    var that = this;
+    var composedBuffer = new Buffer(0);
 
-    this.pipe.on('data', function (buf) {
-        var data = buf.toString(),
-            messages;
-        buffer += data;
+    this.pipe.on('data', function (buffer) {
         if (isLastChunkIn(buffer)) {
-            messages = _.compact(buffer.split(LAST_CHUNK_IDENTIFIER));
-            for  (var i = 0; i < messages.length; i++) {
-                handler.call(that, messages[i]);
-            }
-            buffer = '';
-            messages = [];
+            composedBuffer = Buffer.concat([composedBuffer, buffer]);
+            var data = removeIdentifier(composedBuffer).toString();
+            composedBuffer = new Buffer(0);
+            return handler.call(that, data);
         }
+
+        composedBuffer = Buffer.concat([composedBuffer, buffer]);
     });
 };
 
@@ -110,8 +113,8 @@ ProcessRouter.prototype.addRoutes = function (routes) {
 ProcessRouter.prototype.send = function (command, data) {
     if (command === 'pipe') {
         data = _.isString(data) ? data : JSON.stringify(data);
-        data += LAST_CHUNK_IDENTIFIER;
-        return this.pipe.write(new Buffer(data));
+        data = Buffer.concat([new Buffer(data), LAST_CHUNK_IDENTIFIER_BUFFER]);
+        return this.pipe.write(data);
     }
     var message = {
         command: command,

@@ -24,9 +24,7 @@ var WorkerError = error.WorkerError;
 var config = require('../config');
 log('started, pid', process.pid);
 
-if (process.env.NODE_ENV === 'local') {
-    var memwatch = require('memwatch');
-}
+var memwatch = require('memwatch');
 
 var uploader = new Uploader(config.main.knox);
 var router = new ProcessRouter(process);
@@ -181,8 +179,6 @@ process.on('uncaughtException', error.getErrorHandler(log, function (err) {
     router.send('error', err);
 }));
 
-if (process.env.NODE_ENV === 'local') {
-    memwatch.on('leak', function (info) {
-        log('warning', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
-    });
-}
+memwatch.on('leak', function (info) {
+    log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
+});

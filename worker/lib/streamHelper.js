@@ -39,22 +39,6 @@ module.exports = {
         });
     },
 
-    /**
-     * log messages in stream via log function 
-     * 
-     * @param  {function} client
-     * @param  {string} prefix
-     * @param  {string} level
-     * @return {Duplex}
-     */
-    log: function (client, prefix, level) {
-        level = level || 'info';
-
-        return es.through(function (message) {
-            client(level, prefix + ' %j', message, _.pick(message.message, ['url', 'page', 'locale']));
-            this.emit('data', message);
-        });
-    },
 
     /**
      * create a duplex stream that obtain message and emit it to consumer
@@ -83,12 +67,12 @@ module.exports = {
 
         return es.through(function write(data) {
             if (!Buffer.isBuffer(data)) {
-                data = new Buffer(JSON.stringify(data));
+                data = _.isString(data) ? data : JSON.stringify(data);
+                data = new Buffer(data);
             }
             buffer = Buffer.concat([buffer, data]);
         }, function end() {
             var that = this;
-
             function next() {
                 that.emit('end');
                 buffer = new Buffer(0);

@@ -119,7 +119,7 @@ var publish = exports.publish = function (message, options) {
                 return ok.then(function () {
                     message = new Buffer(JSON.stringify(message));
                     channel.sendToQueue(queue, message, {contentType: 'text/plain'});
-                    // channel.close();
+                    channel.close();
                 });
             });
         })

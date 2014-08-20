@@ -18,7 +18,8 @@
  * @module worker
  */
 
-var es = require('event-stream'),
+var fs = require('fs'),
+    es = require('event-stream'),
     _ = require('lodash'),
     path = require('path'),
     getRedisClient = require('./lib/redisClient'),
@@ -43,9 +44,7 @@ if (config.main.nodetime) {
     require('nodetime').profile(config.main.nodetime);
 }
 
-if (process.env.NODE_ENV === 'local') {
-    var memwatch = require('memwatch');
-}
+var memwatch = require('memwatch');
 
 log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
 
@@ -180,24 +179,32 @@ var generatorRoutes = {
      * 
      * @param  {{uploadList: Object[], message: object, key: string}} data [description]
      */
-    pipe: function (data) {
+    pipe: function pipeHandler(data) {
+
         var archiverStream,
             destination,
-            message;
+            message,
+            key;
 
-        data = JSON.parse(data);
+        try {
+            data = JSON.parse(data);
+        } catch (e) {
+            log('error', e);
+            fs.writeFileSync(__dirname + '/../yd/tmp/pipeError', data);
+            process.kill();
+        }
+
         message = data.message;
-
-        log('message from pipe generator, key %s', data.key,  getMeta(message));
+        key = data.key;
+        log('message from pipe generator, key %s', key,  getMeta(message));
 
         log('shift message from amqp queue');
-        helper.executeAck(data.key);
+
         //send message to done queue
         queuePool.amqpDoneQueue.publish(message.origMessage);
 
         archiverStream = archiver.bulkArchive(data.uploadList);
         data = null;
-
         if (program.write) {
             destination = helper.createSaveZipStream(program, message, basePath);
             destination.once('finish', function () {
@@ -212,7 +219,7 @@ var generatorRoutes = {
                     archiverStream = null;
                     next();
                 };
-                var result = {url: message.url, data: data, messageKey: data.key};
+                var result = {url: message.url, data: data, messageKey: key};
                 if (program.queue) {
                     uploaderRouter.send('reduce:timeout');
                     return redisClient.rpush(config.redis.keys.list, JSON.stringify(result), function (err) {
@@ -248,6 +255,7 @@ var generatorRoutes = {
 
 var uploaderRoutes = {
     'message:uploaded': function (key) {
+        log('message uploaded %s', key);
         helper.executeAck(key);
     },
     error: workerErrorHandler
@@ -287,8 +295,6 @@ helper.createChildProcesses(args, function (err, result) {
 
 process.on('uncaughtException', error.getErrorHandler(log, workerErrorHandler));
 
-if (process.env.NODE_ENV === 'local') {
-    memwatch.on('leak', function(info) {
-        log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
-    });
-}
+memwatch.on('leak', function(info) {
+    log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
+});

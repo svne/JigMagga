@@ -17,7 +17,8 @@ var LAST_CHUNK_IDENTIFIER_BUFFER = new Buffer(LAST_CHUNK_IDENTIFIER);
 var isLastChunkIn = function (chunk) {
     var length = chunk.length;
     var checkBuffer = chunk.slice(length - LAST_CHUNK_IDENTIFIER_BUFFER.length, length);
-    return LAST_CHUNK_IDENTIFIER === checkBuffer.toString();
+    var result = LAST_CHUNK_IDENTIFIER === checkBuffer.toString();
+    return result;
 };
 
 var removeIdentifier = function (chunk) {
@@ -78,14 +79,16 @@ ProcessRouter.prototype._createPipeHandler = function (handler) {
     var composedBuffer = new Buffer(0);
 
     this.pipe.on('data', function (buffer) {
-        if (isLastChunkIn(buffer)) {
-            composedBuffer = Buffer.concat([composedBuffer, buffer]);
-            var data = removeIdentifier(composedBuffer).toString();
-            composedBuffer = new Buffer(0);
-            return handler.call(that, data);
+        if (!isLastChunkIn(buffer)) {
+            return composedBuffer = Buffer.concat([composedBuffer, buffer]);
         }
-
         composedBuffer = Buffer.concat([composedBuffer, buffer]);
+        var data = removeIdentifier(composedBuffer).toString();
+        data = data.split(LAST_CHUNK_IDENTIFIER);
+        composedBuffer = new Buffer(0);
+        for (var i = 0; i < data.length; i++) {
+            handler.call(that, data[i]);
+        }
     });
 };
 

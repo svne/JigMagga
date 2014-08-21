@@ -120,8 +120,12 @@ module.exports = {
         var options = {stdio: [0, 1, 2, 'pipe', 'ipc']},
             child,
             waitTime;
-
-        args.unshift(modulePath);
+        if (args[0] !== 'debug') {
+            args.unshift(modulePath);
+        } else {
+            args[0] = modulePath;
+            args.unshift('--debug-brk');
+        }
 
         child = spawn(process.execPath, args, options);
         if (!_.isFunction(callback)) {

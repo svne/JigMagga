@@ -5,7 +5,7 @@
 var expect = require('chai').expect;
 var sinon = require('sinon');
 
-var error = require('../../lib/error');
+var error = require('../../../lib/error');
 
 var WorkerError = error.WorkerError;
 

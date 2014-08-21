@@ -7,9 +7,9 @@ var path = require('path');
 var expect = require('chai').expect;
 var rewire = require('rewire');
 var sinon = require('sinon');
-var helper = require('../../lib/helper');
+var helper = require('../../../lib/helper');
 
-var konphyg = require('konphyg')(__dirname + '/../../config');
+var konphyg = require('konphyg')(__dirname + '/../../../config');
 
 var baseConfig = konphyg.all();
 
@@ -78,7 +78,7 @@ describe('helper', function () {
     describe('#createSubProcess', function () {
         var child;
         before(function () {
-            child = helper.createSubProcess(__dirname + '/../../testData/simpleProcess.js');
+            child = helper.createSubProcess(__dirname + '/../../../testData/simpleProcess.js');
         });
 
         after(function () {
@@ -103,7 +103,7 @@ describe('helper', function () {
         });
 
         it('should create a process in async way', function (done) {
-            helper.createSubProcess(__dirname + '/../../testData/asyncProcess.js', function (err, child) {
+            helper.createSubProcess(__dirname + '/../../../testData/asyncProcess.js', function (err, child) {
                 expect(err).to.eql(null);
                 expect(child.send).to.be.a('function');
                 expect(child.on).to.be.a('function');
@@ -117,7 +117,7 @@ describe('helper', function () {
                 clock = sinon.useFakeTimers();
             });      
             it('should send an error if process will not send a message in 15000 msec', function (done) {
-                helper.createSubProcess(__dirname + '/../../testData/asyncProcess.js', function (err) {
+                helper.createSubProcess(__dirname + '/../../../testData/asyncProcess.js', function (err) {
                     expect(err).to.be.a('string');
                     expect(err).to.contain('child process did not send a ready message');
                     done();
@@ -131,7 +131,7 @@ describe('helper', function () {
     });
     
     describe('getFolderFiles', function () {
-        var folderPath = __dirname + '/../../testData';
+        var folderPath = __dirname + '/../../../testData';
         it('should returns all files from test data folder', function (done) {
             var files = fs.readdirSync(folderPath);
 
@@ -164,7 +164,7 @@ describe('helper', function () {
     });
 
     describe('messageAckStorage', function () {
-        var helper = rewire('../../lib/helper');
+        var helper = rewire('../../../lib/helper');
         afterEach(function () {
             helper.__set__('messageAckStorage', {});
         });
@@ -220,7 +220,7 @@ describe('helper', function () {
         });
     });
     
-    var message = require('../../testData/message.json'); 
+    var message = require('../../../testData/message.json'); 
 
     describe('#getZipName', function () {
         var basePath = '/foo/bar/';

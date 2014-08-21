@@ -9,13 +9,13 @@ var _ = require('lodash');
 var expect = require('chai').expect;
 var sinon = require('sinon');
 var rewire = require('rewire');
-var message = require('../../../testData/message.json'); 
+var message = require('../../../../testData/message.json'); 
 
-var generateConfig = rewire('../../../generator/lib/generateConfig');
+var generateConfig = rewire('../../../../generator/lib/generateConfig');
 
 message.origMessage = _.clone(message);
 message.domain = message.basedomain;
-var template = fs.readFileSync(path.join(__dirname, '../../../testData/testTemplate.html'));
+var template = fs.readFileSync(path.join(__dirname, '../../../../testData/testTemplate.html'));
 
 
 describe('generateConfig', function () {

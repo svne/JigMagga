@@ -6,7 +6,7 @@ var expect = require('chai').expect;
 var sinon = require('sinon');
 var rewire = require('rewire');
 
-var archive = rewire('../../lib/archiver');
+var archive = rewire('../../../lib/archiver');
 
 describe('archiver', function () {
     describe('#bulkArchive', function () {

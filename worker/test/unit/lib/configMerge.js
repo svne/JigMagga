@@ -6,11 +6,11 @@ var expect = require('chai').expect;
 var sinon = require('sinon');
 var rewire = require('rewire');
 
-var WorkerError = require('../../lib/error').WorkerError;
+var WorkerError = require('../../../lib/error').WorkerError;
 
-var message = require('../../testData/message.json'); 
+var message = require('../../../testData/message.json'); 
 
-var configMerge =rewire('../../lib/configMerge');
+var configMerge =rewire('../../../lib/configMerge');
 
 describe('configMerge', function () {
     describe('#getConfigStream', function () {

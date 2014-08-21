@@ -4,7 +4,7 @@
 var expect = require('chai').expect;
 var es = require('event-stream');
 var _ = require('lodash');
-var messageHelper = require('../../lib/message');
+var messageHelper = require('../../../lib/message');
 
 
 describe('message', function () {

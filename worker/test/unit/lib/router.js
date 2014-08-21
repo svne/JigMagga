@@ -5,15 +5,15 @@
 var expect = require('chai').expect;
 var fs = require('fs');
 
-var ProcessRouter = require('../../lib/router');
-var createSubProcess = require('../../lib/helper').createSubProcess;
+var ProcessRouter = require('../../../lib/router');
+var createSubProcess = require('../../../lib/helper').createSubProcess;
 
 describe('ProcessRouter', function () {
     describe('ipc communication', function () {
         var router,
             child;
         before(function () {
-            child = createSubProcess(__dirname + '/../../testData/simpleProcess.js');
+            child = createSubProcess(__dirname + '/../../../testData/simpleProcess.js');
             router = new ProcessRouter(child);
         });
 
@@ -41,7 +41,7 @@ describe('ProcessRouter', function () {
         var router,
             child;
         beforeEach(function () {
-            child = createSubProcess(__dirname + '/../../testData/pipeTestProcess.js');
+            child = createSubProcess(__dirname + '/../../../testData/pipeTestProcess.js');
             router = new ProcessRouter(child);
         });
 
@@ -61,10 +61,10 @@ describe('ProcessRouter', function () {
         });
 
         it('should send two big messages to pipe and obtain it back', function (done) {
-            var child = createSubProcess(__dirname + '/../../testData/pipeRouters.js'),
+            var child = createSubProcess(__dirname + '/../../../testData/pipeRouters.js'),
                 router = new ProcessRouter(child),
-                message1 = fs.readFileSync(__dirname + '/../../testData/bigFile').toString(),
-                message2 =  fs.readFileSync(__dirname + '/../../testData/bigFile2').toString(),
+                message1 = fs.readFileSync(__dirname + '/../../../testData/bigFile').toString(),
+                message2 =  fs.readFileSync(__dirname + '/../../../testData/bigFile2').toString(),
                 messagesCount = 0,
                 first,
                 second;

@@ -4,7 +4,7 @@
 
 var es = require('event-stream');
 var expect = require('chai').expect;
-var helper = require('../../lib/streamHelper');
+var helper = require('../../../lib/streamHelper');
 
 
 describe('streamHelper', function () {

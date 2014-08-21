@@ -19,7 +19,6 @@
  */
 
 var fs = require('fs'),
-    es = require('event-stream'),
     _ = require('lodash'),
     path = require('path'),
     getRedisClient = require('./lib/redisClient'),
@@ -28,8 +27,7 @@ var fs = require('fs'),
 var amqp = require('./lib/amqp'),
     log = require('./lib/logger')('worker', {component: 'worker', processId: String(process.pid)}),
     ProcessRouter = require('./lib/router'),
-    configMerge = require('./lib/configMerge'),
-    messageHelper = require('./lib/message'),
+    mainStream = require('./lib/mainStream'),
     archiver = require('./lib/archiver'),
     helper = require('./lib/helper'),
     error = require('./lib/error'),
@@ -90,6 +88,7 @@ if (program.queue) {
 
     log('queues in pool %j', queues, {});
     var queuePool = new amqp.QueuePool(queues, connection, {prefetch: config.amqp.prefetch});
+    queuePool.amqpErrorQueue.publish('fooo');
 }
 
 var basePath = (program.args[0]) ? path.join(process.cwd(), program.args[0]) : process.cwd();
@@ -120,52 +119,6 @@ var workerErrorHandler = function (err) {
         queuePool.amqpDoneQueue.publish(originalMessage);
     }
 };
-
-
-/**
- * Pipes message from source stream to filter stream then to configuration
- * then split them by locale or pages and then send a messages to generator process 
- * 
- * @param  {Readable} source
- * @param  {object}   generator
- */
-var mainStream = function (source, generator) {
-    var tc = stream.tryCatch('err');
-
-    tc(source)
-        .pipe(tc(es.through(function (data) {
-            if (!helper.isMessageFormatCorrect(data.message)) {
-                if (_.isFunction(data.queueShift)) {
-                    data.queueShift();
-                }
-
-                return this.emit('err', new WorkerError('something wrong with message fields', data.message));
-            }
-
-            data.basePath = basePath;
-            log('filtered message', getMeta(data.message));
-
-            this.emit('data', data);
-        })))
-        .pipe(tc(configMerge.getConfigStream()))
-        .pipe(tc(messageHelper.pageLocaleSplitter()))
-        .pipe(es.through(function (data) {
-            helper.setAckToStorage(data);
-            this.emit('data', data);
-        }))
-        //add page configs for those messages that did not have page key before splitting
-        .pipe(tc(configMerge.getConfigStream()))
-        .on('data', function (data) {
-            data.message = messageHelper.createMessage(data.message, program, data.config);
-            data.bucketName = helper.generateBucketName(data, program);
-
-            log('send to generator', getMeta(data.message));
-            generator.send('new:message', data);
-        });
-
-    tc.catch(workerErrorHandler);
-};
-
 
 var generatorRouter,
     uploaderRouter;
@@ -290,7 +243,17 @@ helper.createChildProcesses(args, function (err, result) {
         source = messageSource.getDefaultSource(program, log);
     }
 
-    mainStream(source, generatorRouter);
+    var main = mainStream(source, generatorRouter, basePath, program);
+
+    main.on('new:message', function (message) {
+        log('filtered message', message);
+    });
+
+    main.on('send:message', function (message) {
+        log('send to generator', message);
+    });
+
+    main.on('error:message', workerErrorHandler);
 });
 
 process.on('uncaughtException', error.getErrorHandler(log, workerErrorHandler));

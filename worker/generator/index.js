@@ -87,7 +87,13 @@ emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
  */
 var apiStream = es.map(function (data, next) {
     log('[*] send api request', helper.getMeta(data.message));
+    // Take first snapshot
+    var apiMessageKey = generator.createApiMessageKey(data.key);
+
+    data.config.apiMessageKey = apiMessageKey;
     generator.apiCalls([data.config], emitter, function (err, res) {
+        generator.deleteCachedCall(apiMessageKey);
+
         if (err) {
             var errorText = format('error in apiCall %j %j ', err, res); 
             handleError(errorText, data);
@@ -119,6 +125,26 @@ var loadLocale = es.map(function (data, callback) {
 
 });
 
+var saveZipToDisck = function (uploadList, data) {
+    var archiveStream = archiver.bulkArchive(uploadList);
+    var result = {
+        message: data.message,
+        key: data.key || undefined
+    };
+    
+    log('creating zip file for message', helper.getMeta(data.message));
+    var zipPath = helper.getZipName({}, data.message, data.basePath);
+    archiveStream
+        .pipe(fs.createWriteStream(zipPath))
+        .on('finish', function () {
+            log('[!] saved to %s', zipPath);
+            result.zipPath = zipPath;
+            router.send('new:zip', result);
+        });
+};
+process.send({ready: true});
+
+
 messageStream
     .pipe(configStream)
     .pipe(apiStream)
@@ -126,58 +152,55 @@ messageStream
     .pipe(es.through(function (data) {
         var that = this,
             saveDiskPath = path.join(data.basePath, '..'),
-            knox = config.main.knox;
+            knox = config.main.knox,
+            json,
+            uploadPages;
 
         knox.S3_BUCKET = knox.S3_BUCKET || data.bucketName;
         try {
 
             ydGetText.setLocale(data.message.locale);
             generator.init(knox, ydGetText, saveDiskPath);
-
             // generate json and html files
-            var json = _.map(data.apiCallResult, generator.generateJsonPage); 
-            var html = _.map(data.apiCallResult, function (config) {
-                    log('Processing page url: %s pagePath: %s', config.uploadUrl, config.pagePath);
-                    return generator.generatePage(config);
-                });
+            json = _.map(data.apiCallResult, generator.generateJsonPage);
+            uploadPages = _.map(data.apiCallResult, function (config) {
+                log('Processing page url: %s pagePath: %s', config.uploadUrl, config.pagePath);
+                return generator.generatePage(config);
+            });
         } catch (err) {
-            handleError(err.stack || err, data);
+            return handleError(err.stack || err, data);
         }
 
         var result = {
-            message: data.message,
-            key: data.key || undefined
-        };
+                message: data.message,
+                key: data.key || undefined
+            },
+            jsonLength = json.length,
+            htmlLength = uploadPages.length;
+
 
         //create list of files to upload
-        result.uploadList = html.concat(_.flatten(json, true));
+        // result.uploadList = html.concat(_.flatten(json, true));
+        for (var i = 0; i < jsonLength; i++) {
+            uploadPages = uploadPages.concat(json[i]);
+        }
+        json = [];
 
-        log('upload list length %d', result.uploadList.length);
-        
-        //if html files amount is less then 200 send them to the worker 
-        if (html.length < 200) {
+        log('upload list length %d', uploadPages.length);
+
+        //if html files amount is less then 200 send them to the worker
+        if (htmlLength < 200) {
             that.emit('data', '');
+            result.uploadList = uploadPages;
             router.send('pipe', result);
             return;
+        } else {
+            //if the amount is more then 200 create an archive write it to disk and
+            //send to the worker the archive link
+
+            saveZipToDisck(uploadPages, data);
         }
-
-        //if the amount is more then 200 create an archive write it to disck and
-        //send to the worker the archive link
-        var archiveStream = archiver.bulkArchive(result.uploadList);
-
-        log('creating zip file for message', helper.getMeta(data.message));
-        var zipPath = helper.getZipName({}, data.message, data.basePath);
-        archiveStream
-            .pipe(fs.createWriteStream(zipPath))
-            .on('finish', function () {
-                log('[!] saved to %s', zipPath);
-                delete result.uploadList;
-                result.zipPath = zipPath;
-                router.send('new:zip', result);
-            });
     }));
-
-process.send({ready: true});
 
 process.on('uncaughtException', error.getErrorHandler(log, function (err) {
     router.send('error', err);

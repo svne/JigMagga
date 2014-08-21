@@ -22,6 +22,7 @@ var http = require('http-get');
 var _ = require('lodash');
 var Uploader = require('jmUtil').ydUploader;
 var zlib = require('zlib');
+var md5 = require('MD5');
 var gt;
 var pageCounter = 0;
 var knoxConfig;
@@ -342,6 +343,23 @@ var uploadFileS3 = function (conf, cb) {
     });
     pageCounter++;
 };
+
+
+var apiMessageCounter = 0;
+
+var getRandom = function () {
+    return String(Math.round(Math.random() * 10000));
+};
+
+exports.createApiMessageKey = function (messageKey) {
+    messageKey = messageKey || getRandom();
+    apiMessageCounter += 1;
+    return md5(messageKey + apiMessageCounter + getRandom() + Date.now());
+};
+exports.deleteCachedCall = function (apiMessageKey) {
+    restHelper.deleteCachedCall(apiMessageKey);
+};
+
 var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlaceholders) {
     var config = configs.shift(),
         nextConfigs,
@@ -353,7 +371,8 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
             "hostname": config.apiConfig.hostname,
             "port": config.apiConfig.port,
             "base": config.apiConfig.base,
-            "db":  config.domain
+            "db":  config.domain,
+            "apiMessageKey": config.apiMessageKey
         };
 
     if (typeof emitter === 'function') {
@@ -433,8 +452,9 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
         }
     }
     // work through all calls and wait for all to finish
-    // console.log("Make all API calls for jigs");
+    console.log("Make all API calls for jigs");
     async.map(callbackContainer, restHelper.doCall, function (err, results) {
+
         var failedCalls = [],
             nextConfig;
         try {

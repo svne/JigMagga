@@ -1,8 +1,14 @@
 {
     "src_files": [
-        "jig/**/*_test.js"
+        "yd/jig/checkout/orderlocation/**/*_test.js"
     ],
     "test_page": "test/testem/testem.mustache",
-    "launch_in_dev": ["chrome", "firefox"],
-    "launch_in_ci": ["phantomjs"]
+    "launch_in_dev": ["chrome"],
+    "launch_in_ci": ["phantomjs"],
+    "proxies": {
+	    "yd": {
+	      "port": 8000,
+	      "host": "localhost"
+	    }
+	}
 }

@@ -1,6 +1,7 @@
 "use strict";
 var fs = require("fs"),
     path = require('path'),
+    sass = require('node-sass'),
     ssInclude = new (require("ssi"));
 
 var createWalker = require('./generate/walker');
@@ -215,6 +216,7 @@ module.exports = function(grunt) {
                     keepalive: true,
                     open: true,
                     middleware:  function (connect, options, middlewares) {
+                        
                         // inject a custom middleware into the array of default middlewares
                         middlewares.unshift(function (req, res, next) {
                             if (req.url === "/") {
@@ -234,7 +236,21 @@ module.exports = function(grunt) {
                                     });
                                 }
                                 res.end();
-                            } else if (req.url && req.url.search(/\.[s]{0,1}html/) !== -1) {
+                            }
+                            // compile scsss file on server side (testing phantom)
+                            else if (req.url.indexOf("/compilescss") !== -1) {
+                                sass.render({
+                                    data: req.body.scss,
+                                    success: function(css){
+                                        res.end(css);
+                                    },
+                                     error: function(error) {
+                                        console.log(error);
+                                    }
+                                });
+                            }
+                            // check default directory for html file
+                            else if (req.url && req.url.search(/\.[s]{0,1}html/) !== -1) {
                                 var cwd = options.base[0] + "/",
                                     filename = req.url,
                                     filenameSHTML = cwd + filename.replace(/\.html/, ".shtml"),
@@ -264,6 +280,7 @@ module.exports = function(grunt) {
                                 next();
                             }
                         });
+                        middlewares.unshift(connect.bodyParser());
                         return middlewares;
                     }
                 }

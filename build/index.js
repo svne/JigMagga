@@ -28,6 +28,7 @@ program
     .option('-u, --upload', 'if upload is not enabled it will save files to disk', JSON.parse)
     .option('-x, --live [value]', 'will generate for live environment',  JSON.parse)
     .option('-s, --stream [value]', 'pipe a build stream via stdin. The value is the startpoint name.')
+    .option('-f, --file [value]', 'The stream input that will be used.')
     .parse(process.argv);
 
 
@@ -35,6 +36,10 @@ program
 if (program.stream) {
     console.log = function(){/*DISABLED*/}
     console.warn = function(){/*DISABLED*/}
+}
+if (program.file) {
+    var readStream = fs.createReadStream(program.file);
+    readStream.pipe(process.stdin);
 }
 /**
  * Default Task without stream

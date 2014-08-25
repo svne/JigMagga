@@ -9,6 +9,7 @@ var winston = require('winston'),
     steal = require('./lib/steal.js'),
     builder = require('./lib/builder.js'),
     program = require('commander'),
+    fs = require('fs'),
     path = require('path');
 
 

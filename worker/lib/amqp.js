@@ -14,18 +14,18 @@ var channel = null;
  * @param  {Promise}   connection
  * @param  {Function}  callback
  */
-var getChannel = function (connection, callback) {
-    if (channel) {
+var getChannel = function (connection, queue, callback) {
+    if (queue.channel) {
         return process.nextTick(function () {
-            callback(null, callback);
+            callback(null, queue.channel);
         });
     }
 
     connection
         .then(function (connected) {
             return connected.createChannel().then(function (ch) {
-                channel = ch;
-                return callback(null, channel);
+                queue.channel = ch;
+                return callback(null, ch);
             });
         })
         .catch(function (err) {
@@ -55,10 +55,10 @@ var getStream = exports.getStream = function (options) {
     var connection = this.connection || options.connection;
     var queue = this.name || options.queue;
     var prefetch = this.options.prefetch || options.prefetch;
-
+    var that = this;
     // options.exchange = options.exchange || 'amq.direct';
     
-    getChannel(connection, function (err, channel) {
+    getChannel(connection, this, function (err, channel) {
         if (err) {
             throw new Error(err);
         }
@@ -92,13 +92,28 @@ var getStream = exports.getStream = function (options) {
                 
                 message.queueShift = channel.ack.bind(channel, message);
                 return duplex.write(message);
+            }).then(function (res) {
+                that.consumerTag = res.consumerTag;
             });
             
         });
     });
 
-
     return duplex;
+};
+
+var cancelStream = function (callback) {
+    if (!this.channel || !this.consumerTag) {
+        throw new Error('can not destroy stream before it is ready to consume');
+    }
+    var that = this;
+
+    this.channel.cancel(this.consumerTag)
+        .then(function (ok) {
+            that.channel = null;
+
+            callback(null, ok);
+        }, callback);
 };
 
 /**
@@ -109,16 +124,19 @@ var getStream = exports.getStream = function (options) {
  */
 var publish = exports.publish = function (message, options) {
     options = options || {};
-
+    var contentType = options.contentType || 'text/plain';
+    
+    message = _.isString(message) ? message : JSON.stringify(message);
     var queue = options.queue || this.name;
+
     this.connection
         .then(function (connected) {
             return connected.createChannel().then(function (channel) {
                 var ok = channel.assertQueue(queue, {durable: true});
 
                 return ok.then(function () {
-                    message = new Buffer(JSON.stringify(message));
-                    channel.sendToQueue(queue, message, {contentType: 'text/plain'});
+                    message = new Buffer(message);
+                    channel.sendToQueue(queue, message, {contentType: contentType});
                     channel.close();
                 });
             });
@@ -145,6 +163,7 @@ exports.getConnection = function (config) {
 
 var QueuePool = function (queues, connection, options) {
     var that = this;
+    options = options || {};
 
     _.each(queues, function (queue, name) {
         
@@ -152,8 +171,11 @@ var QueuePool = function (queues, connection, options) {
             name: queue,
             connection: connection,
             getStream: getStream,
+            cancelStream: cancelStream,
             publish: publish,
-            options: options
+            options: options,
+            channel: null,
+            consumerTag: null
         };
     });
 };

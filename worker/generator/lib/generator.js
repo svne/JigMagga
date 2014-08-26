@@ -452,7 +452,7 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
         }
     }
     // work through all calls and wait for all to finish
-    console.log("Make all API calls for jigs");
+    // console.log("Make all API calls for jigs");
     async.map(callbackContainer, restHelper.doCall, function (err, results) {
 
         var failedCalls = [],

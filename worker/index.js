@@ -69,7 +69,6 @@ program
     .option('-M, --mediumprio', 'use the high priority queue')
     .option('-L, --lowprio', 'use the high priority queue')
     .option('-V, --postfix', 'use this version postfix queue')
-    .option('-D, --stageversion', 'upload file to subdomain with current branch name (2.5 -> stage-2-5.lieferando.de)')
     .option('-I, --locale <n>', 'use given locale')
     .option('-w, --write [value]', 'write to disk the archive with generated files instead of upload them, path should be provided')
     .parse(process.argv);
@@ -88,10 +87,11 @@ if (program.queue) {
 
     log('queues in pool %j', queues, {});
     var queuePool = new amqp.QueuePool(queues, connection, {prefetch: config.amqp.prefetch});
-    queuePool.amqpErrorQueue.publish('fooo');
 }
 
 var basePath = (program.args[0]) ? path.join(process.cwd(), program.args[0]) : process.cwd();
+
+log('base project path is %s', basePath);
 
 var getMeta = helper.getMeta;
 
@@ -121,7 +121,9 @@ var workerErrorHandler = function (err) {
 };
 
 var generatorRouter,
-    uploaderRouter;
+    uploaderRouter,
+    uploader,
+    generator;
 
 var generatorRoutes = {
     /**
@@ -150,8 +152,6 @@ var generatorRoutes = {
         message = data.message;
         key = data.key;
         log('message from pipe generator, key %s', key,  getMeta(message));
-
-        log('shift message from amqp queue');
 
         //send message to done queue
         queuePool.amqpDoneQueue.publish(message.origMessage);
@@ -208,8 +208,8 @@ var generatorRoutes = {
 
 var uploaderRoutes = {
     'message:uploaded': function (key) {
-        log('message uploaded %s', key);
         helper.executeAck(key);
+        log('message uploaded %s', key);
     },
     error: workerErrorHandler
 };
@@ -223,8 +223,8 @@ helper.createChildProcesses(args, function (err, result) {
         throw new Error(err);
     }
 
-    var uploader = result.uploader,
-        generator = result.generator;
+    uploader = result.uploader,
+    generator = result.generator;
 
     generatorRouter = new ProcessRouter(generator);
     uploaderRouter = new ProcessRouter(uploader);
@@ -260,4 +260,11 @@ process.on('uncaughtException', error.getErrorHandler(log, workerErrorHandler));
 
 memwatch.on('leak', function(info) {
     log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
+});
+
+process.on('SIGTERM', function () {
+    log('warn', 'process terminated remotely', {exit: true});
+    uploader.kill();
+    generator.kill();
+    process.exit();
 });

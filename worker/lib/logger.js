@@ -1,5 +1,5 @@
 'use strict';
-
+var path = require('path');
 var _ = require('lodash');
 var winston = require('winston');
 var config = require('../config');
@@ -22,15 +22,14 @@ var colors = _.assign(winston.config.cli.colors, config.main.logger.colors);
 module.exports = function (component, metadata) {
     metadata = metadata || {};
 
-    var filename = config.main.logger.folder + '/' + component + '.log';
+    var filename = path.join(__dirname, '../..',  config.main.logger.folder, component + '.log');
     var options = config.main.logger.file;
     options.filename = filename;
-
 
     var logger = new (winston.Logger)({
         levels: logLevels,
         transports: [
-            new (winston.transports.Console)({colorize: true}),
+            new (winston.transports.Console)(config.main.logger.console),
             new (winston.transports.File)(options)
         ]
     });
@@ -74,8 +73,12 @@ module.exports = function (component, metadata) {
      * //correct
      * log('foo: %j', {a: 1}, {}) // 'foo {a: 1}', metadata = {}
      * 
+     * function will do nothing in test environment in order to not print anything while tests are running
      */
     return function () {
+        if (process.env.NODE_ENV === 'silent') {
+            return;
+        }
         var args = _.toArray(arguments);
         var meta = args.pop();
 

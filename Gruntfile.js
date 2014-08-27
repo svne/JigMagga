@@ -328,7 +328,7 @@ module.exports = function(grunt) {
                 timeout: 10000,
                 httpBase : "http://localhost:8000"
             },
-            all: ['yd/jig/menu/**/funcunit.html', '!bower_components/**', '!steal/**']
+            all: ['**/funcunit.html', '!bower_components/**', '!steal/**']
         }
     });
 

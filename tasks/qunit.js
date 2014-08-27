@@ -80,7 +80,7 @@ module.exports = function (grunt) {
             blocks: totalBlocks
         };
         stats.total = total;
-        fs.writeFileSync("code-coverage-report.html", fs.readFileSync(__dirname + "/../steal/instrument/qunit.html", {encoding : "utf8"}))
+        fs.writeFileSync("code-coverage-report.html", fs.readFileSync(__dirname + "/qunit/code-coverage-template.html", {encoding: "utf8"}).replace("/*---COVERAGE_RESULT---*/", JSON.stringify(stats)))
     };
 
     // Allow an error message to retain its color when split across multiple lines.

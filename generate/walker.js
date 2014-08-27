@@ -266,9 +266,11 @@ module.exports = function (defaultFolderPath, config) {
                 }
             });
 
-            result = _.first(files);
-
-            result = result.replace(projectPath, '');
+            if (files.length > 0) {
+                result = _.first(files).replace(projectPath, '');
+            } else {
+                return false;
+            }
             return result;
         },
 

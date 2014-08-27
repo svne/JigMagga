@@ -53,6 +53,7 @@ steal("steal/instrument", "jquery").then("qunit", "qunit-tap", function () {
 
 
     QUnit.done(function (obj) {
+        console.log(obj);
         if ($("#qunit-urlconfig-coverage").prop("checked")) {
             steal.instrument.report(filterInstrumentFiles(steal.instrument.compileStats()));
         }
@@ -116,7 +117,6 @@ steal("steal/instrument", "jquery").then("qunit", "qunit-tap", function () {
             });
 
             QUnit.done(function (obj) {
-                //filterInstrumentFiles();
                 sendMessage('qunit.instrument', filterInstrumentFiles(steal.instrument.compileStats()));
                 sendMessage('qunit.done', obj.failed, obj.passed, obj.total, obj.runtime);
             });

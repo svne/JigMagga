@@ -69,6 +69,9 @@ if (!program.stream) {
         .pipe(helper.saveFileToDiskOrUpload());
 
 }
+/**
+ * stream based tasks
+ */
 else if (program.stream === true) {
 
     helper.createStreamWithSettings(program)

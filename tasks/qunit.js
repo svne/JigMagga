@@ -26,8 +26,62 @@ module.exports = function (grunt) {
     // save the tap log
     var tapLog = [];
 
+    // save the instrument log
+    var instrumentLog = [];
+
     // Get an asset file, local to the root of the project.
     var asset = path.join.bind(null, __dirname, '..');
+
+    // calc and save code coverage
+    var saveCodeCoverage = function () {
+        var stats = {
+            files: {},
+            total: {}
+        };
+        for (var i = 0; i < instrumentLog.length; i++) {
+            for (var file in instrumentLog[i].files) {
+                if (stats.files[file]) {
+                    stats.files[file].blockCoverage = (stats.files[file].blockCoverage + instrumentLog[i].files[file].blockCoverage) / 2;
+                    stats.files[file].lineCoverage = (stats.files[file].lineCoverage + instrumentLog[i].files[file].lineCoverage) / 2;
+                    for (var line in stats.files[file].linesUsed) {
+                        if (stats.files[file].linesUsed[line] === 0 && instrumentLog[i].files[file].linesUsed[line] === 1) {
+                            stats.files[file].linesUsed[line] = 1;
+                        }
+                    }
+                } else {
+                    stats.files[file] = instrumentLog[i].files[file];
+                }
+            }
+        }
+        var totalLines = 0,
+            totalLinesHit = 0,
+            totalBlocks = 0,
+            totalBlocksHit = 0;
+        for (var fileName in stats.files) {
+            totalLines += stats.files[fileName].lines;
+            totalBlocks += stats.files[fileName].blocks;
+            totalLinesHit += stats.files[fileName].lines * stats.files[fileName].lineCoverage;
+            totalBlocksHit += stats.files[fileName].blocks * stats.files[fileName].blockCoverage;
+        }
+        var totalLineCoverage = 0,
+            totalBlockCoverage = 0;
+
+        if (totalLines) {
+            totalLineCoverage = totalLinesHit / totalLines;
+        }
+        if (totalBlocks) {
+            totalBlockCoverage = totalBlocksHit / totalBlocks;
+        }
+
+        var total = {
+            lineCoverage: totalLineCoverage,
+            blockCoverage: totalBlockCoverage,
+            lines: totalLines,
+            blocks: totalBlocks
+        };
+        stats.total = total;
+        fs.writeFileSync("code-coverage-report.html", fs.readFileSync(__dirname + "/../steal/instrument/qunit.html", {encoding : "utf8"}))
+    };
 
     // Allow an error message to retain its color when split across multiple lines.
     var formatMessage = function (str) {
@@ -123,7 +177,7 @@ module.exports = function (grunt) {
     });
 
     phantomjs.on('qunit.instrument', function (stats) {
-
+        instrumentLog.push(stats);
     });
 
     // Re-broadcast qunit events on grunt.event.
@@ -176,7 +230,9 @@ module.exports = function (grunt) {
             // Do not use an HTTP base by default
             httpBase: false,
             // output as tap
-            tap: !!this.options("tap")
+            tap: !!this.options("tap"),
+            // save code coverage
+            coverage: !!this.options("coverage")
         });
 
         var urls;
@@ -230,10 +286,14 @@ module.exports = function (grunt) {
             },
             // All tests have been run.
             function () {
-                if(options.tap){
+                if (options.tap) {
                     fs.writeFileSync("tap.log", tapLog.join("\n"));
                     tapLog = [];
                 }
+                if (options.coverage) {
+                    saveCodeCoverage();
+                }
+
                 // Log results.
                 if (status.failed > 0) {
                     warnUnlessForced(status.failed + '/' + status.total +

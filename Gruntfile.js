@@ -109,7 +109,7 @@ module.exports = function(grunt) {
                             },
                             message: "In which page should the jig be rendered?",
                             filter: function (value) {
-                                return value.toLowerCase();
+                                return value;
                             },
                             when: function (answers) {
                                 return answers['generator.template'] === 'jig';
@@ -127,7 +127,7 @@ module.exports = function(grunt) {
                             },
                             message: "In which domain should the page be rendered?",
                             filter: function (value) {
-                                return value.toLowerCase();
+                                return value;
                             },
                             when: function (answers) {
                                 return answers['generator.template'] === 'page';

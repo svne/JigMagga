@@ -12,6 +12,7 @@ steal.config({
         "jquerypp/": "bower_components/jquerypp/",
         "can/": "bower_components/canjs/steal/canjs/",
         "qunit/": "bower_components/qunit/qunit/",
+        "qunit-tap/": "bower_components/qunit-tap/lib/",
         "locales/": "locales/"
     },
     shim: {
@@ -20,6 +21,9 @@ steal.config({
         },
         "qunit": {
             deps: ["jquery", "qunit/qunit.css"]
+        },
+        "jquery/jstorage": {
+            deps: ["jquery"]
         },
         "funcunit": {
             deps: ["qunit"]

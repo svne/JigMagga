@@ -24,7 +24,7 @@ if (!steal.config("isBuild")) {
                             success();
                         } else {
                             $.ajax({
-                                url: "/compilescss",
+                                url: "/sass/compile",
                                 type: "POST",
                                 data: {
                                     scss: options.text
@@ -32,7 +32,6 @@ if (!steal.config("isBuild")) {
                                 dataType: "text"
                             }).done(function(filetext) {
                                 options.text = filetext;
-                                console.log(options.id);
                                 success();
                             }).fail(function(e) {
                                 console.warn("SASS Compile error ", e);
@@ -77,7 +76,7 @@ if (!steal.config("isBuild")) {
                     },
                     startCompiling = function(sassTransform) {
                         options.text = helper.sassImportFn(sassSteal, sassTransform) + options.text;
-                        if (!config.sassCompileClient) {
+                        if (config.sassCompileBrowser) {
                             getImports(options.text, compileCallback);
                         } else {
                             compileCallback();

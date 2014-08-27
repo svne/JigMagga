@@ -4,13 +4,15 @@
     "version": "0.1.0",
     "devDependencies": {
         "qunit": "~1.10.0",
-        "funcunit": "https://github.com/bitovi/funcunit/archive/v2.0.4.tar.gz"
+        "funcunit": "https://github.com/bitovi/funcunit/archive/v2.0.4.tar.gz",
+        "qunit-tap": "1.4.2"
     },
     "dependencies": {
-        "canjs": "2.0.7",
+        "canjs": "2.1.2",
         "jquery-old": "jquery#1.11.0",
         "jquery": "jquery#~2.0.3",
         "jquerypp": "1.0.1",
         "jstorage": "0.4.8"
+
     }
 }

@@ -805,6 +805,7 @@
      *
      */
     steal.type("conf js", function (options, success, error) {
+        console.log(options);
         var domain,
             stealToUri,
             config = JSON.parse(options.text),

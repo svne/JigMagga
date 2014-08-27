@@ -188,13 +188,13 @@ module.exports = function(grunt) {
                     ]
                 }
             },
-            test: {
+            build: {
                 options: {
                     questions: [
                         {
-                            config: "generator.test.namespace",
+                            config: "build.namespace",
                             type: "input",
-                            message: "Please set the namespace of the project:",
+                            message: "Which namespace you want to build:",
                             default: function(answer) {
                                 if (answer['generator.template'] === 'project') {
                                     return;
@@ -204,16 +204,52 @@ module.exports = function(grunt) {
                             filter: function (value) {
                                 return value.toLowerCase();
                             }
-                        }
+                        },
+                        {
+                            config: "build.domain",
+                            type: "list",
+                            choices: function(answers) {
+                                // print out all domains in the current namespace/page
+                                var result = walker.getAllDomains(answers['generator.build.namespace']);
+
+                                result.unshift('default');
+                                return result;
+                            },
+                            message: "Which domain you want to build:",
+                            filter: function (value) {
+                                return value.toLowerCase();
+                            },
+                            when: function (answers) {
+                                return answers['generator.template'] === 'page';
+                            }
+                        },
+                        {
+                            config: "generator.domain",
+                            type: "list",
+                            choices: function(answers) {
+                                var result = walker.getAllPagesInDomains(answers['generator.namespace']);
+                                // print out all domains and domains/pages in the current namespace/page (all with a conf-file inside)
+                                result.unshift({name: "No page", value: "none"});
+                                return result;
+                            },
+                            message: "In which page should the jig be rendered?",
+                            filter: function (value) {
+                                return value.toLowerCase();
+                            },
+                            when: function (answers) {
+                                return answers['generator.template'] === 'jig';
+                            }
+                        },
 
                     ]
+
                 }
             }
         },
         connect: {
             server: {
                 options: {
-                    keepalive: true,
+                    keepalive : true,
                     open: true,
                     middleware:  function (connect, options, middlewares) {
                         
@@ -238,7 +274,7 @@ module.exports = function(grunt) {
                                 res.end();
                             }
                             // compile scsss file on server side (testing phantom)
-                            else if (req.url.indexOf("/compilescss") !== -1) {
+                            else if (req.url.indexOf("/sass/compile") !== -1) {
                                 sass.render({
                                     data: req.body.scss,
                                     success: function(css){
@@ -254,8 +290,8 @@ module.exports = function(grunt) {
                                 var cwd = options.base[0] + "/",
                                     filename = req.url,
                                     filenameSHTML = cwd + filename.replace(/\.html/, ".shtml"),
-                                    defaultBase = cwd + filename.replace(/.*\.[a-z]{2,3}\//, 'yd/page/default/'),
-                                    defaultBaseSHTML = cwd + filename.replace(/.*\.[a-z]{2,3}\//, 'yd/page/default/').replace(/\.html/, ".shtml");
+                                    defaultBase = cwd + filename.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/"),
+                                    defaultBaseSHTML = cwd + filename.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/").replace(/\.html/, ".shtml");
                                 if (fs.existsSync(filename)) {
                                     res.end(ssInclude.parse(filename, fs.readFileSync(filename, {
                                         encoding: "utf8"
@@ -276,7 +312,8 @@ module.exports = function(grunt) {
                                     next();
 
                                 }
-                            } else {
+                            }
+                            else {
                                 next();
                             }
                         });
@@ -285,11 +322,20 @@ module.exports = function(grunt) {
                     }
                 }
             }
+        },
+        qunit: {
+            options: {
+                timeout: 10000,
+                httpBase : "http://localhost:8000"
+            },
+            all: ['**/funcunit.html', '!bower_components/**', '!steal/**']
         }
     });
 
     grunt.loadNpmTasks('grunt-contrib-connect');
     grunt.loadNpmTasks('grunt-prompt');
+    grunt.loadTasks('tasks');
+
 
     grunt.registerTask('generate',
         [
@@ -297,24 +343,24 @@ module.exports = function(grunt) {
             'generator'
         ]);
 
-    grunt.registerTask('test', [
-        'prompt:test',
-        'testem'
-    ]);
+    grunt.registerTask('build',
+        [
+            'prompt:build'
+        ]);
 
-    grunt.registerTask('testem', "Test all files that have a funcunit.html file", function(){
-        var async = this.async(),
-            namespace = grunt.config('generator.test.namespace'),
-            pathToTests,
-            fork = require('child_process').fork,
-            testem;
 
-        pathToTests = namespace ? path.join(__dirname, namespace) : __dirname;
-
-        testem = fork(__dirname + '/node_modules/testem/testem.js', [], {
-            cwd: pathToTests
-        });
+    /**
+     * This is the grunt task for open a grunt connect an test all funcunit suites against this server
+     *
+     * --tap will ouput the result in tap format as a file ./tap.log
+     *
+     */
+    grunt.registerTask('test', "test all funcunit.html suites with phantomjs", function() {
+         grunt.config("connect.server.options.keepalive", false);
+         grunt.config("connect.server.options.open", false);
+         grunt.task.run(["connect", "qunit:all"]);
     });
+
 
     grunt.registerTask("generator", "Project structure generator", function() {
         var generate = require(__dirname + "/generate/generate"),

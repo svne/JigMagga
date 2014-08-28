@@ -695,8 +695,8 @@
                         }
                     }
                 };
-            //TODO use regex that do not require yd/ path and will work with all page paths
-            setConfigs(path.replace(/.*\.[a-z]{2,3}\//, "/yd/page/default/"));
+            //TODO use regex that will work with all page paths
+            setConfigs(path.replace(/^\/([a-z]*)\/page\/.*\.[a-z]{2,3}\//, "/$1/page/default/"));
             setConfigs(path);
             return configs;
         },
@@ -713,7 +713,7 @@
         getDomain = function () {
             var domain = "",
                 path = getPath(),
-                match = path.match(/\/yd\/page\/([^\/]+)\//);
+                match = path.match(/\/[a-z]*\/page\/([^\/]+)\//);
             if (match) {
                 domain = match[1];
             } else {

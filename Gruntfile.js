@@ -160,7 +160,7 @@ module.exports = function(grunt) {
                             },
                             message: "For which domain is this locale?",
                             filter: function (value) {
-                                return value.toLowerCase();
+                                return value;
                             },
                             when: function (answers) {
                                 return answers['generator.template'] === 'locale';

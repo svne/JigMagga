@@ -34,7 +34,7 @@ describe('worker', function () {
     var command = './worker/index.js';
 
     describe('initialization', function () {
-        var args = ['./yd', '-q', '-H'];
+        var args = ['-t', './yd', '-q', '-H'];
 
         it('should start generator subprocess', function (done) {
             var correctMessageRegExp = new RegExp('^started', 'ig');
@@ -144,7 +144,7 @@ describe('worker', function () {
     });
 
     describe('page generation and uploading', function () {
-        var args = ['./yd', '-q', '-H', '-d', 'lieferando.de'];
+        var args = ['-t', './yd', '-q', '-H', '-d', 'lieferando.de'];
 
         var queues = {
             amqpQueue: 'pages.generate.lieferando.de.high'
@@ -182,6 +182,9 @@ describe('worker', function () {
                 }
 
                 if (data.component === 'worker' && uploadedMessageRegExp.test(data.message)) {
+                    workerProcess.stdout.removeAllListeners('data');
+                    workerProcess.stderr.removeAllListeners('data');
+
                     clearTimeout(timeout);
                     done();
                 }
@@ -251,8 +254,7 @@ describe('worker', function () {
             var timeout = setTimeout(function () {
                 callback('process did not upload the message in time');
             }, 30000);
-            worker.stdout.removeAllListeners('data');
-            worker.stderr.removeAllListeners('data');
+
 
             worker.stdout.on('data', function (data) {
                 try{
@@ -261,6 +263,9 @@ describe('worker', function () {
 
                 if (data.component === 'worker' && uploadedMessageRegExp.test(data.message)) {
                     clearTimeout(timeout);
+                    worker.stdout.removeAllListeners('data');
+                    worker.stderr.removeAllListeners('data');
+
                     async.waterfall([
                         getPage.bind(null, url),
                         function (response, body, next) {
@@ -279,7 +284,7 @@ describe('worker', function () {
             });
 
             worker.stderr.on('data', function (data) {
-                console.log('error', data.toString());
+                console.log('ERROR', data.toString());
                 callback(data);
             });
 

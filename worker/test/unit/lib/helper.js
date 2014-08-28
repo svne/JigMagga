@@ -9,9 +9,19 @@ var rewire = require('rewire');
 var sinon = require('sinon');
 var helper = require('../../../lib/helper');
 
-var konphyg = require('konphyg')(__dirname + '/../../../config');
 
-var baseConfig = konphyg.all();
+var baseConfig = {
+    amqp : {
+        "prefixes": {
+            "highprio": ".high",
+            "mediumprio": ".medium",
+            "lowprio": ".low",
+            "default": ".deploy"
+        },
+        "queueBaseName": "pages.generate",
+        "queueErrorBaseName": "pages.generate.error"
+    }
+};
 
 describe('helper', function () {
 

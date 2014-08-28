@@ -21,12 +21,3 @@ node_modules/
 yd/
 yd/*
 steal/
-jm
-abc
-craftbeer
-hello
-testyd
-yd
-worker/config/*.local.json
-worker/logs/*.log
-worker/logs/*.heapsnapshot

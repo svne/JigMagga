@@ -171,6 +171,7 @@ var builder = {
         minify: function () {
             var internalCache = {};
             return es.map(function (data, callback) {
+                console.log("_----->",data.build.minify && data.build.jsgenerate)
                 if (data.build.minify && data.build.jsgenerate) {
                     var browser = data.build.stealConfig.browser;
                     async.mapSeries(data.build.dependencies, function (item, cb) {

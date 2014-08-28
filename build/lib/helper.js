@@ -19,7 +19,7 @@ module.exports = {
             options.namespace = program.namespace || "yd";
             options.namespacePath = path.normalize(__dirname + "/../../" + options.namespace);
             options.jigMaggaPath = path.normalize(__dirname + "/../..");
-            options.basePath = self.getBasePath(program.basepath);
+            options.basePath = self.getBasePath(options.namespace, program.basepath);
             options.defaultPath = options.basePath + "/default";
             options.domain = program.basedomain;
             options.jsgenerate = program.jsgenerate || program.jsgenerate === undefined ? true : false;
@@ -51,7 +51,11 @@ module.exports = {
     getBasePath: function (namespace, basepath) {
         namespace = namespace || "yd";
         basepath = basepath || "page";
-        return  path.normalize(__dirname + "/../../" + namespace + "/" + basepath);
+        var basePath = path.normalize(__dirname + "/../../" + namespace + "/" + basepath);
+        if(!fs.existsSync(basePath)){
+            throw new Error("Basepath not exists: " + basePath);
+        }
+        return basePath;
     },
     /**
      * get a real file from path use also default
@@ -190,9 +194,9 @@ module.exports = {
                     if(item.build.cssgenerate){
                         fs.outputFileSync(fullPath + ".css", item.build.package.css);
                     }
-                    process.stdout.write("Save Files to: ", fullPath);
+                    process.stdout.write("Save Files to: " + fullPath + "\n");
                 } else {
-                    console.warn("Not implement");
+                   console.warn("Not implemented");
                 }
             });
             callback(null, data);

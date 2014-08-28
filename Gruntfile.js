@@ -194,23 +194,14 @@ module.exports = function(grunt) {
                         {
                             config: "build.namespace",
                             type: "input",
-                            message: "Which namespace you want to build:",
-                            default: function(answer) {
-                                if (answer['generator.template'] === 'project') {
-                                    return;
-                                }
-                                return walker.getDefaultNamespace();
-                            },
-                            filter: function (value) {
-                                return value.toLowerCase();
-                            }
+                            message: "Which namespace you want to build:"
                         },
                         {
                             config: "build.domain",
                             type: "list",
                             choices: function(answers) {
                                 // print out all domains in the current namespace/page
-                                var result = walker.getAllDomains(answers['generator.build.namespace']);
+                                var result = walker.getAllDomains(answers['build.namespace']);
 
                                 result.unshift('default');
                                 return result;
@@ -218,28 +209,13 @@ module.exports = function(grunt) {
                             message: "Which domain you want to build:",
                             filter: function (value) {
                                 return value.toLowerCase();
-                            },
-                            when: function (answers) {
-                                return answers['generator.template'] === 'page';
                             }
                         },
                         {
-                            config: "generator.domain",
-                            type: "list",
-                            choices: function(answers) {
-                                var result = walker.getAllPagesInDomains(answers['generator.namespace']);
-                                // print out all domains and domains/pages in the current namespace/page (all with a conf-file inside)
-                                result.unshift({name: "No page", value: "none"});
-                                return result;
-                            },
-                            message: "In which page should the jig be rendered?",
-                            filter: function (value) {
-                                return value.toLowerCase();
-                            },
-                            when: function (answers) {
-                                return answers['generator.template'] === 'jig';
-                            }
-                        },
+                            config: "generator.pages",
+                            type: "input",
+                            message: "Which pages you want generate (you can use regex)"
+                        }
 
                     ]
 

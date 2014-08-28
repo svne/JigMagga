@@ -31,6 +31,13 @@ module.exports = function (source, generator, basePath, program) {
                 return this.emit('err', new error.WorkerError('something wrong with message fields', data.message));
             }
 
+            if (data.message.url && !helper.isUrlCorrect(data.message.url)) {
+                if (_.isFunction(data.queueShift)) {
+                    data.queueShift();
+                }
+                return this.emit('err', new error.WorkerError('something wrong with message url', data.message));
+            }
+
             data.basePath = basePath;
             emitter.emit('new:message', helper.getMeta(data.message));
 

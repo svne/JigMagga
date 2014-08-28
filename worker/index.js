@@ -42,8 +42,6 @@ if (config.main.nodetime) {
     require('nodetime').profile(config.main.nodetime);
 }
 
-var memwatch = require('memwatch');
-
 log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
 
 program
@@ -258,9 +256,15 @@ helper.createChildProcesses(args, function (err, result) {
 
 process.on('uncaughtException', error.getErrorHandler(log, workerErrorHandler));
 
-memwatch.on('leak', function(info) {
-    log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
-});
+
+if (config.main.memwatch) {
+    var memwatch = require('memwatch');
+
+    memwatch.on('leak', function(info) {
+        log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
+    });
+}
+
 
 process.on('SIGTERM', function () {
     log('warn', 'process terminated remotely', {exit: true});

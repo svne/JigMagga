@@ -8,6 +8,7 @@ var rewire = require('rewire');
 
 var WorkerError = require('../../../lib/error').WorkerError;
 var stream = require('../../../lib/streamHelper');
+var hlp = require('../../../lib/helper');
 
 var mainStream = rewire('../../../lib/mainStream');
 var message = require('../../../testData/message.json'); 
@@ -35,7 +36,8 @@ describe('mainStream', function () {
         },
         generateBucketName: function () {
             return 'bucket:name';
-        }
+        },
+        isUrlCorrect: hlp.isUrlCorrect
     };
 
     beforeEach(function () {

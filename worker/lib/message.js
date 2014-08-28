@@ -20,34 +20,32 @@ module.exports = {
      *
      * @param {array} dataArr
      * @param {object} message
-     * @param {object} options
+     * @param {object} program
      */
-    createMessage: function (message, options, domainConfig) {
+    createMessage: function (message, program, domainConfig) {
         domainConfig = domainConfig || {};
 
-        var params = options.values || {
+        var params = program.values || {
                 cityId: message.cityId || undefined,
                 regionId: message.regionId || undefined,
                 districtId: message.districtId || undefined,
                 restaurantId: message.restaurantId || undefined,
                 linkId: message.linkId || undefined,
-                reset: !options.liveuncached ? true : false
+                reset: !program.liveuncached ? true : false
             },
-            locale = options.locale || message.locale;
+            locale = program.locale || message.locale;
 
         return {
             basedomain: message.basedomain,
             domain: domainConfig.domain || message.basedomain,
-            page: options.page || message.page,
-            childpage: message.childpage,
-            version: options.versionnumber,
-            url: options.url || message.url,
+            page: program.page || message.page,
+            childpage: program.childpage || message.childpage,
+            version: program.versionnumber,
+            url: program.url || message.url,
             params: params,
-            queue: options.q,
-            exc: options.exc,
             origMessage: message,
             locale: locale,
-            noMessageAlternatives: options.noMessageAlternatives || undefined
+            noMessageAlternatives: program.noMessageAlternatives || undefined
         };
     },
 

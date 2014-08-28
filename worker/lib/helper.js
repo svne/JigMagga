@@ -13,6 +13,19 @@ var config = require('../config');
 var messageAckStorage = {};
 
 module.exports = {
+
+    /**
+     * check correctness of URL
+     * 
+     * @param  {string} url
+     * @return {boolean}
+     */
+    isUrlCorrect: function (url) {
+        var regexp = new RegExp('[^a-zA-Z0-9-_//]+', 'i');
+
+        return !regexp.test(url);
+    },
+
     /**
      * save queueShift function for some message to message 
      * acknowledge functions storage

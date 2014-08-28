@@ -28,8 +28,6 @@ var WorkerError = error.WorkerError;
 var router = new ProcessRouter(process);
 log('started, pid', process.pid);
 
-var memwatch = require('memwatch');
-
 var config = require('../config');
 
 var messageStream = stream.duplex();
@@ -206,6 +204,10 @@ process.on('uncaughtException', error.getErrorHandler(log, function (err) {
     router.send('error', err);
 }));
 
-memwatch.on('leak', function (info) {
-    log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
-});
+if (config.main.memwatch) {
+    var memwatch = require('memwatch');
+
+    memwatch.on('leak', function (info) {
+        log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
+    });
+}

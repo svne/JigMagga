@@ -26,7 +26,7 @@ craftbeer
 hello
 testyd
 yd
-worker/config/*.local.json
+worker/config/*
 worker/logs/*.log
 worker/logs/*.heapsnapshot
 coverage

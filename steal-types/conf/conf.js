@@ -425,7 +425,7 @@
             }
             if (!steal.config("isBuild")) {
                 if (config["init-pagination-pageNum"]) {
-                    options.text += "window.Yd.request['pageNum'] = " + config["init-pagination-pageNum"] + ";\n";
+                    options.text += "window." + steal.config("namespace") + ".request['pageNum'] = " + config["init-pagination-pageNum"] + ";\n";
                 }
             }
         },
@@ -558,9 +558,7 @@
             var config = {
                     includes: []
                 },
-                includes = [],
-                isTest = steal.config("isTest"),
-                testJig = steal.config("testJig");
+                includes = [];
 
 
             for (var i = 0; i < configs.length; i++) {
@@ -569,18 +567,6 @@
                     for (var j = 0; j < configs[i].includes.length; j++) {
                         if (includes.indexOf(configs[i].includes[j]) === -1) {
                             includes.push(configs[i].includes[j]);
-                        }
-                    }
-                }
-                // check if this is a test and delete all non test jigs
-                if (isTest && configs[i]) {
-                    if (!configs[i].testConf) {
-                        delete configs[i].jigs;
-                    } else if (testJig) {
-                        for (var key in configs[i].jigs) {
-                            if (key !== testJig) {
-                                delete configs[i].jigs[key];
-                            }
                         }
                     }
                 }
@@ -648,14 +634,16 @@
          */
         getConfigPaths = function (path) {
             var configs = [],
+                namespace = getNamespace()
             // get all configs that are in folders - we can bubble up the path (default and domain)
                 setConfigs = function (path) {
-                    var isDefault = path.indexOf("default") !== -1,
-                        dirs = path.split("/");
+                    var dirs = path.split("/"),
+                        confPath;
                     for (var i = 0, dir = "", tempPath = "", len = dirs.length; i < len; i++, dir = dirs[i]) {
                         if (dir && dir.indexOf("html") === -1) {
                             tempPath += "/" + dir;
-                            if (i > (isDefault ? 1 : 2)) {
+                            confPath = tempPath + "/" + dir + ".conf";
+                            if (dir !== namespace && configs.indexOf(confPath) === -1) {
                                 configs.push(tempPath + "/" + dir + ".conf");
                             }
                         }
@@ -663,7 +651,17 @@
                 };
             setConfigs(path.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/"));
             setConfigs(path);
+            setConfigs("/" +  namespace.toLowerCase() + "/page/" + getDomain());
             return configs;
+        },
+        /**
+         * get path from page
+         * @returns {*}
+         */
+        getNamespace = function () {
+            var path = getPath(),
+                namsepsace = path.replace(/^\//, "").split("/")[0];
+            return namsepsace[0].toUpperCase() + namsepsace.slice(1);
         },
         /**
          * get path from page
@@ -675,7 +673,7 @@
             } else if (window.location) {
                 return window.location.pathname;
             } else {
-                throw new Error("No path to build is set!");
+                throw new Error("Conf type loader can´t get a location (url)");
                 return null;
             }
         },
@@ -686,9 +684,11 @@
         getDomain = function () {
             var domain = "",
                 path = getPath(),
-                match = path.match(/\/yd\/page\/([^\/]+)\//);
+                match = path.match(/\/[^\/]*\/page\/([^\/]+)\//);
             if (match) {
                 domain = match[1];
+            } else if(steal.config("domain")){
+                domain = steal.config("domain");
             } else {
                 domain = "default";
                 console.warn("No domain in path / url - use default domain");
@@ -797,6 +797,11 @@
             conf.sass[conf.namespace + "-domain"] = conf.domain ? conf.domain.replace(/\./g, "_") : "default";
             conf.sass[conf.namespace + "-locale"] = conf.locale;
             return conf;
+        },
+        setIsTestConfigWhenFuncunitIsLoaded= function(){
+            if(typeof ___FUNCUNIT_OPENED !== "undefined"){
+                steal.config("isTest", true);
+            }
         };
 
     /**
@@ -805,14 +810,15 @@
      *
      */
     steal.type("conf js", function (options, success, error) {
-        console.log(options);
         var domain,
             stealToUri,
             config = JSON.parse(options.text),
             configs;
+        setIsTestConfigWhenFuncunitIsLoaded();
         if (!config) {
             error("Config can't be parsed");
         }
+        // ignore this config to load in production
         options.ignore = true;
         if (!config.includes) {
             config.includes = [];
@@ -836,7 +842,7 @@
             }
 
             // set local
-            mergedConfig.locale = steal.config("init-locale") || steal.config().env === 'development' && !steal.config("isBuild") && readCookie("yd-dev-locale") || mergedConfig["init-locale"] || (mergedConfig.locales && mergedConfig.locales[0]) || "default";
+            mergedConfig.locale = steal.config("init-locale") || steal.config().env === 'development' && !steal.config("isBuild") && readCookie("locale") || mergedConfig["init-locale"] || (mergedConfig.locales && mergedConfig.locales[0]) || "default";
 
             var messagePOFile = (mergedConfig.namespace || "") + "/locales/" + mergedConfig.domain + "/" + mergedConfig.locale + "/messages.po";
             mergedConfig.localePath = messagePOFile;
@@ -850,7 +856,7 @@
         });
     });
 
-
+    // node export
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = {
             setSassVariables: setSassVariables,

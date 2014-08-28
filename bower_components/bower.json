@@ -8,7 +8,7 @@
         "qunit-tap": "1.4.2"
     },
     "dependencies": {
-        "canjs": "2.1.2",
+        "canjs": "2.1.3",
         "jquery-old": "jquery#1.11.0",
         "jquery": "jquery#~2.0.3",
         "jquerypp": "1.0.1",

@@ -190,7 +190,7 @@ module.exports = {
                     if(item.build.cssgenerate){
                         fs.outputFileSync(fullPath + ".css", item.build.package.css);
                     }
-                    console.log("Save Files to: ", fullPath);
+                    process.stdout.write("Save Files to: ", fullPath);
                 } else {
                     console.warn("Not implement");
                 }
@@ -222,8 +222,7 @@ module.exports = {
                         join = buffer.join("");
                         buffer = [];
                         if(join.length){
-                            var a = JSON.parse(join)
-                            //process.stdout.write("--->" + JSON.stringify(a.build.dependencies[0].id) + "\n");
+                            var a = JSON.parse(join);
                             this.emit("data", a);
                         }
                     }

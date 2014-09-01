@@ -6,15 +6,15 @@
  * Main application module
  *
  * Responsibilities:
- * 
+ *
  * - analyze application arguments
  * - creates generator and uploader child process
- * - creates a message source stream 
+ * - creates a message source stream
  * - parse message add config to it and send them to generator
  * - obtain generated pages from generator process
- * - creates a zip for them if needed 
+ * - creates a zip for them if needed
  * - push them to the uploader via reddis or directly
- * 
+ *
  * @module worker
  */
 
@@ -35,9 +35,12 @@ var amqp = require('./lib/amqp'),
     helper = require('./lib/helper'),
     error = require('./lib/error'),
     stream = require('./lib/streamHelper'),
-    messageSource = require('./lib/messageSource');
+    messageSource = require('./lib/messageSource'),
+    TimeDiff = require('./lib/timeDiff');
 
 var WorkerError = error.WorkerError;
+var timeDiff = new TimeDiff(log);
+var startTimeDiff = timeDiff.create('start');
 
 if (config.main.nodetime) {
     log('connect to nodetime for profiling');
@@ -46,10 +49,10 @@ if (config.main.nodetime) {
 
 log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
 
+// obtain application arguments by parsing command line
 var program = parseArguments(process.argv);
 
 var basePath = (program.target) ? path.join(process.cwd(), program.target) : process.cwd();
-
 
 // get redis Client
 var redisClient = getRedisClient(config.redis, function error(err) {
@@ -58,7 +61,7 @@ var redisClient = getRedisClient(config.redis, function error(err) {
     log('redis client is ready', {redis: true});
 });
 
-//if queue argument exists connect to amqp queues 
+//if queue argument exists connect to amqp queues
 if (program.queue) {
     var connection = amqp.getConnection(config.amqp.credentials);
     var queues = helper.getQueNames(program, config.amqp);
@@ -74,7 +77,7 @@ var getMeta = helper.getMeta;
 
 /**
  * handle non fatal error regarding with message parsing
- * 
+ *
  * @param  {{origMessage: object, message: string, stack: string}} err
  */
 var workerErrorHandler = function (err) {
@@ -105,15 +108,16 @@ var generatorRouter,
 var generatorRoutes = {
     /**
      * generator pipe handler. Invokes for all messages that passes from
-     * generator process via pipe. 
+     * generator process via pipe.
      * Creates a zip archive from upload file list and write it to a disk
      * or send it to the uploader regarding to the value write key of application
-     * 
+     *
      * @param  {{uploadList: Object[], message: object, key: string}} data [description]
      */
-    pipe: function pipeHandler(data) {
+pipe: function pipeHandler(data) {
 
-        var archiverStream,
+        var generateZipTimeDiff = timeDiff.create('generat:zip'),
+            archiverStream,
             destination,
             message,
             key;
@@ -147,6 +151,7 @@ var generatorRoutes = {
                     result = null;
                     data = null;
                     archiverStream = null;
+                    generateZipTimeDiff.stop();
                     next();
                 };
                 var result = {url: message.url, data: data, messageKey: key};
@@ -173,7 +178,7 @@ var generatorRoutes = {
     /**
      * if zip is creating in the generator. Generator just send a link to it
      * to the worker and worker proxies this message to uploader
-     * 
+     *
      * @param  {{zipPath: string, message: object}} data
      */
     'new:zip': function (data) {
@@ -192,6 +197,7 @@ var uploaderRoutes = {
 };
 
 var args = _.clone(process.argv).splice(2);
+
 
 // Creates a generator and uploader child processes,
 // creates a router for them
@@ -221,6 +227,8 @@ helper.createChildProcesses(args, function (err, result) {
     }
 
     var main = mainStream(source, generatorRouter, basePath, program);
+
+    startTimeDiff.stop();
 
     main.on('new:message', function (message) {
         log('filtered message', message);

@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * returns merged configuration from target project that supposed 
+ * returns merged configuration from target project that supposed
  * to contain config folder in it. Module could obtain path to the config
  * using NODE_PROJECT_NAME environment variable or if it is not set - using
  * target argument of application or just current working directory

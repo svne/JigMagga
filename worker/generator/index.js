@@ -20,7 +20,10 @@ var log = require('../lib/logger')('generator', {component: 'generator', process
     generateConfig = require('./lib/generateConfig'),
     generator = require('./lib/generator'),
     ProcessRouter = require('../lib/router'),
-    error = require('../lib/error');
+    error = require('../lib/error'),
+    TimeDiff = require('../lib/timeDiff');
+
+var timeDiff = new TimeDiff(log);
 
 var WorkerError = error.WorkerError;
 
@@ -79,7 +82,7 @@ emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
 /**
  * makes an api call for each message that comming to stream
  * returns the same data object with api call results in apiCallResult field
- * 
+ *
  * @param  {object}   data
  * @param  {Function} next
  */
@@ -87,26 +90,28 @@ var apiStream = es.map(function (data, next) {
     log('[*] send api request', helper.getMeta(data.message));
     // Take first snapshot
     var apiMessageKey = generator.createApiMessageKey(data.key);
+    var apiCallTimeDiff = timeDiff.create('apiCall:message:' + data.message.page);
 
     data.config.apiMessageKey = apiMessageKey;
     generator.apiCalls([data.config], emitter, function (err, res) {
         generator.deleteCachedCall(apiMessageKey);
 
         if (err) {
-            var errorText = format('error in apiCall %j %j ', err, res); 
+            var errorText = format('error in apiCall %j %j ', err, res);
             handleError(errorText, data);
             return next();
         }
         data.apiCallResult = res;
+        apiCallTimeDiff.stop();
         return next(null, data);
     });
 });
 
 var lastLocale = '';
 /**
- * loads locale file for each message if the file for that locale was not 
+ * loads locale file for each message if the file for that locale was not
  * loaded before
- * 
+ *
  * @param  {object}   data
  * @param  {Function} callback
  */
@@ -129,7 +134,7 @@ var saveZipToDisck = function (uploadList, data) {
         message: data.message,
         key: data.key || undefined
     };
-    
+
     log('creating zip file for message', helper.getMeta(data.message));
     var zipPath = helper.getZipName({}, data.message, data.basePath);
     archiveStream
@@ -154,6 +159,8 @@ messageStream
             json,
             uploadPages;
 
+        var generatePageTimeDiff = timeDiff.create('generate:page:' + data.message.page);
+
         knox.S3_BUCKET = knox.S3_BUCKET || data.bucketName;
         try {
 
@@ -168,6 +175,7 @@ messageStream
         } catch (err) {
             return handleError(err.stack || err, data);
         }
+
 
         var result = {
                 message: data.message,
@@ -185,7 +193,7 @@ messageStream
         json = [];
 
         log('upload list length %d', uploadPages.length);
-
+        generatePageTimeDiff.stop();
         //if html files amount is less then 200 send them to the worker
         if (htmlLength < 200) {
             that.emit('data', '');

@@ -8,15 +8,18 @@ var _ = require('lodash'),
     spawn = require('child_process').spawn;
 
 var config = require('../config');
+var log = require('./logger')('worker', {component: 'worker', processId: process.pid}),
+    TimeDiff = require('./timeDiff');
+
+var timeDiff = new TimeDiff(log);
 
 // @type {Object.<string, {count: number, queueShift: function}>} - storage of message acknowledge functions
 var messageAckStorage = {};
 
 module.exports = {
-
     /**
      * check correctness of URL
-     * 
+     *
      * @param  {string} url
      * @return {boolean}
      */
@@ -27,19 +30,21 @@ module.exports = {
     },
 
     /**
-     * save queueShift function for some message to message 
+     * save queueShift function for some message to message
      * acknowledge functions storage
-     * 
+     *
      * @param {{queueShift: ?function, key: ?string}} data
      */
     setAckToStorage: function (data) {
+
         if(!_.isFunction(data.queueShift) || !data.key) {
             return;
         }
         if (!messageAckStorage[data.key]) {
             messageAckStorage[data.key] = {
                 count: 1,
-                queueShift: data.queueShift
+                queueShift: data.queueShift,
+                timeDiff: timeDiff.create('message:' + data.message.page)
             };
         } else {
             messageAckStorage[data.key].count += 1;
@@ -48,9 +53,9 @@ module.exports = {
     },
 
     /**
-     * execute queue acknowledge function and shift message from the queue 
+     * execute queue acknowledge function and shift message from the queue
      * by message key
-     * 
+     *
      * @param  {string} messageKey
      */
     executeAck: function (messageKey) {
@@ -64,13 +69,14 @@ module.exports = {
         }
 
         messageAckStorage[messageKey].queueShift();
-        delete messageAckStorage[messageKey];
+        messageAckStorage[messageKey].timeDiff.stop();
+        messageAckStorage[messageKey] = null;
     },
 
     /**
-     * returns a an object with main queue and error queue names 
+     * returns a an object with main queue and error queue names
      * based on program priority keys, basedomain and prefix
-     * 
+     *
      * @param  {object} program
      * @param  {object} config
      * @return {{amqpQueue: string, amqpErrorQueue: string}}
@@ -116,9 +122,9 @@ module.exports = {
     /**
      * create sub process based on child_process spawn command
      * with pipe and ipc channels enabled.
-     * if callback is present it waits for ready message from a child 
+     * if callback is present it waits for ready message from a child
      * end return process instance in callback
-     * 
+     *
      * @param  {string}   modulePath - path to js file that will be executed like a process
      * @param  {array}    args       - arguments that will be passed to a module
      * @param  {Function} callback
@@ -166,7 +172,7 @@ module.exports = {
      * returns a name of zip archive for a message based on page name, url, locale
      * and current date
      * if write key is a string it uses it like a relative path to the folder with zip files
-     * 
+     *
      * @param  {{write: boolean}} program
      * @param  {{page: string, url: string, locale: string}} message
      * @param  {string} basePath
@@ -188,7 +194,7 @@ module.exports = {
 
     /**
      * returns stream that write input to the zip file name created by getZipName method
-     * 
+     *
      * @param  {{write: boolean}} program
      * @param  {{page: string, url: string, locale: string}} message
      * @param  {string} basePath
@@ -223,7 +229,7 @@ module.exports = {
     /**
      * generate the name of bucket using message basedomain and
      * knox.buckets list from config
-     * 
+     *
      * @param  {{message: {basedomain: string}}} data    [description]
      * @param  {{live: boolean, liveuncached: boolean}} program [description]
      * @return {string}
@@ -243,10 +249,10 @@ module.exports = {
     },
 
     /**
-     * check correctness of message object. It must have basedomain field and this 
+     * check correctness of message object. It must have basedomain field and this
      * domain should not be in the skip list. It should have both url and page fields
      * or should not have both of them
-     * 
+     *
      * @param  {object}  message
      * @return {Boolean}
      */
@@ -257,7 +263,7 @@ module.exports = {
 
     /**
      * create a meta data for log message from message object
-     * 
+     *
      * @param  {object} msg
      * @return {object}
      */
@@ -268,7 +274,7 @@ module.exports = {
     /**
      * get a list of file from folder recursively
      * predicate param is a function that allow to filter files
-     * 
+     *
      * @param  {string}      folderPath  - path to folder
      * @param  {?Function}   predicate   - if exists executed for each file if it returns true file is included to result
      * @param  {Function}    callback
@@ -293,7 +299,7 @@ module.exports = {
 
             files = files.concat(stats);
             next();
-        }); 
+        });
 
         walker.on('errors', function (root, nodeStatsArray, next) {
             next('error while getting all files');

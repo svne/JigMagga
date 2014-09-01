@@ -2,7 +2,7 @@
 
 /**
  * represent a module that listen for new message
- * from pipe ipc and reddis and upload them using 
+ * from pipe ipc and reddis and upload them using
  * upload content or upload file method
  *
  * @module uploader
@@ -17,7 +17,10 @@ var _ = require('lodash'),
 var log = require('../lib/logger')('uploader', {component: 'uploader', processId: String(process.pid)}),
     ProcessRouter  = require('../lib/router'),
     stream = require('../lib/streamHelper'),
-    error = require('../lib/error');
+    error = require('../lib/error'),
+    TimeDiff = require('../lib/timeDiff');
+
+var timeDiff = new TimeDiff(log);
 
 var WorkerError = error.WorkerError;
 
@@ -44,12 +47,12 @@ var handleError = function (text, data) {
 
 
 /**
- * create a stream that read a messages from redis if there is no 
+ * create a stream that read a messages from redis if there is no
  * new messages in redis to upload it increase the timeout between reads
  * if the timeout is more then 5 sec it pauses stream
  * Method tries to find a messages in the redis list and take 50 first of them
- * by range. After obtaining some amount of messages it removes them from the list 
- * 
+ * by range. After obtaining some amount of messages it removes them from the list
+ *
  * @param  {object} client
  * @param  {string} listKey [description]
  * @return {Redable}
@@ -104,9 +107,9 @@ router.addRoutes({
 var uploadsAmount = 0;
 
 /**
- * upload item using uploadFile method if there is a zipPath field 
+ * upload item using uploadFile method if there is a zipPath field
  * and uploadContent if there is a data field
- * 
+ *
  * @param  {data}   data
  * @param  {Function} callback [description]
  */
@@ -114,7 +117,7 @@ var uploadItem = function (data, callback) {
     if (_.isString(data)) {
         data = JSON.parse(data);
     }
-
+    var uploadPageTimeDiff = timeDiff.create('upload:page');
     var next = function (err, res) {
         if (err) {
             handleError(err, {upload: true, url: data.url});
@@ -123,6 +126,7 @@ var uploadItem = function (data, callback) {
             log('success', res, {upload: true, url: data.url, uploadsAmount: uploadsAmount});
             router.send('message:uploaded', data.messageKey);
         }
+        uploadPageTimeDiff.stop();
         callback();
     };
 
@@ -140,7 +144,7 @@ var uploadItem = function (data, callback) {
 
 /**
  * returns stream that upload each message or array of messages
- * 
+ *
  * @param  {object} source
  */
 var uploadStream = function (source) {

@@ -1,9 +1,46 @@
+'use strict';
+
+
 var path = require("path"),
-    util = require("util"),
     es = require('event-stream'),
     extend = require('node.extend'),
-    fs = require('fs-extra'),
-    jmUtil = require('jmUtil');
+    Uploader = require('jmUtil').ydUploader,
+    configMerger = require('./configMerger'),
+    fs = require('fs-extra');
+
+
+var uploaderInstance;
+
+/**
+ * return an instance of uploader
+ *
+ * @param {object} config
+ * @param {string} domain
+ * @param {boolean} isLive
+ * @return {Uploader}
+ */
+var getUploader = function (config, domain, isLive) {
+    var env = isLive ? 'live': 'stage';
+
+    if (uploaderInstance) {
+        return uploaderInstance;
+    }
+
+    var knoxOptions = config.main.knox;
+
+    if (!knoxOptions.S3_BUCKET) {
+        var predefinedDomain = knoxOptions.buckets[env][domain];
+
+        if (!predefinedDomain) {
+            knoxOptions.S3_BUCKET = (isLive ? 'www' : 'stage') + '.' + domain;
+        } else {
+            knoxOptions.S3_BUCKET = predefinedDomain;
+        }
+    }
+
+    uploaderInstance = new Uploader(knoxOptions);
+    return uploaderInstance;
+};
 
 module.exports = {
 
@@ -28,6 +65,7 @@ module.exports = {
             options.page = program.page;
             options.versionnumber = program.versionnumber;
             options.live = program.live;
+            options.upload = program.upload;
             if (!options.domain) {
                 throw new Error("no domain");
             }
@@ -52,7 +90,7 @@ module.exports = {
         namespace = namespace || "yd";
         basepath = basepath || "page";
         var basePath = path.normalize(__dirname + "/../../" + namespace + "/" + basepath);
-        if(!fs.existsSync(basePath)){
+        if (!fs.existsSync(basePath)) {
             throw new Error("Basepath not exists: " + basePath);
         }
         return basePath;
@@ -79,7 +117,7 @@ module.exports = {
             data.build = data.build || {};
             data.build.namespacePath = path.normalize(__dirname + "/../../" + namespace);
             callback(null, data);
-        })
+        });
     },
     /**
      *
@@ -100,7 +138,7 @@ module.exports = {
                 var dataCopy = extend(true, {}, data[i]);
                 this.emit('data', dataCopy);
             }
-        })
+        });
 
     },
     /**
@@ -110,11 +148,11 @@ module.exports = {
     joinPagesIntoSingleStreams: function () {
         var arry = [];
         return es.through(function (data) {
-                arry.push(data)
+                arry.push(data);
             },
             function () {
                 this.emit('data', arry);
-                this.emit('end')
+                this.emit('end');
             });
     },
     /**
@@ -133,7 +171,7 @@ module.exports = {
                     this.emit('data', extend(true, {}, data));
                 }
             }
-        })
+        });
     },
     /**
      *
@@ -143,19 +181,19 @@ module.exports = {
         var selfHelper = this,
             buffer = [];
         return es.through(function write(data) {
-                buffer.push(data)
+                buffer.push(data);
             },
             function end() { //optional
                 var self = this;
                 var timer = setInterval(function () {
                     if (buffer.length && !selfHelper.inProgress) {
                         selfHelper.inProgress = true;
-                        self.emit('data', buffer.pop())
+                        self.emit('data', buffer.pop());
                     } else if (!buffer.length) {
                         clearInterval(timer);
                         self.emit('end');
                     }
-                }, 100)
+                }, 100);
             }
         );
     },
@@ -165,7 +203,7 @@ module.exports = {
             console.log("DONE : ", data.build.page);
             selfHelper.inProgress = false;
             callback(null, data);
-        })
+        });
     },
     loadFileFromStealOptions: function (options) {
         var src = typeof options.src === "string" ? options.src : options.src.path;
@@ -173,14 +211,44 @@ module.exports = {
             encoding: "utf8"
         });
     },
+
+
+    /**
+     * upload content to cdn
+     *
+     * @param {string} fileContent
+     * @param {string} uploadPath
+     * @param {string} extension
+     * @param {{namespace: string, domain: string, live: boolean, jsgenerate: boolean}} buildOptions
+     */
+    uploadContent: function (fileContent, uploadPath, extension, buildOptions) {
+        var config = configMerger.getProjectConfig(buildOptions.namespace);
+        var uploader = getUploader(config, buildOptions.domain, buildOptions.live);
+
+        var contentType = extension === 'js' ? 'application/javascript' : 'text/css';
+
+        uploadPath += '.' + extension;
+
+        uploader.uploadContent(fileContent, uploadPath, {type: contentType}, function (err, res) {
+            if (err) {
+                return process.stdout.write(err);
+            }
+            return process.stdout.write(res + '\n');
+        });
+    },
+
     saveFileToDiskOrUpload: function () {
+        var that = this;
         return es.map(function (data, callback) {
             var fullPath,
+                fileContent,
                 browser,
+                uploadPath,
+                pathToDomain,
                 name;
             data.forEach(function (item) {
                 browser = item.build.browser ? Object.keys(item.build.browser).filter(function (a) {
-                    return a !== "version"
+                    return a !== "version";
                 }).join() + item.build.browser.version : null;
                 name = [];
                 browser && name.push(browser);
@@ -188,23 +256,31 @@ module.exports = {
                 item.build.versionnumber && name.push(item.build.versionnumber);
                 fullPath = item.build.pageHTMLPath.replace(/[^/]*$/, "") + "production-" + name.join("-");
                 if (!item.build.upload) {
-                    if(item.build.jsgenerate){
+                    if(item.build.jsgenerate) {
                         fs.outputFileSync(fullPath + ".js", item.build.package.js);
                     }
-                    if(item.build.cssgenerate){
+                    if(item.build.cssgenerate) {
                         fs.outputFileSync(fullPath + ".css", item.build.package.css);
                     }
                     process.stdout.write("Save Files to: " + fullPath + "\n");
-                } else {
-                   console.warn("Not implemented");
+                }
+
+                uploadPath = fullPath.replace(item.build.jigMaggaPath + '/', '');
+                process.stdout.write("Starting upload to: " + uploadPath + "\n");
+
+                if(item.build.jsgenerate) {
+                    that.uploadContent(item.build.package.js, uploadPath, 'js', item.build);
+                }
+                if(item.build.cssgenerate) {
+                    that.uploadContent(item.build.package.css, uploadPath, 'css', item.build);
                 }
             });
             callback(null, data);
-        })
+        });
     },
     stdoutSingleObjectWithBumper: function () {
         return es.map(function (data, callback) {
-            if(typeof data !== "string"){
+            if (typeof data !== "string") {
                 data = JSON.stringify(data);
             }
             process.stdout.write("\n-||JSON||-\n");
@@ -219,22 +295,22 @@ module.exports = {
             join;
         return es.through(function write(data) {
             split = data.split("\n-||JSON||-\n");
-            if(split.length > 1){
-                for(var i = 0; i < split.length; i++){
+            if (split.length > 1) {
+                for (var i = 0; i < split.length; i++) {
                     buffer.push(split[i]);
-                    if(i !== (split.length -1)){
+                    if (i !== (split.length - 1)) {
                         join = buffer.join("");
                         buffer = [];
-                        if(join.length){
+                        if (join.length) {
                             var a = JSON.parse(join);
                             this.emit("data", a);
                         }
                     }
                 }
-            }else{
+            } else {
                 buffer.push(split.join(""));
             }
 
-        })
+        });
     }
 };

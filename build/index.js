@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * Created by toni meuschke on 7/28/14.
  *
@@ -20,15 +22,13 @@
  *      $ node build/index.js  -s steal -f save.stream
  */
 
-var winston = require('winston'),
-    es = require('event-stream'),
+var es = require('event-stream'),
     configMerger = require('./lib/configMerger.js'),
     helper = require('./lib/helper.js'),
     steal = require('./lib/steal.js'),
     builder = require('./lib/builder.js'),
     program = require('commander'),
-    fs = require('fs'),
-    path = require('path');
+    fs = require('fs');
 
 
 program
@@ -45,16 +45,16 @@ program
     .option('-n, --namespace [value]', 'the namespace of your project')
     .option('-b, --basePath [value]', 'the basepath to your page directory')
     .option('-m, --minify [value]', 'minify css and js Default true', JSON.parse)
-    .option('-u, --upload', 'if upload is not enabled it will save files to disk', JSON.parse)
+    .option('-u, --upload', 'if upload is not enabled it will save files to disk')
     .option('-x, --live [value]', 'will generate for live environment',  JSON.parse)
     .option('-s, --stream [value]', 'pipe a build stream via stdin. The value is the startpoint name.')
     .option('-f, --file [value]', 'The stream input that will be used.')
     .parse(process.argv);
 
 
-if (program.stream) {
-    console.log = function(){/*DISABLED*/}
-    console.warn = function(){/*DISABLED*/}
+if (program.stream && program.stream !== 'save') {
+    console.log = function(){/*DISABLED*/};
+    console.warn = function(){/*DISABLED*/};
 }
 if (program.file) {
     var readStream = fs.createReadStream(program.file);
@@ -100,7 +100,7 @@ else if (program.stream === true) {
         .pipe(configMerger.getAllMergedConfigsFromPages())
         .pipe(steal.getJSAndHTMLFilePath())
         .pipe(es.stringify())
-        .pipe(process.stdout)
+        .pipe(process.stdout);
 
 }
 /**
@@ -136,7 +136,7 @@ else if (program.stream === "js") {
         .pipe(builder.js.translate())
         .pipe(builder.js.minify())
         .pipe(builder.makePackage())
-       // .pipe(helper.stdoutSingleObjectWithBumper());
+        .pipe(helper.stdoutSingleObjectWithBumper());
 
     process.stdin.on('end', function () {
         process.stdin.resume();

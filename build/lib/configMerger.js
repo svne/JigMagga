@@ -1,7 +1,11 @@
+'use strict';
+
+
 var jmUtil = require('jmUtil'),
     es = require('event-stream'),
+    path = require('path'),
+    konphyg = require('konphyg'),
     async = require('async'),
-    helper = require('./helper.js'),
     util = require('util');
 
 
@@ -19,6 +23,8 @@ function callPageConfigUtil() {
         });
     });
 }
+
+var projectConfigStore = {};
 
 
 module.exports = {
@@ -66,8 +72,8 @@ module.exports = {
             }
             data.build.pages = filteredPages;
             data.build.pagesRegex = regex;
-            callback(null, data)
-        })
+            callback(null, data);
+        });
     },
     /**
      * this fn iterate over all build.pages in a stream and will return a stream that include an array with all pages configurations
@@ -78,7 +84,7 @@ module.exports = {
         var self = this;
         return es.map(function (data, callback) {
             if (!data.build || !data.build.basePath || !data.build.domain) {
-                throw Error("Stream need build object with {basePath: \"\", domain: \"\"} ")
+                throw new Error("Stream need build object with {basePath: \"\", domain: \"\"} ");
             }
             async.mapLimit(data.build.pages, 1, function (item, cb) {
                 self.getConfigFromPageItem(item, data.build.basePath, data.build.domain, function (err, result) {
@@ -89,8 +95,23 @@ module.exports = {
             }, function (err, results) {
                 callback(err, results);
             });
-        })
+        });
+    },
+
+    /**
+     * obtains a project config by namespace and cash it in the scope
+     *
+     * @param {string} namespace
+     * @return {object}
+     */
+    getProjectConfig: function (namespace) {
+        if (projectConfigStore[namespace]) {
+            return projectConfigStore[namespace];
+        }
+        var pathToConfig = path.join(__dirname, '../..', namespace, 'config');
+        var config = konphyg(pathToConfig);
+
+        projectConfigStore[namespace] = config.all();
+        return projectConfigStore[namespace];
     }
-
-
 };

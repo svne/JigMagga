@@ -22,6 +22,7 @@ yd/
 yd/*
 steal/
 worker/logs
+worker/config
 coverage/
 newrelic.js
 tmp/*

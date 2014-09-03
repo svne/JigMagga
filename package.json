@@ -41,6 +41,8 @@
     "memwatch": "^0.2.2",
     "mocha": "~1.20.1",
     "mustache": "~0.8.1",
+    "newrelic": "^1.10.3",
+    "request": "^2.40.0",
     "rewire": "~2.1.0",
     "sinon": "~1.10.3",
     "winston": "^0.7.3",
@@ -54,12 +56,17 @@
   ],
   "main": "home",
   "scripts": {
-    "test": "mocha -R spec --recursive ./worker/test",
+    "integration": "NODE_PROJECT_NAME=yd NODE_ENV=test mocha --recursive -t 2000000 -R spec ./worker/test/integration",
+    "unit": "NODE_PROJECT_NAME=yd mocha --recursive -R spec ./worker/test/unit",
+    "coverage": " istanbul cover _mocha -- -R spec --recursive ./worker/test/unit",
+    "test": "npm run unit && npm run integration",
     "install": "node node_modules/bower/bin/bower install --config.cwd=bower_components --config.directory=.",
     "prepublish": "node node_modules/bower/bin/bower install steal=git://github.com/bitovi/legacy-steal.git --config.directory=."
   },
   "dependencies": {
+    "MD5": "^1.2.1",
     "amqp": "^0.2.0",
+    "amqplib": "^0.2.1",
     "archiver": "^0.10.1",
     "async": "^0.9.0",
     "cheerio": "~0.17.0",

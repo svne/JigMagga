@@ -1,65 +1,184 @@
 'use strict';
-var amqp = require('amqp');
 var _ = require('lodash');
+var format = require('util').format;
 var stream = require('./streamHelper');
 
+var amqplib = require('amqplib');
 
+var channel = null;
 
-exports.getStream = function (options) {
+/**
+ * returns amqp channel from global variable if it was created before
+ * or creates it and push to the global var
+ * 
+ * @param  {Promise}   connection
+ * @param  {Function}  callback
+ */
+var getChannel = function (connection, queue, callback) {
+    if (queue.channel) {
+        return process.nextTick(function () {
+            callback(null, queue.channel);
+        });
+    }
 
-    var duplex = stream.duplex();
-
-    var _source =  {
-        queue: options.queue,
-        connection: options.connection,
-        exchange: options.exchange
-    };
-
-    var queueOptions = {
-        durable: true,
-        autoDelete: false
-    };
-
-
-    _source.connection.on('ready', function () {
-        var exchange = _source.connection.exchange('amq.direct', {type: 'direct'});
-
-        exchange.on('open', function () {
-
-            _source.connection.queue(_source.queue, queueOptions, function (queue) {
-                duplex.emit('ready', _source.queue);
-                queue.bind(_source.exchange, _source.queue);
-
-                queue.subscribe({ack: true, prefetchCount: 1}, function (data) {
-
-                    if (options.shiftAfterReceive) {
-                        duplex.write(data);
-                        return queue.shift();
-                    }
-
-                    if (_.isArray(data) && data.length === 1) {
-                        data[0].queueShift = queue.shift.bind(queue);
-                    } else {
-                        data.queueShift = queue.shift.bind(queue);
-                    }
-                    duplex.write(data);
-                    data = null;
-                });
+    connection
+        .then(function (connected) {
+            return connected.createChannel().then(function (ch) {
+                queue.channel = ch;
+                return callback(null, ch);
             });
+        })
+        .catch(function (err) {
+           return callback(err); 
+        });
+};
+
+
+/**
+ * module representing an amqp
+ * @module amqp
+ */
+
+/**
+ * returns a stream from a amqp queue each message from the 
+ * queue is throed to the stream
+ * - shiftAfterReceive means whether the message should be shifted from queue just after receiving
+ *   or queueShift method should be added to the message object
+ * - prefetch is an amount of message that should be consumed by the amqp client without acknowledge
+ * 
+ * @param  {{connection: Promise, exchange: string, queue: string, prefetch: number, shiftAfterReceive: boolean}} options
+ * @return {Stream}
+ */
+var getStream = exports.getStream = function (options) {
+    options = options || {};
+    var duplex = stream.duplex();
+    var connection = this.connection || options.connection;
+    var queue = this.name || options.queue;
+    var prefetch = this.options.prefetch || options.prefetch;
+    var that = this;
+    // options.exchange = options.exchange || 'amq.direct';
+    
+    getChannel(connection, this, function (err, channel) {
+        if (err) {
+            throw new Error(err);
+        }
+        var ok = channel.assertQueue(queue, {durable: true});
+        if (prefetch) {
+            ok = ok.then(function () {
+                channel.prefetch(prefetch);
+            });
+        }
+
+        ok = ok.then(function () {
+            duplex.emit('ready', queue);
+            channel.on('close', function () {
+                console.log('CHANNEL IS CLOASING');
+            });
+
+            channel.on('error', function () {
+                console.log('ERROR IN CHANNEL');
+                console.log(arguments);
+            });
+
+            channel.consume(queue, function (message) {
+                if (!message) {
+                    return;
+                }
+
+                if (options.shiftAfterReceive) {
+                    duplex.write(message);
+                    return channel.ack(message);
+                }
+                
+                message.queueShift = channel.ack.bind(channel, message);
+                return duplex.write(message);
+            }).then(function (res) {
+                that.consumerTag = res.consumerTag;
+            });
+            
         });
     });
 
     return duplex;
 };
 
+var cancelStream = function (callback) {
+    if (!this.channel || !this.consumerTag) {
+        throw new Error('can not destroy stream before it is ready to consume');
+    }
+    var that = this;
 
-exports.getConnection = function (config) {
-    config.heartbeat = 30;
+    this.channel.cancel(this.consumerTag)
+        .then(function (ok) {
+            that.channel = null;
 
-    return amqp.createConnection(
-        config,
-        {
-            reconnect: false
-        }
-    );
+            callback(null, ok);
+        }, callback);
 };
+
+/**
+ * publish message to queue 
+ * 
+ * @param  {*} message
+ * @param  {?object} options
+ */
+var publish = exports.publish = function (message, options) {
+    options = options || {};
+    var contentType = options.contentType || 'text/plain';
+    
+    message = _.isString(message) ? message : JSON.stringify(message);
+    var queue = options.queue || this.name;
+
+    this.connection
+        .then(function (connected) {
+            return connected.createChannel().then(function (channel) {
+                var ok = channel.assertQueue(queue, {durable: true});
+
+                return ok.then(function () {
+                    message = new Buffer(message);
+                    channel.sendToQueue(queue, message, {contentType: contentType});
+                    channel.close();
+                });
+            });
+        })
+        .catch(function (err) {
+            throw new Error(err);
+        });
+};
+
+
+/**
+ * returns amqp connection promise
+ * 
+ * @param  {{login: string, password: string, host: string, vhost: string}} config
+ * @return {Promise}
+ */
+exports.getConnection = function (config) {
+
+    var amqpUrl = format('amqp://%s:%s@%s/%s',
+        config.login, config.password, config.host, config.vhost);
+
+    return amqplib.connect(amqpUrl);
+};
+
+var QueuePool = function (queues, connection, options) {
+    var that = this;
+    options = options || {};
+
+    _.each(queues, function (queue, name) {
+        
+        that[name] = {
+            name: queue,
+            connection: connection,
+            getStream: getStream,
+            cancelStream: cancelStream,
+            publish: publish,
+            options: options,
+            channel: null,
+            consumerTag: null
+        };
+    });
+};
+
+exports.QueuePool = QueuePool;
+

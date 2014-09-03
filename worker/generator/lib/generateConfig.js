@@ -8,7 +8,29 @@ var deepExtend = require('deep-extend');
 
 var viewHelper = require("./view");
 
+/**
+ * provide module that generating config
+ * @module generateConfig
+ */
 
+
+/**
+ * @name WorkerMessage
+ * @type {object}
+ * @property {string} locale 
+ * @property {string} page 
+ * @property {string} basedomain 
+ * @property {string} domain 
+ */
+
+
+/**
+ * init view container object
+ * 
+ * @param  {WorkerMessage} message
+ * @param  {string} projectName
+ * @return {object}
+ */
 var initViewContainer = function (message, projectName) {
     var viewContainer = _.cloneDeep(viewHelper.helper);
 
@@ -22,22 +44,41 @@ var initViewContainer = function (message, projectName) {
     return viewContainer;
 };
 
+/**
+ * checks if error has code ENOENT that means that file not exists
+ * 
+ * @param  {{code: string}}}  err - error object
+ * @return {Boolean}
+ */
 var isFileNotExist = function (err) {
     return err.code === 'ENOENT';
 };
 
+
+/**
+ * get template from domain folder or from default folder
+ * replace include tags inside template
+ * 
+ * @param  {WorkerMessage}   msg - message object
+ * @param  {string}   basePath - path to folder that contains 'page' folder with configs
+ * @param  {Function} callback
+ */
 var obtainTemplate = function (msg, basePath, callback) {
     var domainPagePath = path.join(basePath, 'page', msg.basedomain, msg.page),
         defaultPagePath = path.join(basePath, 'page/default', msg.page),
         headLang = msg.locale.substr(0, 2),
         country = msg.locale.substr(-2);
 
-    function tplPath(pagePath) {
+    
+    function tplPath(pageFolderPath) {
+        if (msg.origMessage.staticOld) {
+            return pageFolderPath + '.html';
+        }
         var page = msg.page;
 
         page = page.split('/').reverse()[0];
 
-        return path.join(pagePath, page + '.html');
+        return path.join(pageFolderPath, page + '.html');
     }
 
     function next(err, res) {
@@ -45,7 +86,6 @@ var obtainTemplate = function (msg, basePath, callback) {
             return callback(err);
         }
         res.content = res.content.toString('utf-8');
-
         res.content = res.content.replace(/<!--#include\s+virtual="(.*?)"\s*-->/g, function (_str, include) {
             return "<% include " + include + " %>";
         });
@@ -54,7 +94,6 @@ var obtainTemplate = function (msg, basePath, callback) {
             var htmlTag = format('<html lang="%s" id="%s"', headLang, country.toLowerCase());
             res.content = res.content.replace(/<html/g, htmlTag);
         }
-
         callback(null, res);
     }
 
@@ -74,7 +113,12 @@ var obtainTemplate = function (msg, basePath, callback) {
     });
 };
 
-
+/**
+ * generate uploadUrl and uploadS3 flag
+ * 
+ * @param  {{message: WorkerMessage, config: {pages: object[]}}} data
+ * @return {{uploadUrl: string, uploadS3: boolean}}
+ */
 var generateUrls = function (data) {
     var result = {},
         url = data.message.url,
@@ -104,6 +148,11 @@ var generateUrls = function (data) {
     return result;
 };
 
+/**
+ * generate predefined object that will be used in the template generation
+ * @param  {{message: WorkerMessage, config: object}} data
+ * @return {object}
+ */
 var generatePredefined = function (data) {
     var country = data.message.locale.substr(-2),
         headLang = data.message.locale.substr(0, 2),
@@ -119,6 +168,13 @@ var generatePredefined = function (data) {
     return predefined;
 };
 
+/**
+ * extend config with domain-pages if them exist in the config
+ * 
+ * @param  {object} config
+ * @param  {string} basedomain
+ * @return {object}
+ */
 var extendWithDomainPage = function (config, basedomain) {
     var result = {};
 
@@ -131,6 +187,13 @@ var extendWithDomainPage = function (config, basedomain) {
     return result;
 };
 
+/**
+ * extend config with child-pages if them exists
+ * 
+ * @param  {object} config
+ * @param  {string} childpage
+ * @return {object}
+ */
 var extendWithChildPage = function (config, childpage) {
     if (!childpage) {
         return config;
@@ -143,23 +206,44 @@ var extendWithChildPage = function (config, childpage) {
     return deepExtend({}, config, config['child-pages'][childpage]); 
 };
 
-
+/**
+ * extends config with viewContainer, predefined object, domain page, child pages
+ * and obtain a template
+ * 
+ * @param  {{message: WorkerMessage, config: {locales: array}}}   data
+ * @param  {object}   workerConfig
+ * @param  {Function} callback
+ */
 module.exports = function (data, workerConfig, callback) {
     var message = data.message,
+        isStaticOld = Boolean(data.message.origMessage.staticOld),
         localConfig = data.config,
+        mainLocale = data.config['init-locale'] || data.config.locales[0],
 //        exc = message.exc,
         projectName = data.basePath.split('/').reverse()[0],
         viewContainer = initViewContainer(message, projectName), // init view container
         pageWithoutPath = message.page.replace(/^.*\//, ""),
-        domainPagePath = format("%s/page/%s/%s/", projectName, message.basedomain, message.page);
+        domainPagePath;
+
+    if (isStaticOld) {
+        domainPagePath = path.join(projectName, 'page', message.basedomain, 'static-old/');
+    } else {
+        domainPagePath = format("%s/page/%s/%s/", projectName, message.basedomain, message.page);        
+    }
+
+    data.locale = data.message.locale;
+
+    data.isMainLocale = data.locale === mainLocale;
 
     async.waterfall([
         obtainTemplate.bind(null, message, data.basePath),
         function (result, next) {
             localConfig.template = result.content;
-//            result.path = result.path.replace(data.basePath, '/' + projectName);
+            if (isStaticOld) {
+                result.path = path.join(result.path, '..');
+            }
 
-            localConfig.pagePath = path.join(result.path, '/');
+            localConfig.pagePath =  path.join(result.path, '/');
             viewContainer.filename = path.join(result.path, pageWithoutPath + '.html');
 
             if (message.version) {
@@ -179,7 +263,6 @@ module.exports = function (data, workerConfig, callback) {
                 locale: data.locale,
                 jsonUrlPostfix: data.isMainLocale ? "" : "/" + data.locale
             });
-
             localConfig = extendWithDomainPage(localConfig, message.basedomain);
 
             localConfig.predefined = generatePredefined(data);
@@ -193,16 +276,4 @@ module.exports = function (data, workerConfig, callback) {
             next(null, data);
         }
     ], callback);
-
-//    if (exc) {
-//        localConfig["upload-worker"] = function (message) {
-//            message.bucket = knoxConf.S3_BUCKET;
-//            message.domain = domain;
-//            message.deleteAfter = true;
-//            console.log("Writing to upload queue", message.from);
-//            exc.publish(amqpQueueUploder, JSON.stringify(message), { contentType: 'application/json'});
-//        };
-//    } else {
-//        localConfig["upload-worker"] = false;
-//    }
 };

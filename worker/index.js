@@ -1,23 +1,46 @@
 #! /usr/local/bin/node
 'use strict';
 
-var _ = require('lodash'),
-    es = require('event-stream'),
+
+/**
+ * Main application module
+ *
+ * Responsibilities:
+ *
+ * - analyze application arguments
+ * - creates generator and uploader child process
+ * - creates a message source stream
+ * - parse message add config to it and send them to generator
+ * - obtain generated pages from generator process
+ * - creates a zip for them if needed
+ * - push them to the uploader via reddis or directly
+ *
+ * @module worker
+ */
+
+var fs = require('fs'),
+    _ = require('lodash'),
     path = require('path'),
     getRedisClient = require('./lib/redisClient'),
-    program = require('commander');
-
-var amqp = require('./lib/amqp'),
-    memwatch = require('memwatch'),
-    log = require('./lib/logger')('worker', {component: 'worker', processId: String(process.pid)}),
-    ProcessRouter = require('./lib/router'),
-    configMerge = require('./lib/configMerge'),
-    messageHelper = require('./lib/message'),
-    archiver = require('./lib/archiver'),
-    helper = require('./lib/helper'),
-    stream = require('./lib/streamHelper');
+    parseArguments = require('./lib/parseArguments');
 
 var config = require('./config');
+
+
+var amqp = require('./lib/amqp'),
+    log = require('./lib/logger')('worker', {component: 'worker', processId: String(process.pid)}),
+    ProcessRouter = require('./lib/router'),
+    mainStream = require('./lib/mainStream'),
+    archiver = require('./lib/archiver'),
+    helper = require('./lib/helper'),
+    error = require('./lib/error'),
+    stream = require('./lib/streamHelper'),
+    messageSource = require('./lib/messageSource'),
+    TimeDiff = require('./lib/timeDiff');
+
+var WorkerError = error.WorkerError;
+var timeDiff = new TimeDiff(log);
+var startTimeDiff = timeDiff.create('start');
 
 if (config.main.nodetime) {
     log('connect to nodetime for profiling');
@@ -26,203 +49,213 @@ if (config.main.nodetime) {
 
 log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
 
-program
-    .option('-c, --cityId <n>', 'define location by cityId', parseInt)
-    .option('-s, --regionId <n>', 'define location by regionId', parseInt)
-    .option('-o, --districtId <n>', 'define location by districtId', parseInt)
-    .option('-l, --linkId <n>', 'define internlinkpage by linkId', parseInt)
-    .option('-v, --values [values]', 'specify values as JSON')
-    .option('-r, --restaurantId <n>', 'define restaurant by restaurantId', parseInt)
-    .option('-R, --satelliteId <n>', 'define restaurant by satelliteId', parseInt)
-    .option('-b, --versionnumber [value]', 'specify build version as float')
-    .option('-q, --queue', 'start program to listen on queue')
-    .option('-e, --errorqueue', 'use error queue')
-    .option('-E, --errorerrorqueue', 'use errorerror queue')
-    .option('-i, --static', 'generate all new static pages (info-center)')
-    .option('-y, --staticold', 'generate all old static pages (sem)')
-    .option('-d, --basedomain [value]', 'specify the domain')
-    .option('-p, --page [value]', 'define the template to be generated')
-    .option('-k, --childpage [value]', 'define a child page that should overwrite the parent element')
-    .option('-x, --live', 'use live db and queue - normally staging is used')
-    .option('-X, --liveuncached', 'use live db and uncache queue')
-    .option('-u, --url [value]', 'define the url to be generated')
-    .option('-H, --highprio', 'use the high priority queue')
-    .option('-M, --mediumprio', 'use the high priority queue')
-    .option('-L, --lowprio', 'use the high priority queue')
-    .option('-V, --postfix', 'use this version postfix queue')
-    .option('-a, --archive', 'archive file before upload')
-    .option('-D, --stageversion', 'upload file to subdomain with current branch name (2.5 -> stage-2-5.lieferando.de)')
-    .option('-I, --locale <n>', 'use given locale')
-    .option('-w, --write [value]', 'write to disk the archive with generated files instead of upload them, path should be provided')
-    .parse(process.argv);
+// obtain application arguments by parsing command line
+var program = parseArguments(process.argv);
 
+var basePath = (program.target) ? path.join(process.cwd(), program.target) : process.cwd();
 
-var redisClient = getRedisClient(function error(err) {
+// get redis Client
+var redisClient = getRedisClient(config.redis, function error(err) {
     log('redis Error %j', err, {redis: true});
 }, function success() {
     log('redis client is ready', {redis: true});
 });
 
-var basePath = (program.args[0]) ? path.join(process.cwd(), program.args[0]) : process.cwd();
+//if queue argument exists connect to amqp queues
+if (program.queue) {
+    var connection = amqp.getConnection(config.amqp.credentials);
+    var queues = helper.getQueNames(program, config.amqp);
 
-//main stream
-var mainStream = function (source, generator) {
-    source
-        .pipe(stream.filter(function (data) {
-            if (!helper.isMessageFormatCorrect(data.message)) {
-                log('error', 'something wrong with message fields');
-                return false;
-            }
-            data.basePath = basePath;
-            return true;
-        }))
-        .pipe(stream.log(log, '[FILTERED:MESSAGE]'))
+    log('queues in pool %j', queues, {});
+    var queuePool = new amqp.QueuePool(queues, connection, {prefetch: config.amqp.prefetch});
+}
 
-        .pipe(configMerge.getConfigStream())
-        .pipe(messageHelper.pageLocaleSplitter())
 
-        //add page configs for those messages that did not have page key before splitting
-        .pipe(configMerge.getConfigStream())
-        .pipe(es.through(function (message) {
-            message.message = messageHelper.createMessage(message.message, program, message.config);
-            message.bucketName = helper.generateBucketName(message, program);
-            this.emit('data', message);
-        }))
-        .on('data', function (data) {
-            if (data.queueShift) {
-                data.queueShift();
-                delete data.queueShift;
-            }
-            log('send to generator', {page: data.message.page, url: data.message.url, locale: data.message.locale});
-            generator.send('new:message', data);
-        })
-        .on('error', function (err) {
-            log('error', 'main stream %j', err, {error: true});
-        });
+log('base project path is %s', basePath);
+
+var getMeta = helper.getMeta;
+
+/**
+ * handle non fatal error regarding with message parsing
+ *
+ * @param  {{origMessage: object, message: string, stack: string}} err
+ */
+var workerErrorHandler = function (err) {
+    console.log('workerErrorHandler');
+    log('error', 'Error while processing message: %j',  err, err.originalMessage, {});
+    if (!program.queue) {
+        return;
+    }
+
+    //if there is shift function for this message in the storage shift message from main queue
+    helper.executeAck(err.messageKey);
+
+    var originalMessage = err.originalMessage || {};
+    originalMessage.error = err.message;
+
+    queuePool.amqpErrorQueue.publish(originalMessage);
+
+    if (!program.live && !originalMessage.upload) {
+        queuePool.amqpDoneQueue.publish(originalMessage);
+    }
 };
 
 var generatorRouter,
-    uploaderRouter;
+    uploaderRouter,
+    uploader,
+    generator;
 
 var generatorRoutes = {
-    pipe: function (data) {
-        var uploadFileList,
+    /**
+     * generator pipe handler. Invokes for all messages that passes from
+     * generator process via pipe.
+     * Creates a zip archive from upload file list and write it to a disk
+     * or send it to the uploader regarding to the value write key of application
+     *
+     * @param  {{uploadList: Object[], message: object, key: string}} data [description]
+     */
+pipe: function pipeHandler(data) {
+
+        var generateZipTimeDiff = timeDiff.create('generat:zip'),
             archiverStream,
             destination,
-            message;
+            message,
+            key;
 
-        data = JSON.parse(data);
-        message = data.message;
-        var metadata = {page: message.page, url: message.url, locale: message.locale};
-        log('message from pipe generator', metadata);
-
-        uploadFileList = data.json.reduce(function (result, currentItem) {
-            return result.concat(currentItem);
-        }, data.html);
-
-        data = null;
-        archiverStream = archiver.bulkArchive(uploadFileList);
-
-        if (program.write) {
-            destination = helper.createSaveZipStream(program, message, basePath);
-        } else {
-            destination = stream.accumulate(function(err, data, next) {
-                uploadFileList = [];
-                var result = {url: message.url, data: data};
-                if (program.queue) {
-                    uploaderRouter.send('reduce:timeout');
-                    return redisClient.rpush(config.redis.keys.list, JSON.stringify(result), function () {
-                        next();
-                        log('generated message sended to redis', metadata)
-                        result = null;
-                        data = null;
-                        archiverStream = null;
-                    });
-                }
-                log('[WORKER] send message to upload', metadata);
-                uploaderRouter.send('pipe', result);
-                result = null;
-                data = null;
-                archiverStream = null;
-                next();
-            });
+        try {
+            data = JSON.parse(data);
+        } catch (e) {
+            log('error', e);
+            fs.writeFileSync(__dirname + '/../yd/tmp/pipeError', data);
+            process.kill();
         }
 
-        archiverStream.pipe(destination)
-            .on('finish', function () {
-                if (program.write) {
-                    return console.log('saved!!');
-                }
-                console.log('sanded to uploader');
+        message = data.message;
+        key = data.key;
+        log('message from pipe generator, key %s', key,  getMeta(message));
+
+        //send message to done queue
+        queuePool.amqpDoneQueue.publish(message.origMessage);
+
+        archiverStream = archiver.bulkArchive(data.uploadList);
+        data = null;
+        if (program.write) {
+            destination = helper.createSaveZipStream(program, message, basePath);
+            destination.once('finish', function () {
+                log('saved on disk', getMeta(message));
             });
-    }
+        } else {
+            destination = stream.accumulate(function(err, data, next) {
+                var that = this;
+                var cb =  function () {
+                    result = null;
+                    data = null;
+                    archiverStream = null;
+                    generateZipTimeDiff.stop();
+                    next();
+                };
+                var result = {url: message.url, data: data, messageKey: key};
+                if (program.queue) {
+                    uploaderRouter.send('reduce:timeout');
+                    return redisClient.rpush(config.redis.keys.list, JSON.stringify(result), function (err) {
+                        if (err) {
+                            return that.emit('error', new WorkerError(err.message || err), data.message.origMessage);
+                        }
+                        log('generated message sended to redis', getMeta(message));
+                        cb();
+                    });
+                }
+                log('[WORKER] send message to upload', getMeta(message));
+                uploaderRouter.send('pipe', result);
+                cb();
+            });
+        }
+        var tc = stream.tryCatch();
+
+        tc(archiverStream).pipe(tc(destination));
+        tc.catch(workerErrorHandler);
+    },
+    /**
+     * if zip is creating in the generator. Generator just send a link to it
+     * to the worker and worker proxies this message to uploader
+     *
+     * @param  {{zipPath: string, message: object}} data
+     */
+    'new:zip': function (data) {
+        log('new zip saved by generator', helper.getMeta(data.message));
+        uploaderRouter.send('new:zip', {url: data.message.url, zipPath: data.zipPath});
+    },
+    error: workerErrorHandler
+};
+
+var uploaderRoutes = {
+    'message:uploaded': function (key) {
+        helper.executeAck(key);
+        log('message uploaded %s', key);
+    },
+    error: workerErrorHandler
 };
 
 var args = _.clone(process.argv).splice(2);
 
+
+// Creates a generator and uploader child processes,
+// creates a router for them
 helper.createChildProcesses(args, function (err, result) {
     if (err) {
-        console.log(err);
-        return;
+        throw new Error(err);
     }
 
-    var uploader = result.uploader,
-        generator = result.generator;
+    uploader = result.uploader,
+    generator = result.generator;
 
     generatorRouter = new ProcessRouter(generator);
     uploaderRouter = new ProcessRouter(uploader);
 
     generatorRouter.addRoutes(generatorRoutes);
+    uploaderRouter.addRoutes(uploaderRoutes);
 
     var source;
 
+    //creates a message source and pass it to the mainStream function
     if (program.queue) {
-        var connection = amqp.getConnection(config.amqp.credentials);
-        var queues = helper.getQueNames(program, config.amqp);
-
-        log('queues %j', queues, {});
-
-        var queueStreams = _.values(queues).map(function (queueName) {
-            var amqpStream = amqp.getStream({
-                queue: queueName,
-                exchange: 'amq.direct',
-                connection: connection
-            });
-            amqpStream.on('ready', function (queue) {
-                log('%s is connected', queue);
-            });
-            return amqpStream;
-        });
-
-        source = es.merge.apply(es, queueStreams)
-            .pipe(messageHelper.getMessageParser())
-            .pipe(stream.log(log, '[PARSED:MESSAGE]'));
-
+        source = messageSource.getQueueSource(program, log, queuePool);
+    } else if (program.staticold) {
+        source = messageSource.getStaticOldSource(program, log, basePath);
     } else {
-        var data = {
-            message: _.pick(program, ['basedomain', 'url', 'page', 'locale'])
-        };
-        var values = {};
-        if (program.values) {
-            values = JSON.parse(program.values);
-        } else {
-            values = _.pick(program, function (value, key) {
-                return (new RegExp('.*Id$', 'ig')).test(key);
-            });
-        }
-        data.message = _.assign(data.message, values);
-        source = es.readArray([data]);
+        source = messageSource.getDefaultSource(program, log);
     }
 
-    mainStream(source, generatorRouter);
+    var main = mainStream(source, generatorRouter, basePath, program);
 
+    startTimeDiff.stop();
+
+    main.on('new:message', function (message) {
+        log('filtered message', message);
+    });
+
+    main.on('send:message', function (message) {
+        log('send to generator', message);
+    });
+
+    main.on('error:message', workerErrorHandler);
 });
 
-process.on('uncaughtException', function (err) {
-    log('error', '%s %j', err, err.stack, {uncaughtException: true});
-    process.kill();
-});
+process.on('uncaughtException', error.getErrorHandler(log, workerErrorHandler));
 
-memwatch.on('leak', function(info) {
-    log('warning', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
+
+if (config.main.memwatch) {
+    var memwatch = require('memwatch');
+
+    memwatch.on('leak', function(info) {
+        log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
+    });
+}
+
+
+process.on('SIGTERM', function () {
+    log('warn', 'process terminated remotely', {exit: true});
+    uploader.kill();
+    generator.kill();
+    process.exit();
 });

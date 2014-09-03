@@ -1,3 +1,5 @@
+'use strict';
+
 var util = require('util');
 var fs = require('fs');
 var placeholderHelper = require("./placeholders.js");
@@ -18,6 +20,12 @@ var getRequestId = function (options) {
 
 exports.clearCache = function () {
     cachedCalls = {};
+};
+
+exports.deleteCachedCall = function (apiMessageKey) {
+    if (cachedCalls[apiMessageKey]) {
+        delete cachedCalls[apiMessageKey];
+    }
 };
 
 exports.addCall = function (apicall, config, paramsFromQueue, apiconfig) {
@@ -47,7 +55,7 @@ exports.addCall = function (apicall, config, paramsFromQueue, apiconfig) {
     var url = util.format('http://%s:%s/%s/%s%s', apiconfig.hostname, apiconfig.port, apiconfig.base, apiconfig.version, path);
 
     // check if there is a schema in the config
-    paramsSchema = null;
+    var paramsSchema = null;
     if (config.apicalls[apicall].requestSchema != undefined) {
         var schemaFile = config.apicalls[apicall].requestSchema.substr(2);
         paramsSchema = JSON.parse(fs.readFileSync(schemaFile, "utf-8"));
@@ -86,7 +94,8 @@ exports.addCall = function (apicall, config, paramsFromQueue, apiconfig) {
         success: true, // marker, that this call has not been failed
         result: null, // hold the returned data from api
         resultCode: 200,
-        viewParam: apicall // key in viewContainer to hold data
+        viewParam: apicall, // key in viewContainer to hold data
+        apiMessageKey: apiconfig.apiMessageKey // unique key for message
     };
 };
 
@@ -96,40 +105,46 @@ exports.doCall = function (options, callback) {
         return callback(null, options);
     }
     requestId = getRequestId(options);
+    var messageKey = options.apiMessageKey;
 
-    if (cachedCalls[requestId]) {
-        return cachedCalls[requestId].promise.done(function(result) {
+    if (!cachedCalls[messageKey]) {
+        cachedCalls[messageKey] = {};
+    }
+
+    if (cachedCalls[messageKey][requestId]) {
+        return cachedCalls[messageKey][requestId].promise.done(function(result) {
             result.requestId = result.requestId || requestId;
             callback(null, result);
         });
     }
 
-    cachedCalls[requestId] = Q.defer();
+    cachedCalls[messageKey][requestId] = Q.defer();
     var getOptions = {
         url: options.path + (options.query ? "?" + querystring.stringify(options.query) : ""),
         bufferType: "buffer",
         headers: { "YD-X-Domain": options.db, "Accept-Language": options.language, 'User-Agent': 'ydFrontend_Worker' }
     };
     http.get(getOptions, function (error, result) {
+
         if (result) {
             try {
                 options.result = JSON.parse(result.buffer.toString());
                 options.success = true;
-                cachedCalls[requestId].resolve(deepExtend({},options));
+                cachedCalls[messageKey][requestId].resolve(deepExtend({},options));
             }
             catch (err) {
                 options.success = false;
                 options.error = err;
-                cachedCalls[requestId].resolve(options);
+                cachedCalls[messageKey][requestId].resolve(options);
             }
         } else {
             options.resultCode = (error && error.code) ? error.code : error;
             options.error = error;
             options.success = false;
-            cachedCalls[requestId].resolve(options);
+            cachedCalls[messageKey][requestId].resolve(options);
         }
     });
-    cachedCalls[requestId].promise.done(function(result) {
+    cachedCalls[messageKey][requestId].promise.done(function(result) {
         result.requestId = result.requestId || requestId;
         callback(null, result);
     });

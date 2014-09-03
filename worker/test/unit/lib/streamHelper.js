@@ -4,7 +4,7 @@
 
 var es = require('event-stream');
 var expect = require('chai').expect;
-var helper = require('../../lib/streamHelper');
+var helper = require('../../../lib/streamHelper');
 
 
 describe('streamHelper', function () {
@@ -49,6 +49,37 @@ describe('streamHelper', function () {
                 }));
         });
 
+    });
+
+    describe('#accumulate', function () {
+        it('should collect all messages in a buffer and emit one accumulated message', function (done) {
+            var messages = ['Hello ', 'World'];
+            var accumulater = helper.accumulate(function (err, message) {
+                expect(message.toString()).to.eql(messages.join(''));
+                done();
+            });
+
+            es.readArray(messages).pipe(accumulater);
+        });
+    });
+
+    describe('#tryCatch', function () {
+        it('should add listener to error event of streams and create a handler for all such events', function (done) {
+            var tc = helper.tryCatch();
+
+            var errorStream = tc(es.through(function () {
+                this.emit('error', 'foo');
+            }));
+
+            var source = tc(es.readArray(['bar', 'foo']));
+
+            tc.catch(function (err) {
+                expect(err).to.eql('foo');
+                done();
+            });
+
+            source.pipe(errorStream);
+        });
     });
 
 });

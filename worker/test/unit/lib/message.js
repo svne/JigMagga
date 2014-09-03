@@ -4,7 +4,7 @@
 var expect = require('chai').expect;
 var es = require('event-stream');
 var _ = require('lodash');
-var messageHelper = require('../../lib/message');
+var messageHelper = require('../../../lib/message');
 
 
 describe('message', function () {
@@ -53,13 +53,14 @@ describe('message', function () {
         });
 
         it('should parse message if the content type is text/plain', function (done) {
+            //data.properties.contentType
             var message = {
-                contentType: 'text/plain',
-                data: JSON.stringify({foo: 1})
+                properties : {contentType: 'text/plain'},
+                content: new Buffer(JSON.stringify({foo: 1}))
             };
 
             stream.on('data', function (res) {
-                expect(res.message).to.eql(JSON.parse(message.data));
+                expect(res.message).to.eql(JSON.parse(message.content));
                 done();
             });
             stream.write(message);
@@ -67,12 +68,12 @@ describe('message', function () {
 
         it('should not parse message if content type is text/json', function (done) {
             var message = {
-                contentType: 'text/json',
-                data: {foo: 1}
+                properties : {contentType: 'text/json'},
+                content: {foo: 1}
             };
 
             stream.on('data', function (res) {
-                expect(res.message).to.eql(message.data);
+                expect(res.message).to.eql(message.content);
                 done();
             });
             stream.write(message);

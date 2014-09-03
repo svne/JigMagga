@@ -1,7 +1,7 @@
 module.exports = function () {
     var vm = require("vm"),
         fs = require("fs"),
-        filterModel = require(__dirname + '/../../library/reused/predefinedFilterValues.js'),
+        filterModel = require('./predefinedFilterValues.js'),
         deepExtend = require("deep-extend");
 
 

@@ -1,50 +1,125 @@
 'use strict';
 
 
-var path = require("path"),
+var path = require('path'),
+    async = require('async'),
     es = require('event-stream'),
     extend = require('node.extend'),
+    archiver = require('archiver'),
     Uploader = require('jmUtil').ydUploader,
     configMerger = require('./configMerger'),
+    originalFs = require('fs'),
     fs = require('fs-extra');
+
+/**
+ * create a stream that archives all files in list
+ * if there is a from field in file entity file should be added via readStream from disk
+ * in other case content filed should be present
+ *
+ * @param {Array<{content: ?string, from: ?string, to:string}>} fileList
+ * @return {*}
+ */
+var getArchiveStream = function (fileList) {
+    var archive = archiver('zip');
+
+    fileList.forEach(function (item) {
+        var extension = item.to.substr(-4);
+        var store = (extension === '.jpg' || extension === '.png' || extension === '.pdf');
+        var source;
+        if (item.from) {
+            source = originalFs.createReadStream(item.from);
+        } else if (item.content) {
+            source = Buffer.isBuffer(item.content) ? item.content : new Buffer(item.content);
+        } else {
+            throw new Error('can not add item to archive without from or content field');
+        }
+
+        archive.append(source, {name: item.to, store: store});
+    });
+
+    archive.finalize();
+    return archive;
+};
+
+/**
+ * create stream tha store file as a zip archive to the disk
+ * and after it upload this file
+ *
+ * @param uploader
+ * @param buildOptions
+ * @param callback
+ * @return {*}
+ */
+var uploaderStream = function (uploader, buildOptions, callback) {
+    var random = Math.round(Math.random() * 1000);
+
+    var zipName = 'zip' + Date.now() + '_' + random + '.zip';
+    var pathToZip = path.join(buildOptions.jigMaggaPath, 'tmp', zipName);
+
+    var stream = fs.createWriteStream(pathToZip);
+
+    stream.on('finish', function () {
+        console.log('File generated', pathToZip);
+
+
+        uploader.uploadFile(pathToZip, zipName, {deleteAfter: true}, callback);
+    });
+
+    return stream;
+};
+
+/**
+ * list of pages with files that should be uploaded
+ * @type {Object<string, array>}
+ */
+var uploadList = {};
+
+var addToUploadList = function (item, page) {
+    if (!uploadList[page]) {
+        uploadList[page] = [];
+    }
+
+    uploadList[page].push(item);
+};
 
 
 var uploaderInstance;
 
-/**
- * return an instance of uploader
- *
- * @param {object} config
- * @param {string} domain
- * @param {boolean} isLive
- * @return {Uploader}
- */
-var getUploader = function (config, domain, isLive) {
-    var env = isLive ? 'live': 'stage';
-
-    if (uploaderInstance) {
-        return uploaderInstance;
-    }
-
-    var knoxOptions = config.main.knox;
-
-    if (!knoxOptions.S3_BUCKET) {
-        var predefinedDomain = knoxOptions.buckets[env][domain];
-
-        if (!predefinedDomain) {
-            knoxOptions.S3_BUCKET = (isLive ? 'www' : 'stage') + '.' + domain;
-        } else {
-            knoxOptions.S3_BUCKET = predefinedDomain;
-        }
-    }
-
-    uploaderInstance = new Uploader(knoxOptions);
-    return uploaderInstance;
-};
-
 module.exports = {
 
     /**
+     * return an instance of uploader
+     *
+     * @param {object} config
+     * @param {string} domain
+     * @param {boolean} isLive
+     * @return {Uploader}
+     */
+    getUploader: function (config, domain, isLive) {
+        var env = isLive ? 'live': 'stage';
+
+        if (uploaderInstance) {
+            return uploaderInstance;
+        }
+
+        var knoxOptions = config.main.knox;
+
+        if (!knoxOptions.S3_BUCKET) {
+            var predefinedDomain = knoxOptions.buckets[env][domain];
+
+            if (!predefinedDomain) {
+                knoxOptions.S3_BUCKET = (isLive ? 'www' : 'stage') + '.' + domain;
+            } else {
+                knoxOptions.S3_BUCKET = predefinedDomain;
+            }
+        }
+
+        uploaderInstance = new Uploader(knoxOptions);
+        return uploaderInstance;
+    },
+
+
+/**
      * prepare a build stream which include all informations about the build
      * @param program
      * @returns {*}
@@ -53,6 +128,12 @@ module.exports = {
         var self = this;
         return es.readable(function (count, callback) {
             var options = {};
+            if (program.uploadmedia) {
+                program.jsgenerate = false;
+                program.cssgenerate = false;
+                options.uploadmedia = program.uploadmedia;
+            }
+
             options.namespace = program.namespace || "yd";
             options.namespacePath = path.normalize(__dirname + "/../../" + options.namespace);
             options.jigMaggaPath = path.normalize(__dirname + "/../..");
@@ -69,7 +150,7 @@ module.exports = {
             if (!options.domain) {
                 throw new Error("no domain");
             }
-            if (!options.page) {
+            if (!options.page && !options.uploadmedia) {
                 throw new Error("no page");
             }
             var data = {
@@ -212,6 +293,14 @@ module.exports = {
         });
     },
 
+    uploadArchive: function (fileList, buildOptions, callback) {
+        var config = configMerger.getProjectConfig(buildOptions.namespace);
+        var uploader = this.getUploader(config, buildOptions.domain, buildOptions.live);
+
+        getArchiveStream(fileList)
+            .pipe(uploaderStream(uploader, buildOptions, callback));
+    },
+
 
     /**
      * upload content to cdn
@@ -221,9 +310,9 @@ module.exports = {
      * @param {string} extension
      * @param {{namespace: string, domain: string, live: boolean, jsgenerate: boolean}} buildOptions
      */
-    uploadContent: function (fileContent, uploadPath, extension, buildOptions) {
+    uploadContent: function (fileContent, uploadPath, extension, buildOptions, callback) {
         var config = configMerger.getProjectConfig(buildOptions.namespace);
-        var uploader = getUploader(config, buildOptions.domain, buildOptions.live);
+        var uploader = this.getUploader(config, buildOptions.domain, buildOptions.live);
 
         var contentType = extension === 'js' ? 'application/javascript' : 'text/css';
 
@@ -231,21 +320,48 @@ module.exports = {
 
         uploader.uploadContent(fileContent, uploadPath, {type: contentType}, function (err, res) {
             if (err) {
-                return process.stdout.write(err);
+                return callback(err);
             }
-            return process.stdout.write(res + '\n');
+            callback(res);
         });
+    },
+
+    uploadFiles: function (uploadList, buildOptions, callback) {
+        var onUpload = function (err, res) {
+            if (err) {
+                return process.stdout.write('Error while uploading: ' + err + '\n');
+            }
+            process.stdout.write(res + '\n');
+            callback();
+        };
+
+        if (uploadList.length === 1) {
+            var file = uploadList[0];
+            process.stdout.write('Start uploading  of single file to: ' + file.to + '\n');
+            return this.uploadContent(file.content, file.to, file.ext, buildOptions, onUpload);
+        }
+
+        uploadList = uploadList.map(function (file) {
+            file.to = file.to + '.' + file.ext;
+            process.stdout.write('Start adding to archive and uploading to: ' + file.to + '\n');
+            return file;
+        });
+
+        this.uploadArchive(uploadList, buildOptions, onUpload);
+
     },
 
     saveFileToDiskOrUpload: function () {
         var that = this;
         return es.map(function (data, callback) {
             var fullPath,
-                fileContent,
                 browser,
                 uploadPath,
-                pathToDomain,
+                buildOptions = data[0].build,
                 name;
+
+            uploadList = {};
+
             data.forEach(function (item) {
                 browser = item.build.browser ? Object.keys(item.build.browser).filter(function (a) {
                     return a !== "version";
@@ -262,20 +378,30 @@ module.exports = {
                     if(item.build.cssgenerate) {
                         fs.outputFileSync(fullPath + ".css", item.build.package.css);
                     }
-                    process.stdout.write("Save Files to: " + fullPath + "\n");
+
+                    return process.stdout.write("Save Files to: " + fullPath + "\n");
                 }
 
                 uploadPath = fullPath.replace(item.build.jigMaggaPath + '/', '');
-                process.stdout.write("Starting upload to: " + uploadPath + "\n");
 
-                if(item.build.jsgenerate) {
-                    that.uploadContent(item.build.package.js, uploadPath, 'js', item.build);
+
+                if (item.build.jsgenerate) {
+                    //that.uploadContent(item.build.package.js, uploadPath, 'js', item.build);
+                    addToUploadList({content: item.build.package.js, to:uploadPath, ext: 'js'}, item.build.page);
                 }
-                if(item.build.cssgenerate) {
-                    that.uploadContent(item.build.package.css, uploadPath, 'css', item.build);
+                if (item.build.cssgenerate) {
+                    addToUploadList({content: item.build.package.css, to:uploadPath, ext: 'css'}, item.build.page);
                 }
             });
-            callback(null, data);
+
+            if (!Object.keys(uploadList).length) {
+                return;
+            }
+            async.eachSeries(Object.keys(uploadList), function (page, next) {
+                process.stdout.write('Start archiving and uploading items for page: ' + page + '\n');
+                that.uploadFiles(uploadList[page], buildOptions, next);
+            }, callback);
+
         });
     },
     stdoutSingleObjectWithBumper: function () {

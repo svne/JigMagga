@@ -25,6 +25,7 @@
 var es = require('event-stream'),
     configMerger = require('./lib/configMerger.js'),
     helper = require('./lib/helper.js'),
+    media = require('./lib/media'),
     steal = require('./lib/steal.js'),
     builder = require('./lib/builder.js'),
     program = require('commander'),
@@ -36,8 +37,6 @@ program
     .option('-v, --versionnumber [value]', 'specify build version as float', parseFloat)
     .option('-d, --basedomain [value]', 'specify the domain')
     .option('-p, --page [value]', 'define the template to be generated can be a regex')
-    //TODO archive the files and upload as zip
-    .option('-a, --archive', 'archive file before upload')
     //TODO override locales from config
     .option('-I, --locale [value]', 'use given locale')
     .option('-c, --cssgenerate [value]', 'generate only css', JSON.parse)
@@ -49,6 +48,7 @@ program
     .option('-x, --live [value]', 'will generate for live environment',  JSON.parse)
     .option('-s, --stream [value]', 'pipe a build stream via stdin. The value is the startpoint name.')
     .option('-f, --file [value]', 'The stream input that will be used.')
+    .option('-M, --uploadmedia [value]', 'Upload media files. Should not be used with css or js generate flags')
     .parse(process.argv);
 
 
@@ -60,10 +60,21 @@ if (program.file) {
     var readStream = fs.createReadStream(program.file);
     readStream.pipe(process.stdin);
 }
+
+if (program.uploadmedia) {
+    var ps = es.pause();
+    helper.createStreamWithSettings(program)
+        .pipe(media.getMediaSources())
+        .pipe(media.extractFilePaths())
+        .pipe(ps)
+        .pipe(media.upload(ps));
+}
+
 /**
  * Default Task without stream
  */
-if (!program.stream) {
+
+else if (!program.stream) {
 
     helper.createStreamWithSettings(program)
         .pipe(configMerger.getConfig())
@@ -165,16 +176,21 @@ else if (program.stream === "css") {
  * will save a files to disk or upload them to CDN based on stream configuration
  */
 else if (program.stream === "save") {
-
     process.stdin.setEncoding('utf8');
     process.stdin
         .pipe(helper.bufferStringifyStreamWithBumperAndParseSingleObject())
         .pipe(helper.joinPagesIntoSingleStreams())
+        //.pipe(ps)
         .pipe(helper.saveFileToDiskOrUpload());
 
     process.stdin.on('end', function () {
         process.stdin.resume();
     });
 }
+
+process.on('uncaughtException', function (err) {
+    process.stdout.write('error :' + err + err.stack);
+    process.kill();
+});
 
 

@@ -1,3 +1,4 @@
+'use strict';
 var fs = require('fs'),
     UglifyJS = require("uglify-js"),
     CleanCSS = require('clean-css'),
@@ -5,7 +6,6 @@ var fs = require('fs'),
     sass = require('node-sass'),
     async = require('async'),
     stealLib = require('./steal.js'),
-    helper = require('./helper.js'),
     canCompile = require('./can-compile/can-compile.js'),
     sassHelper = require('./../../steal-types/sass/sass-helper.js');
 
@@ -49,7 +49,7 @@ var builder = {
                         }
                     }, function (err, results) {
                         if (err) {
-                            throw Error(error);
+                            throw new Error(error);
                         } else {
                             data.build.dependencies = results;
                             callback(null, data);
@@ -81,7 +81,7 @@ var builder = {
                     }, function (err, results) {
                         data.build.dependencies = results;
                         callback(null, data);
-                    })
+                    });
                 } else {
                     callback(null, data);
                 }
@@ -108,7 +108,7 @@ var builder = {
                                         cb(null, item);
                                     },
                                     error: function (error) {
-                                        throw Error(error);
+                                        throw new Error(error);
                                     },
                                     outputStyle: 'compressed'
                                 });
@@ -120,7 +120,7 @@ var builder = {
                     }, function (err, results) {
                         data.build.dependencies = results;
                         callback(null, data);
-                    })
+                    });
                 } else {
                     callback(null, data);
                 }
@@ -135,14 +135,14 @@ var builder = {
                 srcs = [], codez = [];
 
             steals.forEach(function (stealOpts) {
-                codez.push(convert(stealOpts.text, stealOpts.id, directory))
-                srcs.push(stealOpts.rootSrc + '')
+                codez.push(convert(stealOpts.text, stealOpts.id, directory));
+                srcs.push(stealOpts.rootSrc + '');
             });
 
             return {
                 srcs: srcs,
                 code: codez.join('\n') //css.minify(codez.join('\n'))
-            }
+            };
         }
     },
     js: {
@@ -171,7 +171,7 @@ var builder = {
         minify: function () {
             var internalCache = {};
             return es.map(function (data, callback) {
-                console.log("_----->",data.build.minify && data.build.jsgenerate)
+                console.log("_----->",data.build.minify && data.build.jsgenerate);
                 if (data.build.minify && data.build.jsgenerate) {
                     var browser = data.build.stealConfig.browser;
                     async.mapSeries(data.build.dependencies, function (item, cb) {
@@ -212,11 +212,11 @@ var builder = {
                     }, function (err, results) {
                         data.build.dependencies = results;
                         callback(null, data);
-                    })
+                    });
                 } else {
                     callback(null, data);
                 }
-            })
+            });
         }
 
     }
@@ -372,21 +372,21 @@ function makeStealPackage(moduleOptions, dependencies, cssPackage, buildOptions)
         };
 
         if (file.exclude || matchStr('' + file.id)) {
-            console.log('   excluding ' + file.id)
+            console.log('   excluding ' + file.id);
             return;
         }
 
-        if (file.buildType == 'js') {
-            jses.push(file)
-        } else if (file.buildType == 'css') {
-            csses.push(file)
+        if (file.buildType === 'js') {
+            jses.push(file);
+        } else if (file.buildType === 'css') {
+            csses.push(file);
         }
-    })
+    });
     // add to dependencies
     if (csses.length && dependencies) {
         dependencies[cssPackage] = csses.map(function (css) {
             return css.id;
-        })
+        });
     }
 
     // this now needs to handle css and such
@@ -403,7 +403,7 @@ function makeStealPackage(moduleOptions, dependencies, cssPackage, buildOptions)
     for (var key in dependencies) {
         dependencyCalls.push(
                 "steal.has('" + dependencies[key].join("','") + "')"
-        )
+        );
     }
 
 
@@ -417,7 +417,7 @@ function makeStealPackage(moduleOptions, dependencies, cssPackage, buildOptions)
     for (var key in loadingCallsCss) {
         code.push("steal.executed('" + loadingCallsCss[key].path + "')");
     }
-    ;
+
 
 
     if (buildOptions.stealOwnModules) {
@@ -426,12 +426,12 @@ function makeStealPackage(moduleOptions, dependencies, cssPackage, buildOptions)
 
         // but having it might cause a circular dependency in
         // the apps scenario
-        code.push("steal('" + loadingCalls.join("','") + "')")
+        code.push("steal('" + loadingCalls.join("','") + "')");
     }
 
-    code.push("steal.pushPending()")
+    code.push("steal.pushPending()");
 
-    lineNum += code.length
+    lineNum += code.length;
     // add js code
     jses.forEach(function (file) {
 
@@ -449,7 +449,7 @@ function makeStealPackage(moduleOptions, dependencies, cssPackage, buildOptions)
     return {
         js: jsCode,
         css: csspackage && csspackage.code ? csspackage.code : ""
-    }
+    };
 }
 
 
@@ -461,7 +461,7 @@ function convert(css, cssLocation, prodLocation) {
 
             //check if url is relative
             if (isAbsoluteOrData(part)) {
-                return whole
+                return whole;
             }
             //it's a relative path from cssLocation, need to convert to
             // prodLocation
@@ -472,7 +472,7 @@ function convert(css, cssLocation, prodLocation) {
     return newCSS;
 }
 function isAbsoluteOrData(part) {
-    return /^(data:|http:\/\/|https:\/\/|\/)/.test(part)
+    return /^(data:|http:\/\/|https:\/\/|\/)/.test(part);
 }
 
 

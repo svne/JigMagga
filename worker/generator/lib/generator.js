@@ -44,6 +44,38 @@ var childPageUploadUrl = function (config) {
     return config;
 };
 
+/**
+ * returns a list of api call names the result of which should not be included
+ * in to the predefined object. The apicall included to the list if all it has render property that
+ * equal false in all jigs.
+ *
+ * @param {object} jigs
+ * @return {array}
+ */
+var getExcludedPredefinedVariables = function (jigs) {
+    var apiCallJigs = _.filter(_.keys(jigs), function (jigName) {
+        return jigs[jigName].apicalls;
+    });
+    var apiCallsWithJigs = {};
+
+    _.each(apiCallJigs, function (jigName) {
+        var jig = jigs[jigName];
+        _.each(jig.apicalls, function (apiCall, apiCallName) {
+            if (!apiCallsWithJigs[apiCallName]) {
+                apiCallsWithJigs[apiCallName] = [];
+            }
+            apiCallsWithJigs[apiCallName].push(jig);
+        });
+    });
+
+    return _.filter(_.keys(apiCallsWithJigs), function (apiCallName) {
+        var jigs = apiCallsWithJigs[apiCallName];
+        return _.every(jigs, function (jig) {
+            return jig.render === false;
+        });
+    });
+};
+
 
 exports.init = function (knoxConf, gettext, diskSavePath) {
     gt = gettext;
@@ -144,9 +176,11 @@ exports.generatePage = function (origConfig, callback) {
         var script = '<script id="yd-application-data" type="text/javascript">' +
             ' window.Yd = window.Yd || {};' +
             ' window.Yd.predefined = window.Yd.predefined || {};' + "\n";
+        var excludedPredefinedVar = getExcludedPredefinedVariables(config.jigs);
+
         for (var predefinedVar in config["predefined"]) {
             if (config["predefined"].hasOwnProperty(predefinedVar)) {
-                if (predefinedVar == "attr") continue;
+                if (predefinedVar == "attr" || _.contains(excludedPredefinedVar, predefinedVar)) continue;
                 if (typeof config["predefined"][predefinedVar] == 'function') continue;
                 predefinedVarString = JSON.stringify(config["predefined"][predefinedVar]);
                 predefinedVarString = predefinedVarString.replace(/\$&/g, '');

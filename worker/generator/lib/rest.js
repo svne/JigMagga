@@ -10,7 +10,12 @@ var querystring = require("querystring");
 
 var httpMock = require('./httpMock');
 
-var http = (process.env.NODE_ENV === 'local') ? httpMock : http;
+var useFixtures = function () {
+    return process.argv.indexOf('-f') >= 0 || process.argv.indexOf('--fixtures') >= 0;
+};
+
+var http = (useFixtures()) ? httpMock : http;
+
 
 var cachedCalls = {};
 
@@ -95,7 +100,8 @@ exports.addCall = function (apicall, config, paramsFromQueue, apiconfig) {
         result: null, // hold the returned data from api
         resultCode: 200,
         viewParam: apicall, // key in viewContainer to hold data
-        apiMessageKey: apiconfig.apiMessageKey // unique key for message
+        apiMessageKey: apiconfig.apiMessageKey, // unique key for message
+        apiCallDescriptor: config.apicalls[apicall]
     };
 };
 
@@ -124,6 +130,9 @@ exports.doCall = function (options, callback) {
         bufferType: "buffer",
         headers: { "YD-X-Domain": options.db, "Accept-Language": options.language, 'User-Agent': 'ydFrontend_Worker' }
     };
+    if (useFixtures()) {
+        getOptions.apiCallDescriptor = options.apiCallDescriptor;
+    }
     http.get(getOptions, function (error, result) {
 
         if (result) {

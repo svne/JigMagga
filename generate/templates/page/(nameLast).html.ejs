@@ -1,28 +1,69 @@
-<!doctype html>
-<html class="modern">
+<!doctype html><!--[if lte IE 7 ]>
+<html lang="de" id="de" class="ie7"><![endif]--> <!--[if IE 8 ]>
+<html lang="de" id="de" class="ie8"><![endif]--> <!--[if IE 9]>
+<html lang="de" id="de" class="ie9"><![endif]--> <!--[if gt IE 9]><!-->
+<html lang="de" id="de" class="modern"><!--<![endif]-->
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 </head>
 <body data-pagename="<%= name %>">
 
     <div class="<%= namespace %>-header">
         <div class="<%= namespace %>-header-inner">
-            <section class="<%= namespace %>-jig-header"></section>
+            <!--
+
+            Choose your desired jig rendering method:
+
+            1.) Create a HTML element like this and leave it empty:
+                <section class="<%= namespace %>-jig-yourjigname"></section>
+                Configure it via .conf file afterwards.
+                For more information take a look at https://github.com/yourdelivery/JigMagga#jigs-in-the-config-files
+
+            2.) Use the JigMagga slot system to configure your new jig completely dynamic.
+                For more information take a look at  https://github.com/yourdelivery/JigMagga#the-slot-system
+
+            -->
         </div>
     </div>
+
     <div class="<%= namespace %>-wrapper">
 
         <div class="<%= namespace %>-content">
-            <div class="<%= namespace %>-inner">
+            <div class="<%= namespace %>-content-inner">
+                <!--
 
+                Choose your desired jig rendering method:
 
+                1.) Create a HTML element like this and leave it empty:
+                    <section class="<%= namespace %>-jig-yourjigname"></section>
+                    Configure it via .conf file afterwards.
+                    For more information take a look at https://github.com/yourdelivery/JigMagga#jigs-in-the-config-files
+
+                2.) Use the JigMagga slot system to configure your new jig completely dynamic.
+                    For more information take a look at  https://github.com/yourdelivery/JigMagga#the-slot-system
+
+                -->
             </div>
         </div>
 
         <div class="<%= namespace %>-footer">
-            <section class="<%= namespace %>-jig-footer"></section>
+            <div class="<%= namespace %>-footer-inner">
+                <!--
+
+                Choose your desired jig rendering method:
+
+                1.) Create a HTML element like this and leave it empty:
+                    <section class="<%= namespace %>-jig-yourjigname"></section>
+                    Afterwards you can configure your jig via .conf file.
+                    For more information take a look at https://github.com/yourdelivery/JigMagga#jigs-in-the-config-files
+
+                2.) Use the JigMagga slot system for a completely dynamic configuring of your new jig.
+                    For more information take a look at  https://github.com/yourdelivery/JigMagga#the-slot-system
+
+                -->
+            </div>
         </div>
+
     </div>
 
     <script id="<%= namespace %>-application-script" type='text/javascript' src='/steal/steal.js?<%= namespace %>/page/<%= domain%>/<%= name %>'></script>

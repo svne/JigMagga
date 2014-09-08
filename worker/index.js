@@ -18,8 +18,7 @@
  * @module worker
  */
 
-var fs = require('fs'),
-    _ = require('lodash'),
+var _ = require('lodash'),
     path = require('path'),
     getRedisClient = require('./lib/redisClient'),
     parseArguments = require('./parseArguments');
@@ -31,17 +30,15 @@ var amqp = require('./lib/amqp'),
     log = require('./lib/logger')('worker', {component: 'worker', processId: String(process.pid)}),
     ProcessRouter = require('./lib/router'),
     mainStream = require('./lib/mainStream'),
-    archiver = require('./lib/archiver'),
     helper = require('./lib/helper'),
     error = require('./lib/error'),
-    stream = require('./lib/streamHelper'),
     messageSource = require('./lib/messageSource'),
     TimeDiff = require('./lib/timeDiff');
 
-var WorkerError = error.WorkerError;
 var timeDiff = new TimeDiff(log);
 var startTimeDiff = timeDiff.create('start');
-var getMeta = helper.getMeta;
+
+var createPipeHandler = require('./lib/pipeHandler');
 
 if (config.main.nodetime) {
     log('connect to nodetime for profiling');
@@ -105,78 +102,6 @@ var generatorRouter,
 
 var generatorRoutes = {
     /**
-     * generator pipe handler. Invokes for all messages that passes from
-     * generator process via pipe.
-     * Creates a zip archive from upload file list and write it to a disk
-     * or send it to the uploader regarding to the value write key of application
-     *
-     * @param  {{uploadList: Object[], message: object, key: string}} data [description]
-     */
-    pipe: function pipeHandler(data) {
-
-        var generateZipTimeDiff = timeDiff.create('generat:zip'),
-            archiverStream,
-            destination,
-            message,
-            key;
-
-        try {
-            data = JSON.parse(data);
-        } catch (e) {
-            log('error', e);
-            fs.writeFileSync(__dirname + '/../yd/tmp/pipeError', data);
-            process.kill();
-        }
-
-        message = data.message;
-        key = data.key;
-        log('message from pipe generator, key %s', key,  getMeta(message));
-
-        //send message to done queue
-        if (program.queue) {
-            queuePool.amqpDoneQueue.publish(message.origMessage);
-        }
-
-        archiverStream = archiver.bulkArchive(data.uploadList);
-        data = null;
-        if (program.write) {
-            destination = helper.createSaveZipStream(program, message, basePath);
-            destination.once('finish', function () {
-                log('saved on disk', getMeta(message));
-                helper.executeAck(key);
-            });
-        } else {
-            destination = stream.accumulate(function(err, data, next) {
-                var that = this;
-                var cb =  function () {
-                    result = null;
-                    data = null;
-                    archiverStream = null;
-                    generateZipTimeDiff.stop();
-                    next();
-                };
-                var result = {url: message.url, data: data, messageKey: key};
-                if (program.queue) {
-                    uploaderRouter.send('reduce:timeout');
-                    return redisClient.rpush(config.redis.keys.list, JSON.stringify(result), function (err) {
-                        if (err) {
-                            return that.emit('error', new WorkerError(err.message || err), data.message.origMessage);
-                        }
-                        log('generated message sended to redis', getMeta(message));
-                        cb();
-                    });
-                }
-                log('[WORKER] send message to upload', getMeta(message));
-                uploaderRouter.send('pipe', result);
-                cb();
-            });
-        }
-        var tc = stream.tryCatch();
-
-        tc(archiverStream).pipe(tc(destination));
-        tc.catch(workerErrorHandler);
-    },
-    /**
      * if zip is creating in the generator. Generator just send a link to it
      * to the worker and worker proxies this message to uploader
      *
@@ -212,6 +137,8 @@ helper.createChildProcesses(args, function (err, result) {
 
     generatorRouter = new ProcessRouter(generator);
     uploaderRouter = new ProcessRouter(uploader);
+
+    generatorRoutes.pipe = createPipeHandler(uploaderRouter, queuePool, redisClient, workerErrorHandler);
 
     generatorRouter.addRoutes(generatorRoutes);
     uploaderRouter.addRoutes(uploaderRoutes);

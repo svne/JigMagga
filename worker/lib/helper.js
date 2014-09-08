@@ -4,6 +4,7 @@ var _ = require('lodash'),
     async = require('async'),
     format = require('util').format,
     fs = require('fs'),
+    fsExtra = require('fs-extra'),
     path = require('path'),
     spawn = require('child_process').spawn;
 
@@ -202,6 +203,14 @@ module.exports = {
      */
     createSaveZipStream: function (program, message, basePath) {
         return fs.createWriteStream(this.getZipName(program, message, basePath));
+    },
+
+
+    saveFiles: function (fileList, log, callback) {
+        async.each(fileList, function (file, next) {
+            log('save file to:', file.path);
+            fsExtra.outputFile(file.path, file.content, next);
+        }, callback);
     },
 
     /**

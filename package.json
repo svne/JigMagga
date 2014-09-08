@@ -63,6 +63,10 @@
     "install": "node node_modules/bower/bin/bower install --config.cwd=bower_components --config.directory=.",
     "prepublish": "node node_modules/bower/bin/bower install steal=git://github.com/bitovi/legacy-steal.git --config.directory=."
   },
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/yourdelivery/JigMagga.git"
+  },
   "dependencies": {
     "MD5": "^1.2.1",
     "amqp": "^0.2.0",
@@ -77,14 +81,6 @@
     "event-stream": "~3.1.5",
     "gettext": "0.0.1",
     "git-wrapper": "~0.1.1",
-<<<<<<< HEAD
-    "async": "^0.9.0",
-    "cheerio": "~0.17.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/yourdelivery/JigMagga.git"
-=======
     "http-get": "^0.5.10",
     "jmUtil": "git://github.com/yourdelivery/JigMaggerUtilities",
     "konphyg": "~1.4.0",
@@ -108,6 +104,5 @@
     "fs-extra": "^0.11.0",
     "ssi": "^0.1.5",
     "node.extend": "^1.1.0"
->>>>>>> origin/jsbuildRefectoring
   }
 }

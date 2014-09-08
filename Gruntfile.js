@@ -1,6 +1,8 @@
 "use strict";
 var fs = require("fs"),
-    path = require('path');
+    path = require('path'),
+    sass = require('node-sass'),
+    ssInclude = new (require("ssi"));
 
 var createWalker = require('./generate/walker');
 var config = require('./grunt.config');
@@ -186,34 +188,47 @@ module.exports = function(grunt) {
                     ]
                 }
             },
-            test: {
+            build: {
                 options: {
                     questions: [
                         {
-                            config: "generator.test.namespace",
+                            config: "build.namespace",
                             type: "input",
-                            message: "Please set the namespace of the project:",
-                            default: function(answer) {
-                                if (answer['generator.template'] === 'project') {
-                                    return;
-                                }
-                                return walker.getDefaultNamespace();
+                            message: "Which namespace you want to build:"
+                        },
+                        {
+                            config: "build.domain",
+                            type: "list",
+                            choices: function(answers) {
+                                // print out all domains in the current namespace/page
+                                var result = walker.getAllDomains(answers['build.namespace']);
+
+                                result.unshift('default');
+                                return result;
                             },
+                            message: "Which domain you want to build:",
                             filter: function (value) {
                                 return value.toLowerCase();
                             }
+                        },
+                        {
+                            config: "generator.pages",
+                            type: "input",
+                            message: "Which pages you want generate (you can use regex)"
                         }
 
                     ]
+
                 }
             }
         },
         connect: {
             server: {
                 options: {
-                    keepalive: true,
+                    keepalive : true,
                     open: true,
                     middleware:  function (connect, options, middlewares) {
+                        
                         // inject a custom middleware into the array of default middlewares
                         middlewares.unshift(function (req, res, next) {
                             if (req.url === "/") {
@@ -233,30 +248,70 @@ module.exports = function(grunt) {
                                     });
                                 }
                                 res.end();
-                            } else if (req.url && req.url.search(/\.html/) !== -1) {
-                                var filename = options.base[0] + req.url,
-                                    defaultBase = filename.replace(/\/page\/[^\/]*\//, '/page/default/');
+                            }
+                            // compile scsss file on server side (testing phantom)
+                            else if (req.url.indexOf("/sass/compile") !== -1) {
+                                sass.render({
+                                    data: req.body.scss,
+                                    success: function(css){
+                                        res.end(css);
+                                    },
+                                     error: function(error) {
+                                        console.log(error);
+                                    }
+                                });
+                            }
+                            // check default directory for html file
+                            else if (req.url && req.url.search(/\.[s]{0,1}html/) !== -1) {
+                                var cwd = options.base[0] + "/",
+                                    filename = req.url,
+                                    filenameSHTML = cwd + filename.replace(/\.html/, ".shtml"),
+                                    defaultBase = cwd + filename.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/"),
+                                    defaultBaseSHTML = cwd + filename.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/").replace(/\.html/, ".shtml");
                                 if (fs.existsSync(filename)) {
-                                    res.end(fs.readFileSync(filename, {encoding: "utf8"}));
+                                    res.end(ssInclude.parse(filename, fs.readFileSync(filename, {
+                                        encoding: "utf8"
+                                    })).contents);
+                                } else if (fs.existsSync(filenameSHTML)) {
+                                    res.end(ssInclude.parse(filenameSHTML, fs.readFileSync(filenameSHTML, {
+                                        encoding: "utf8"
+                                    })).contents);
                                 } else if (fs.existsSync(defaultBase)) {
-                                    res.end(fs.readFileSync(defaultBase, {encoding: "utf8"}));
-
+                                    res.end(ssInclude.parse(defaultBase, fs.readFileSync(defaultBase, {
+                                        encoding: "utf8"
+                                    })).contents);
+                                } else if (fs.existsSync(defaultBaseSHTML)) {
+                                    res.end(ssInclude.parse(defaultBaseSHTML, fs.readFileSync(defaultBaseSHTML, {
+                                        encoding: "utf8"
+                                    })).contents);
                                 } else {
                                     next();
+
                                 }
-                            } else {
+                            }
+                            else {
                                 next();
                             }
                         });
+                        middlewares.unshift(connect.bodyParser());
                         return middlewares;
                     }
                 }
             }
+        },
+        qunit: {
+            options: {
+                timeout: 10000,
+                httpBase : "http://localhost:8000"
+            },
+            all: ['**/funcunit.html', '!bower_components/**', '!steal/**']
         }
     });
 
     grunt.loadNpmTasks('grunt-contrib-connect');
     grunt.loadNpmTasks('grunt-prompt');
+    grunt.loadTasks('tasks');
+
 
     grunt.registerTask('generate',
         [
@@ -264,24 +319,24 @@ module.exports = function(grunt) {
             'generator'
         ]);
 
-    grunt.registerTask('test', [
-        'prompt:test',
-        'testem'
-    ]);
+    grunt.registerTask('build',
+        [
+            'prompt:build'
+        ]);
 
-    grunt.registerTask('testem', "Test all files that have a funcunit.html file", function(){
-        var async = this.async(),
-            namespace = grunt.config('generator.test.namespace'),
-            pathToTests,
-            fork = require('child_process').fork,
-            testem;
 
-        pathToTests = namespace ? path.join(__dirname, namespace) : __dirname;
-
-        testem = fork(__dirname + '/node_modules/testem/testem.js', [], {
-            cwd: pathToTests
-        });
+    /**
+     * This is the grunt task for open a grunt connect an test all funcunit suites against this server
+     *
+     * --tap will ouput the result in tap format as a file ./tap.log
+     *
+     */
+    grunt.registerTask('test', "test all funcunit.html suites with phantomjs", function() {
+         grunt.config("connect.server.options.keepalive", false);
+         grunt.config("connect.server.options.open", false);
+         grunt.task.run(["connect", "qunit:all"]);
     });
+
 
     grunt.registerTask("generator", "Project structure generator", function() {
         var generate = require(__dirname + "/generate/generate"),

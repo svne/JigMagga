@@ -1,8 +1,0 @@
-{
-    "src_files": [
-        "jig/**/*_test.js"
-    ],
-    "test_page": "test/testem/testem.mustache",
-    "launch_in_dev": ["chrome", "firefox"],
-    "launch_in_ci": ["phantomjs"]
-}

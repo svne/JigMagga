@@ -8,6 +8,7 @@ steal.config({
         }
     },
     paths: {
+        "jquery": steal.config("browser") && steal.config("browser").msie  && steal.config("browser").version < 10? "bower_components/jquery-old/dist/jquery.js" :  "bower_components/jquery/jquery.min.js",
         "jquery/": "bower_components/jquerypp/",
         "jquerypp/": "bower_components/jquerypp/",
         "can/": "bower_components/canjs/steal/canjs/",

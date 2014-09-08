@@ -13,7 +13,7 @@ var fs = require('fs'),
 var builder = {
     makePackage: function () {
         return es.map(function (data, callback) {
-            data.build.package = makeStealPackage(data.build.dependencies);
+            data.build.package = makeStealPackage(data.build.dependencies, null, null, data.build);
             // put steal.production into js
             data.build.package.js = fs.readFileSync(data.build.jigMaggaPath + "/steal/steal.production.js", {encoding: "utf8"}) + data.build.package.js;
             callback(null, data);
@@ -442,7 +442,11 @@ function makeStealPackage(moduleOptions, dependencies, cssPackage, buildOptions)
     });
 
     var jsCode = code.join(";") + ";steal.popPending();";
+    var stealConfig = buildOptions.stealConfig;
+    stealConfig.env = 'production';
 
+    var stealProductionConf = "steal.config(" + JSON.stringify(stealConfig) + ");";
+    jsCode = stealProductionConf + '\n' + jsCode;
 
     var csspackage = builder.css.makePackage(csses, cssPackage);
 

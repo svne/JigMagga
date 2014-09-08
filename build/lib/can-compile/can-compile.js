@@ -97,7 +97,7 @@ module.exports = function(configuration, callback, log) {
             });
         };
     });
-    var renderer = Handlebars.compile(configuration.wrapper || '(function(window) {\n {{{content}}} \n})(this);');
+    var renderer = Handlebars.compile(configuration.wrapper || 'steal("can/view/ejs/ejs.js", function(can) {\n {{{content}}} \n});');
 
     async.series(callbacks, function(errors, results) {
         if (errors) {

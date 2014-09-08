@@ -819,7 +819,7 @@
             error("Config can't be parsed");
         }
         // ignore this config to load in production
-        options.ignore = true;
+        //options.ignore = true;
         if (!config.includes) {
             config.includes = [];
         }

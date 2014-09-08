@@ -28,6 +28,10 @@ var pageCounter = 0;
 var knoxConfig;
 var saveDiskPath;
 
+function capitaliseFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+};
+
 var childPageUploadUrl = function (config) {
     var childUrl = '';
     if (config['child-page-path']) {
@@ -92,18 +96,24 @@ exports.generatePage = function (origConfig, callback) {
     origConfig = childPageUploadUrl(origConfig);
 
     var config = deepExtend({}, origConfig),
+        namespace = config.namespace,
+        namespaceCapital = capitaliseFirstLetter(config.namespace),
+
         filename,
         viewContainer = config["viewContainer"],
         url = config["uploadUrl"],
         html = "",
         predefinedVarString;
+
+
     try {
+
 
         if (config["child-page-path"]) {
             config["child-page-path"] = _.map(config["child-page-path"], function (page) {
                 return {
                     url: page.url,
-                    name:  gt._("yd-core-page", page.url)
+                    name:  gt._(namespace + "-core-page", page.url)
                 };
             });
             config.predefined["child-page-path"] = config["child-page-path"];
@@ -115,7 +125,7 @@ exports.generatePage = function (origConfig, callback) {
         // TODO: Needed for pages?
 
         config["template"] = ejs.render(config["template"], viewContainer);
-        viewContainer.Yd = {config: config, predefined: config["predefined"]};
+        viewContainer[namespaceCapital] = {config: config, predefined: config["predefined"]};
         viewContainer._ = global._ = gt._;
         viewContainer._n = gt._n;
         for (var key in config) {
@@ -173,9 +183,9 @@ exports.generatePage = function (origConfig, callback) {
             }
         }
 
-        var script = '<script id="yd-application-data" type="text/javascript">' +
-            ' window.Yd = window.Yd || {};' +
-            ' window.Yd.predefined = window.Yd.predefined || {};' + "\n";
+        var script = '<script id="' + namespace + '-application-data" type="text/javascript">' +
+            ' window.' + namespaceCapital + ' = window.' + namespaceCapital + ' || {};' +
+            ' window.' + namespaceCapital + '.predefined = window.' + namespaceCapital + '.predefined || {};' + "\n";
         var excludedPredefinedVar = getExcludedPredefinedVariables(config.jigs);
 
         for (var predefinedVar in config["predefined"]) {
@@ -186,11 +196,11 @@ exports.generatePage = function (origConfig, callback) {
                 predefinedVarString = predefinedVarString.replace(/\$&/g, '');
                 predefinedVarString = predefinedVarString.replace(/<script.*?>/ig, '');
                 predefinedVarString = predefinedVarString.replace(/<style.*?>/ig, '');
-                script += 'Yd.predefined["' + predefinedVar + '"] = ' + predefinedVarString + ";\n";
+                script += namespaceCapital + '.predefined["' + predefinedVar + '"] = ' + predefinedVarString + ";\n";
             }
         }
 
-        script += 'Yd.predefined["child-page-path"] = ' + JSON.stringify(config["child-page-path"]) + ";\n";
+        script += namespaceCapital + '.predefined["child-page-path"] = ' + JSON.stringify(config["child-page-path"]) + ";\n";
         viewContainer.this = viewContainer;
         delete viewContainer.this.this;
         // load all predefined modules like filtervalues
@@ -204,19 +214,24 @@ exports.generatePage = function (origConfig, callback) {
                         }
                     }
                     var predefinedHelper = new (require('./' + config.predefinedModules[predefinedModule].module))();
-                    script += "Yd.predefined." + predefinedModule + ' = ' + JSON.stringify(
+                    script += namespaceCapital + ".predefined." + predefinedModule + ' = ' + JSON.stringify(
                         predefinedHelper.init(neededData)
                     ) + ";\n";
                     predefinedHelper = null;
                 }
             }
         }
+
+
         script += '</script>';
-        script += util.format('<!--[if !IE]> --><script id="yd-application-script" type="text/javascript" src="/%s"></script><!-- <![endif]-->', config["scriptName"]);
-        script += util.format('<!--[if IE 7]><script id="yd-application-script-ie7" type="text/javascript" src="/%s"></script><![endif]-->', config["scriptName"].replace('/production-', '/production-msie7.0-'));
-        script += util.format('<!--[if IE 8]><script id="yd-application-script-ie8" type="text/javascript" src="/%s"></script><![endif]-->', config["scriptName"].replace('/production-', '/production-msie8.0-'));
-        script += util.format('<!--[if IE 9]><script id="yd-application-script-ie9" type="text/javascript" src="/%s"></script><![endif]-->', config["scriptName"].replace('/production-', '/production-msie9.0-'));
-        var finalHtml = config["template"].replace(/<script[^>]+id="yd-application-script"[^>]*><\/script>/, script);
+        script += util.format('<!--[if !IE]> --><script id="%s-application-script" type="text/javascript" src="/%s"></script><!-- <![endif]-->', namespace, config["scriptName"]);
+        script += util.format('<!--[if IE 7]><script id="%s-application-script-ie7" type="text/javascript" src="/%s"></script><![endif]-->', namespace, config["scriptName"].replace('/production-', '/production-msie7.0-'));
+        script += util.format('<!--[if IE 8]><script id="%s-application-script-ie8" type="text/javascript" src="/%s"></script><![endif]-->', namespace, config["scriptName"].replace('/production-', '/production-msie8.0-'));
+        script += util.format('<!--[if IE 9]><script id="%s-application-script-ie9" type="text/javascript" src="/%s"></script><![endif]-->', namespace, config["scriptName"].replace('/production-', '/production-msie9.0-'));
+
+        var scriptTagRegExp = new RegExp('<script[^>]+id="' + namespace + '-application-script"[^>]*><\\/script>');
+        //var finalHtml = config["template"].replace(/<script[^>]+id="yd-application-script"[^>]*><\/script>/, script);
+        var finalHtml = config["template"].replace(scriptTagRegExp, script);
         url += ".html";
         filename = config["upload-worker"] ?
             saveDiskPath + "/production." + url.replace(/\//g, "_") :

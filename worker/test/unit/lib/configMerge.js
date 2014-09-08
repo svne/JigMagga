@@ -65,7 +65,7 @@ describe('configMerge', function () {
 
             var stream = configMerge.getConfigStream();
             
-            stream.on('err', function (err) {
+            stream.on('error', function (err) {
                 expect(err).to.be.an.instanceOf(WorkerError);
                 expect(err.originalMessage).to.eql(message);
                 done();

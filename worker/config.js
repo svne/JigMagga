@@ -9,7 +9,7 @@
 
 
 var path = require('path');
-var parseArguments = require('./lib/parseArguments');
+var parseArguments = require('./parseArguments');
 
 var config;
 

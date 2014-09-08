@@ -28,6 +28,7 @@ module.exports = function (processArgs) {
         .option('-V, --postfix', 'use this version postfix queue')
         .option('-I, --locale <n>', 'use given locale')
         .option('-t, --target <n>', 'relative path from current dir to target project')
+        .option('-f, --fixtures', 'use fixtures from project folder instead of making an api call')
         .option('-w, --write [value]', 'write to disk the archive with generated files instead of upload them, path should be provided')
         .parse(processArgs);
 };

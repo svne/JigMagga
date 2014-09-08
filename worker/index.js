@@ -22,7 +22,7 @@ var fs = require('fs'),
     _ = require('lodash'),
     path = require('path'),
     getRedisClient = require('./lib/redisClient'),
-    parseArguments = require('./lib/parseArguments');
+    parseArguments = require('./parseArguments');
 
 var config = require('./config');
 
@@ -41,6 +41,7 @@ var amqp = require('./lib/amqp'),
 var WorkerError = error.WorkerError;
 var timeDiff = new TimeDiff(log);
 var startTimeDiff = timeDiff.create('start');
+var getMeta = helper.getMeta;
 
 if (config.main.nodetime) {
     log('connect to nodetime for profiling');
@@ -53,16 +54,17 @@ log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
 var program = parseArguments(process.argv);
 
 var basePath = (program.target) ? path.join(process.cwd(), program.target) : process.cwd();
+log('base project path is %s', basePath);
 
-// get redis Client
-var redisClient = getRedisClient(config.redis, function error(err) {
-    log('redis Error %j', err, {redis: true});
-}, function success() {
-    log('redis client is ready', {redis: true});
-});
-
-//if queue argument exists connect to amqp queues
 if (program.queue) {
+    // get redis Client
+    var redisClient = getRedisClient(config.redis, function error(err) {
+        log('redis Error %j', err, {redis: true});
+    }, function success() {
+        log('redis client is ready', {redis: true});
+    });
+
+    //if queue argument exists connect to amqp queues
     var connection = amqp.getConnection(config.amqp.credentials);
     var queues = helper.getQueNames(program, config.amqp);
 
@@ -70,18 +72,12 @@ if (program.queue) {
     var queuePool = new amqp.QueuePool(queues, connection, {prefetch: config.amqp.prefetch});
 }
 
-
-log('base project path is %s', basePath);
-
-var getMeta = helper.getMeta;
-
 /**
  * handle non fatal error regarding with message parsing
  *
  * @param  {{origMessage: object, message: string, stack: string}} err
  */
 var workerErrorHandler = function (err) {
-    console.log('workerErrorHandler');
     log('error', 'Error while processing message: %j',  err, err.originalMessage, {});
     if (!program.queue) {
         return;
@@ -93,10 +89,12 @@ var workerErrorHandler = function (err) {
     var originalMessage = err.originalMessage || {};
     originalMessage.error = err.message;
 
-    queuePool.amqpErrorQueue.publish(originalMessage);
+    if (program.queue) {
+        queuePool.amqpErrorQueue.publish(originalMessage);
 
-    if (!program.live && !originalMessage.upload) {
-        queuePool.amqpDoneQueue.publish(originalMessage);
+        if (!program.live && !originalMessage.upload) {
+            queuePool.amqpDoneQueue.publish(originalMessage);
+        }
     }
 };
 
@@ -114,7 +112,7 @@ var generatorRoutes = {
      *
      * @param  {{uploadList: Object[], message: object, key: string}} data [description]
      */
-pipe: function pipeHandler(data) {
+    pipe: function pipeHandler(data) {
 
         var generateZipTimeDiff = timeDiff.create('generat:zip'),
             archiverStream,
@@ -135,7 +133,9 @@ pipe: function pipeHandler(data) {
         log('message from pipe generator, key %s', key,  getMeta(message));
 
         //send message to done queue
-        queuePool.amqpDoneQueue.publish(message.origMessage);
+        if (program.queue) {
+            queuePool.amqpDoneQueue.publish(message.origMessage);
+        }
 
         archiverStream = archiver.bulkArchive(data.uploadList);
         data = null;
@@ -143,6 +143,7 @@ pipe: function pipeHandler(data) {
             destination = helper.createSaveZipStream(program, message, basePath);
             destination.once('finish', function () {
                 log('saved on disk', getMeta(message));
+                helper.executeAck(key);
             });
         } else {
             destination = stream.accumulate(function(err, data, next) {

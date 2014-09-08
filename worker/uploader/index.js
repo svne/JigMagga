@@ -18,8 +18,10 @@ var log = require('../lib/logger')('uploader', {component: 'uploader', processId
     ProcessRouter  = require('../lib/router'),
     stream = require('../lib/streamHelper'),
     error = require('../lib/error'),
-    TimeDiff = require('../lib/timeDiff');
+    TimeDiff = require('../lib/timeDiff'),
+    parseArguments = require('../parseArguments');
 
+var program = parseArguments(process.argv);
 var timeDiff = new TimeDiff(log);
 
 var WorkerError = error.WorkerError;
@@ -35,9 +37,11 @@ var messageStream = stream.duplex();
 
 var REDIS_CHECK_TIMEOUT = 100;
 
-var redisClient = getRedisClient(config.redis, function error(err) {
-    log('redis Error %j', err, {redis: true});
-});
+if (program.queue) {
+    var redisClient = getRedisClient(config.redis, function error(err) {
+        log('redis Error %j', err, {redis: true});
+    });
+}
 
 var handleError = function (text, data) {
     log('error', text, {error: true});
@@ -166,14 +170,17 @@ var uploadStream = function (source) {
     });
 };
 
+if (program.queue) {
+    redisClient.on('ready', function () {
+        log('redis client is ready', {redis: true});
 
-redisClient.on('ready', function () {
-    log('redis client is ready', {redis: true});
+        redisListStream.pipe(uploadStream(redisListStream));
 
-    redisListStream.pipe(uploadStream(redisListStream));
-
+        process.send({ready: true});
+    });
+} else {
     process.send({ready: true});
-});
+}
 
 messageStream.pipe(uploadStream());
 

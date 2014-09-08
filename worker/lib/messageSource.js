@@ -69,6 +69,15 @@ module.exports = {
             });
         }
         data.message = _.assign(data.message, values);
+        data.key = messageHelper.createMessageKey(data.message);
+
+        data.queueShift = function () {
+            process.nextTick(function () {
+                log('all jobs done. Exiting...');
+                process.exit();
+            });
+        };
+
         log('creating source from command line kyes', helper.getMeta(data.message));
         return es.readArray([data]);
     },

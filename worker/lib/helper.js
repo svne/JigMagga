@@ -268,7 +268,7 @@ module.exports = {
      * @return {object}
      */
     getMeta: function (msg) {
-        return _.pick(msg, ['page', 'url', 'locale']);
+        return _.pick(msg, ['page', 'url', 'locale', 'basedomain']);
     },
 
     /**

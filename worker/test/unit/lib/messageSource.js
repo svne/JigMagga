@@ -1,4 +1,4 @@
-/*global describe, it : true*/
+/*global describe, it, before: true*/
 'use strict';
 
 var path = require('path');
@@ -68,6 +68,17 @@ describe('messageSource', function () {
     });
 
     describe('#getDefaultSource', function () {
+
+        before(function () {
+            var messageHelper = {
+                createMessageKey: function () {return 'sad';}
+            };
+
+            messageSource.__set__({
+                messageHelper: messageHelper
+            });
+        });
+
         it('should add to message basedomain url page and locale', function (done) {
             var stream = messageSource.getDefaultSource(message, function () {});
             stream.on('data', function (msg) {

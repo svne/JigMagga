@@ -34,28 +34,27 @@ module.exports = {
          * @param  {{message: WorkerMessage, basePath: string, isPageConfigLoaded: boolean}}   data
          * @param  {Function} callback
          */
-        return es.through(function (data) {
+        return es.map(function (data, callback) {
 
-            var that = this,
-                message = data.message,
+            var message = data.message,
                 basePath = data.basePath;
 
             if (data.isPageConfigLoaded) {
-                return that.emit('data', data);
+                return callback(null, data);
             }
 
             basePath = path.join(basePath, 'page');
 
             configMerge.getPageConfig(basePath, message.basedomain, message.page, function (err, config) {
                 if (err) {
-                    return that.emit('err', new WorkerError(err.message || err, data.message, data.key));
+                    return callback(new WorkerError(err.message || err, data.message, data.key));
                 }
 
                 var result = _.cloneDeep(data);
                 result.config = config;
                 result.isPageConfigLoaded = (message.page) ? true : false;
+                callback(null, result);
 
-                that.emit('data', result);
             });
         });
     }

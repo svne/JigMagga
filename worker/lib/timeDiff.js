@@ -24,6 +24,9 @@ TimeDiff.prototype.create = function(prefix) {
         prefix: prefix,
         diff: process.hrtime(),
         stop: function () {
+            if (process.env.NODE_ENV === 'test') {
+                return;
+            }
             var diff = process.hrtime(this.diff);
             var time = diffToTime(diff);
             that._log('time diff in msec: %d', time, {timediff: true, diff: time, prefix: prefix});

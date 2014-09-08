@@ -1,0 +1,702 @@
+[
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12549,
+        "url": "avelinos-hamburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 17146,
+        "url": "aviratora-steakhaus-bernau"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24103,
+        "url": "aviratora-steakhaus-ristorante-bernau"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12827,
+        "url": "avsar-kebap-haus-und-pizzeria-wiesbaden"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12274,
+        "url": "awanda-lieferservice-stuttgart"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 15223,
+        "url": "aydin-doener-essen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22036,
+        "url": "ayintap-doener-und-pizza-muenster"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21935,
+        "url": "aylin-tuerkische-spezialitaeten-und-mehr-hamburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 25709,
+        "url": "ayman-s-pizzeria-bremen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12041,
+        "url": "ayurveda-heimservice-muenchen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23260,
+        "url": "ayurveda-heimservice-muenchen-2"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23508,
+        "url": "ayurveda-muenchen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23065,
+        "url": "azad-grill-erfurt"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 18866,
+        "url": "azad-grill-erfurt-inaktiv"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20671,
+        "url": "azzurro-paderborn"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 25471,
+        "url": "b-b-bistro-offenbach"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20545,
+        "url": "b-kitchen-1-hamburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12368,
+        "url": "b-kitchen-hamburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22591,
+        "url": "b-town-fast-food-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22825,
+        "url": "b-und-b-focaccia-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 17210,
+        "url": "b1-pizzeria-ansbach"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 19504,
+        "url": "b4u-burger-for-you-hamburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23124,
+        "url": "b4u-taste-the-difference-hamburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 18981,
+        "url": "baalbak-restaurant-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21370,
+        "url": "baan-thai-imbiss-luebbecke"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21960,
+        "url": "bab-marrakesch-wiesbaden"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22066,
+        "url": "baba-jee-niederkassel"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 19219,
+        "url": "baba-tuerkisches-spezialitaeten-haus-alfeld-leine"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24648,
+        "url": "babalu-wuppertal"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23774,
+        "url": "babalu-wuppertal-inaktiv"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 13283,
+        "url": "babas-pizza-muenchen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 25496,
+        "url": "bablo-pizza-bremen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24936,
+        "url": "babo-doener-pizza-und-grillhaus-bad-oeynhausen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 25754,
+        "url": "babylon-bistro---pizzeria-gronau--westfalen---bismarck"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20395,
+        "url": "babylon-gronau-westfalen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 16377,
+        "url": "babylon-hannover-hannover"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 17097,
+        "url": "babylon-imbiss-pizza-service-bremen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23912,
+        "url": "babylon-kassel"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 17800,
+        "url": "babylon-pizza-delmenhorst"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 18227,
+        "url": "babylon-pizza-kebap-hausach"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 13543,
+        "url": "baccara-hamburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24116,
+        "url": "bacco-karte-n30-wiesbaden"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 16204,
+        "url": "bacco-karte-n30-wiesbaden-inaktiv"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 18728,
+        "url": "bacco-taunusstein"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24173,
+        "url": "bacco-wiesbaden"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 13057,
+        "url": "bacco-wiesbaden-inaktiv"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 15565,
+        "url": "baccos-grill-hamburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20228,
+        "url": "baci-baci-pizza-taxi-wesel"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21093,
+        "url": "back-fresh-bielefeld"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21147,
+        "url": "backofen-wennigsen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24444,
+        "url": "badsha-frankfurt-am-main"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21442,
+        "url": "baeckerboy-duisburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 18387,
+        "url": "baeckerei-suellner-berg-bei-neumarkt-in-der-oberpfalz"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 15338,
+        "url": "baeckerei-trage-bremen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23894,
+        "url": "baerbels-bistro-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21451,
+        "url": "baerlifood-office-lieferservice-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12034,
+        "url": "bagel-brothers-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12086,
+        "url": "bagel-brothers-frankfurt-am-main"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12416,
+        "url": "bagel-company-berlin-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 17258,
+        "url": "bagel-station-hannover-hannover"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 14468,
+        "url": "bagel-station-koeln"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20128,
+        "url": "bagel-und-torten-taxi-catering-berlin-wilmersdorf"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22865,
+        "url": "baggis-home-of-pizza-bochum"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23334,
+        "url": "baguette-berlin-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22917,
+        "url": "baguette-excellent-lilienthal"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 18010,
+        "url": "baguette-express-augsburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23042,
+        "url": "baguettemanufaktur-bargteheide"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 25321,
+        "url": "baguetteria-das-originale-duesseldorf"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23793,
+        "url": "baguetteria-das-originale-duesseldorf-inaktiv"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24333,
+        "url": "baguetterie-bak-bread-chemnitz"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 14806,
+        "url": "baguitzza-oldenburg"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22951,
+        "url": "bahnhof-pizzeria-mannheim"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 18377,
+        "url": "bahnhofs-grill-attendorn"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21258,
+        "url": "bains-pizza-fischach"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 14436,
+        "url": "bains-pizza-schwabmuenchen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12292,
+        "url": "bajwas-pizza-service-i-leipzig"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 13693,
+        "url": "bajwas-pizza-service-ii-leipzig"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 13694,
+        "url": "bajwas-pizza-service-iii-leipzig"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 13695,
+        "url": "bajwas-pizza-service-iv-leipzig"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21247,
+        "url": "bajwas-pizza-service-leipzig"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23553,
+        "url": "bajwas-pizza-service-leipzig-engelsdorf"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22578,
+        "url": "bajwas-pizza-service-leipzig-inaktiv"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 9095,
+        "url": "bakers-berlin"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 19885,
+        "url": "baktis-restaurante-rees"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 19959,
+        "url": "bal-fastfood-more-ludwigsburg-mitte"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 22075,
+        "url": "balinger-china-service-balingen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 16604,
+        "url": "balinger-pizza-service-balingen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21505,
+        "url": "balis-restaurant-pizzeria-oberhausen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 18077,
+        "url": "balkan-burger-bielefeld"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 18179,
+        "url": "balkan-grill-pizzeria-lippstadt"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 25448,
+        "url": "balkan-plaza-karcheva-heidenheim-an-der-brenz"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21290,
+        "url": "balkan-schnellrestaurant-braunschweig"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 12090,
+        "url": "ballu-express-hannover"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 16812,
+        "url": "ballys-bollywood-leipzig"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 28870,
+        "url": "balou-s-imbiss-salzhemmendorf"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 20944,
+        "url": "bam-bus-dudenhofen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23325,
+        "url": "bambi-am-weissen-hirsch-dahmetal"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 21056,
+        "url": "bambino-dueren"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 24896,
+        "url": "bambino-isernhagen"
+    },
+    {
+        "basedomain": "lieferservice.de",
+        "page": "menu",
+        "locale": "de_DE",
+        "restaurantId": 23776,
+        "url": "bambino-isernhagen-inaktiv"
+    }
+]

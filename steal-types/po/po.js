@@ -92,6 +92,7 @@ steal({id: './gettext.js', ignore: true}, "./sprintf.js",
             steal().config().types.jsOld.require(jsOptions, jsSuccess, jsError);
         };
 
+
         if (!steal.config("isBuild")) {
             steal().config().types.jsOld = steal().config().types.js;
             steal.type("js", function (jsOptions, jsSuccess, jsError) {
@@ -114,5 +115,6 @@ steal({id: './gettext.js', ignore: true}, "./sprintf.js",
 
             });
         }
+
         return can;
     });

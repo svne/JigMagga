@@ -1,98 +1,37 @@
 !function (window) {
+
     /**
-     * global time getter function
-     * @param win
-     * @constructor
+     *
+     * @param controller
+     * @returns {string}
      */
-    var GlobalTimeFunction = function (win) {
-            window.ydDate = function () {
-                return new win.Date();
-            };
-            var timezoneCache = {};
-            var getTimezoneOffsetFromGMT = function (date, config) {
-                if (config && config.timezone) {
-                    if (!timezoneCache[+date]) {
-                        var offsetHoursFromGMT = config.timezone.defaultOffset,
-                            timezone = (config && config.timezone && config.timezone[date.getFullYear()]
-                                ) || false;
-                        if (timezone && (+date
-                            ) >= timezone.from && (+date
-                            ) <= timezone.to) {
-                            offsetHoursFromGMT = config.timezone[date.getFullYear()].offset;
-                        }
-                        timezoneCache[+date] = offsetHoursFromGMT;
-                        return offsetHoursFromGMT;
-                    } else {
-                        return  timezoneCache[+date];
-                    }
-                }
-                return new Date().getTimezoneOffset();
-            };
-            steal('jquery', function () {
-                var _serverDate,
-                    _startDate;
-                Date.prototype.ydDateDiff = function () {
-                    var diffTime = new win.Date().getTime() - new win.Date(_serverDate || new win.Date()).getTime();
-                    return !(diffTime > -150000 && diffTime < 150000
-                        );
-                };
-                window.ydDate = function () {
-                    var date = new win.Date(), offsetHoursFromGMT;
-                    if (_serverDate) {
-                        date = new win.Date(_serverDate);
-                        offsetHoursFromGMT = getTimezoneOffsetFromGMT(date, (win && win.Yd ? win.Yd.config : undefined
-                            ));
-                        date.setMinutes(date.getMinutes() + date.getTimezoneOffset() + offsetHoursFromGMT);
-                        date.setMilliseconds(date.getMilliseconds() + (new win.Date().getTime() - _startDate.getTime()
-                            ));
-                    } else {
-                        date = new win.Date();
-                    }
-                    return date;
-                };
-                (function () {
-                    $.ajax({
-                        type: 'HEAD',
-                        url: win.location.href,
-                        cache: false,
-                        success: function (msg, b, c) {
-                            _startDate = new win.Date();
-                            _serverDate = c.getResponseHeader('Date');
-                            if (win.ydDate().ydDateDiff()) {
-                                $(win).trigger('serverTimeArrived');
-                            }
-                        },
-                        error: function (jqXHR, textStatus, errorThrown) {
-                            steal.dev.log(jqXHR);
-                            steal.dev.log(errorThrown);
-                        }
-                    });
-                })();
-            });
+    var controllerToPath = function (controller) {
+            return controller.toLowerCase().replace(/\./g, "/");
         },
         /**
          * will remove a jig when browser is not supported
+         * if steal.config("isBuild") is true it will include all browser stuff and provide steal information to filter ist via build
          * @param jig
          * @returns {*}
          */
-        browserSupport = function (jig) {
-            if (jig && jig.browser && (window.$ || (steal.config("isBuild") && steal.config("browser")))) {
+        browserSupport = function (jig, config) {
+            if (jig && jig.browser) {
                 var $browser = window.$ ? window.$.browser : steal.config("browser"),
                     versionconf,
                     k,
-                    key
-                version = $browser.version,
+                    key,
+                    version = $browser ? $browser.version : null,
                     browserconf = jig.browser;
                 //noinspection JSLint
                 for (k in browserconf) {
                     //noinspection JSLint
-                    if (k && k in $browser && browserconf[k].version) {
+                    if (k && $browser && k in $browser && browserconf[k].version) {
                         versionconf = browserconf[k].version;
                         //noinspection JSLint
                         for (key in versionconf) {
                             if (version.search(versionconf[key]) !== -1) {
                                 if (browserconf[k].controller && jig.path) {
-                                    jig.path = browserconf[k].controller.toLowerCase().replace(/\./g, "/");
+                                    jig.path = controllerToPath(browserconf[k].controller)
                                 } else {
                                     jig.disable = true;
                                 }
@@ -106,6 +45,7 @@
         },
         /**
          * will include the browser stuff
+         * if steal.config("isBuild") is true it will include all files and put also the browser property for the build
          * @param config
          */
         browserIncludes = function (config) {
@@ -113,9 +53,9 @@
                 browser = window.$ ? window.$.browser : steal.config("browser");
             if (config && browser && config.browserincludes) {
                 for (key in config.browserincludes) {
-                    if (key in browser) {
-                        for (var includeKey in config.browserincludes[key]) {
-                            config.includes.push(config.browserincludes[key][includeKey]);
+                    for (var includeKey in config.browserincludes[key]) {
+                        if (key in browser) {
+                            config.includes.push({id: config.browserincludes[key][includeKey], browser: key});
                         }
                     }
                 }
@@ -172,7 +112,7 @@
          */
         renderJig = function (jig, section, config) {
             if (jig && jig.render === false && section !== "head") {
-                var path = jig.controller.toLowerCase().replace(/\./g, "/");
+                var path = controllerToPath(jig.controller);
                 if (jig.css !== false) {
                     jig.css = path + "/css/" + path.split("/").pop(-1) + ".scss";
                 }
@@ -194,81 +134,77 @@
             return config;
         },
         /**
+         * include the template of the jig
+         * @param config
+         */
+        includeTemplate = function (config, jig) {
+            if (jig.template) {
+                if (typeof jig.template === "object") {
+                    if (jig.template[config.locale]) {
+                        jig.options.template = "//" + jig.template[config.locale];
+                        config.includes.push({id: jig.options.template, jig: jig, locale: config.locale});
+                    } else {
+                        jig.options.template = "//" + jig.template[Object.keys(jig.template)[0]];
+                        config.includes.push({id: jig.options.template, jig: jig, locale: Object.keys(jig.template)[0]});
+                    }
+                } else {
+                    jig.options.template = "//" + jig.template;
+                    config.includes.push(jig.options.template);
+                }
+            } else {
+                jig.options.template = "//" + controllerToPath(jig.controller) + "/views/init.ejs";
+                console.warn("Missing template for Controller: ", jig.controller, " ", "//" + controllerToPath(jig.controller) + "/views/init.ejs");
+            }
+        },
+        /**
          * prepare all jigs for final config
          * @param config
          */
-        prepareConfigJigs = function (config) {
-            var key;
-            if (config.jigs && !isEmptyObject(config.jigs)) {
-                //noinspection JSLint
-                for (key in config.jigs) {
-                    //noinspection JSUnfilteredForInLoop
-                    //TODO replace all short written config controller because we do not now if it is ejs or mustache
-                    if (typeof (config.jigs[key]) === "string") {
-                        config.jigs[key] = {"controller": config.jigs[key]};
-                    }
-                    if (!steal.config("isBuild") || !config.jigs[key].disabled) {
-                        if (!config.jigs[key].path && config.jigs[key].controller) {
-                            config.jigs[key].path = config.jigs[key].controller.toLowerCase().replace(/\./g, "/");
-                        }
-                        if (config.jigs[key].sass) {
-                            for (var i in config.jigs[key].sass) {
-                                if (config.jigs[key].controller) {
-                                    steal.Yd.sass[config.jigs[key].controller.toLowerCase().replace(/\./g, "-") + "-" + i] = config.jigs[key].sass[i];
-                                }
-                            }
-                        }
-                        config.jigs[key].options = config.jigs[key].options || {};
-                        if (config.jigs[key].template) {
-                            if (typeof config.jigs[key].template === "object") {
-                                if (config.jigs[key].template[config.locale]) {
-                                    config.jigs[key].options.template = "//" + config.jigs[key].template[config.locale];
-                                } else {
-                                    config.jigs[key].options.template = "//" + config.jigs[key].template[Object.keys(config.jigs[key].template)[0]];
-                                }
-                            } else {
-                                config.jigs[key].options.template = "//" + config.jigs[key].template;
-                            }
-                        } else {
-                            config.jigs[key].options.template = "//" + config.jigs[key].controller.toLowerCase().replace(/\./g, "/") + "/views/init.ejs";
-                            console.warn("Missing template for Controller: ", config.jigs[key].controller, " ", "//" + config.jigs[key].controller.toLowerCase().replace(/\./g, "/") + "/views/init.ejs");
-                        }
-                        if (config.jigs[key].css) {
-                            config.jigs[key].options.css = "//" + config.jigs[key].css;
-                        }
-                        //config.jigs[key] = browserSupport(config.jigs[key]);
-                        config.jigs[key] = renderJig(config.jigs[key], key, config);
-                        /**
-                         * check if jig has includes that are config special
-                         */
-                        if (config.jigs[key] && config.jigs[key].includes) {
-                            if (typeof config.jigs[key].includes === "string") {
-                                config.includes.push(config.jigs[key].includes);
-                            } else if (config.jigs[key].includes.length) {
-                                config.includes = config.includes.concat(config.jigs[key].includes);
-                            }
-                        }
-                        if (config.jigs[key] && config.jigs[key].css) {
-                            config.includes.push(config.jigs[key].css);
-                        }
-                        if (config.jigs[key].template) {
-                            if (typeof config.jigs[key].template === "object") {
-                                if (config.jigs[key].template[config.locale]) {
-                                    config.includes.push("//" + config.jigs[key].template[config.locale]);
-                                } else {
-                                    config.includes.push("//" + config.jigs[key].template[Object.keys(config.jigs[key].template)[0]]);
-                                }
-                            } else {
-                                config.includes.push(config.jigs[key].template);
-                            }
-                        }
-                        // include controller
-                        if (config.jigs[key] && config.jigs[key].render) {
-                            if (config.jigs[key].path) {
-                                config.includes.push(config.jigs[key].path);
-                            }
+        prepareJig = function (config, jigKey, jig) {
+
+            //noinspection JSUnfilteredForInLoop
+            //TODO replace all short written config controller because we do not now if it is ejs or mustache
+            if (typeof (jig) === "string") {
+                jig = config.jigs[jigKey] = {"controller": jig};
+            }
+            if (!jig.disabled) {
+                if (!jig.path && jig.controller) {
+                    jig.path = controllerToPath(jig.controller);
+                }
+                if (jig.sass) {
+                    for (var i in jig.sass) {
+                        if (jig.controller) {
+                            config.sass[jig.controller.toLowerCase().replace(/\./g, "-") + "-" + i] = jig.sass[i];
                         }
                     }
+                }
+                jig.options = jig.options || {};
+
+                includeTemplate(config, jig);
+
+                if (jig.css) {
+                    jig.options.css = "//" + jig.css;
+                }
+                browserSupport(jig, config);
+                renderJig(jig, jigKey, config);
+                /**
+                 * check if jig has includes that are config special
+                 */
+                if (jig && jig.includes) {
+                    if (typeof jig.includes === "string") {
+                        config.includes.push(jig.includes);
+                    } else if (jig.includes.length) {
+                        config.includes = config.includes.concat(jig.includes);
+                    }
+                }
+                // include css
+                if (jig && jig.css) {
+                    config.includes.push(jig.css);
+                }
+
+                // include controller
+                if (jig && jig.render && jig.path) {
+                    config.includes.push({id: jig.path});
                 }
             }
         },
@@ -421,7 +357,7 @@
             }
         },
         /**
-         * check jig config for slot logic and execute ist
+         * check jig config for slot logic and execute it
          * eg.
          *  "slot" : {
          *
@@ -470,6 +406,29 @@
                 }
             }
         },
+        prepareNamespace = function (config, options) {
+            var namespace = steal.config("namespace");
+
+            steal.config(namespace, config);
+            options.text = "if(typeof window === 'undefined'){ window = {};};\n" +
+                "window." + namespace + " = window." + namespace + " || {};\n" +
+                namespace + " = window." + namespace + ";\n" +
+                "window." + namespace + ".predefined = window." + namespace + ".predefined || {};\n" +
+                "window." + namespace + ".request = window." + namespace + ".request || {};\n" +
+                "window." + namespace + ".config = " + JSON.stringify(config) + ";\n" +
+                "steal.config('" + namespace + "', window." + namespace + ".config);\n";
+
+        },
+        setPageNum = function (config, options) {
+            if (config["pagination-limit"]) {
+                options.text += "window." + steal.config("namespace") + ".request['pageLimit'] = " + config['pagination-limit'] + ";\n";
+            }
+            if (!steal.config("isBuild")) {
+                if (config["init-pagination-pageNum"]) {
+                    options.text += "window." + steal.config("namespace") + ".request['pageNum'] = " + config["init-pagination-pageNum"] + ";\n";
+                }
+            }
+        },
         /**
          * process a config
          * MAIN Function
@@ -480,8 +439,9 @@
          */
         processConfig = function (options, config, success, error) {
 
+            var namespace = config.namespace ? config.namespace.charAt(0).toUpperCase() + config.namespace.slice(1) : "Jm";
+            steal.config("namespace", namespace);
 
-            steal.Yd = steal.Yd || {};
             // for js building
             options.putDependenciesAfterThisModuleForBuild = true;
 
@@ -489,55 +449,43 @@
                 config = removeDevelopOptionsFromConfig(config);
             }
 
-            if (config.sass) {
-                steal.Yd.sass = config.sass;
-            }
 
             prepareDomainAndPageConfig(config);
-            prepareConfigJigs(config);
 
-            /**
-             * TODO write functions for every jig action or prepare and split code to cleanup and make js testable
-             * @type {Array}
-             */
+
+            // prepare all jigs
             var jigsKeys = Object.keys(config.jigs);
             for (var i = 0; i < jigsKeys.length; i++) {
                 executeJigSlotLogic(jigsKeys[i], config.jigs[jigsKeys[i]]);
+                prepareJig(config, jigsKeys[i], config.jigs[jigsKeys[i]]);
             }
 
 
             // include all browser specify stuff
             browserIncludes(config);
 
+            // include main lib
             config.includes.push("lib/lib.js");
 
             // include all jigs that have IncludeController
 
+            prepareNamespace(config, options);
 
-            options.text = "if(typeof window === 'undefined'){ window = {};};\n" +
-                "window.Yd = window.Yd || {};\n" +
-                "Yd = window.Yd;\n" +
-                "window.Yd.predefined = window.Yd.predefined || {};\n" +
-                "window.Yd.request = window.Yd.request || {};\n" +
-                "window.Yd.config = " + JSON.stringify(config) + ";\n" +
-                "steal.config('page', window.Yd.config);\n";
-            if (config["pagination-limit"]) {
-                options.text += "window.Yd.request['pageLimit'] = " + config['pagination-limit'] + ";\n";
-            }
-            if (!steal.config("isBuild")) {
-                if (config["init-pagination-pageNum"]) {
-                    options.text += "window.Yd.request['pageNum'] = " + config["init-pagination-pageNum"] + ";\n";
-                }
-            }
+
+            setPageNum(config, options);
 
 
             if (config.includes && config.includes.length) {
 
                 options.text += "\nvar contentLoaded =" + contentLoaded.toString() + ";\n";
-                options.text += "\n(" + GlobalTimeFunction.toString() + ")(window);\n";
-                steal.apply(steal, config.includes);
-
-
+                //load PO file before js includes only for development ENV
+                if (!steal.config("isBuild")) {
+                    steal(config.includes[0], function () {
+                        steal.apply(steal, config.includes);
+                    });
+                } else {
+                    steal.apply(steal, config.includes);
+                }
 
                 if ((config.jigs && !isEmptyObject(config.jigs)) || config.tracking) {
 
@@ -557,11 +505,11 @@
 
                     options.text += "\ncontentLoaded(window, function(){\n";
                     options.text += "\nvar routeInit = false;\n";
-                    options.text += "\ndocument.body.className = document.body.className.replace(/\\byd-onload\\b/,'');\n";
+                    options.text += "\ndocument.body.className = document.body.className.replace(/\\b" + config.namespace + "-onload\\b/,'');\n";
                     options.text += "\ncan.support.cors = true;\n";
                     options.text += "\nif(routeInit){return false;} routeInit = true;\n";
                     // init all routes and trigger ready
-                    options.text += "\ncan.route.ydReady = can.Deferred();\n";
+                    options.text += "\ncan.route." + config.namespace + "Ready = can.Deferred();\n";
 
                     // write all routes that jigs have
                     options.text += writeJigRoutes(config);
@@ -584,7 +532,7 @@
                                 }
                             }
                             options.text += "\ncan.route.ready();";
-                            options.text += "\ncan.route.ydReady.resolve();";
+                            options.text += "\ncan.route." + config.namespace + "Ready.resolve();";
                         });
                     }
                     options.text += "\n});";
@@ -594,8 +542,15 @@
                 success();
             } else {
                 error("No includes or jigs defined");
+                console.warn("No includes or jigs defined");
             }
         },
+        /**
+         * merged all configs in 1
+         * @param parseconfig
+         * @param configs
+         * @returns {{includes: Array}}
+         */
         mergeConfigs = function (parseconfig, configs) {
 
             configs.push(parseconfig);
@@ -603,9 +558,7 @@
             var config = {
                     includes: []
                 },
-                includes = [],
-                isTest = steal.config("isTest"),
-                testJig = steal.config("testJig");
+                includes = [];
 
 
             for (var i = 0; i < configs.length; i++) {
@@ -617,18 +570,6 @@
                         }
                     }
                 }
-                // check if this is a test and delete all non test jigs
-                if (isTest && configs[i]) {
-                    if (!configs[i].testConf) {
-                        delete configs[i].jigs;
-                    } else if (testJig) {
-                        for (var key in configs[i].jigs) {
-                            if (key !== testJig) {
-                                delete configs[i].jigs[key];
-                            }
-                        }
-                    }
-                }
                 config = extend(config, configs[i]);
             }
 
@@ -636,6 +577,11 @@
 
             return config;
         },
+        /**
+         * get all config files
+         * @param configs
+         * @param done
+         */
         getAllConfigs = function (configs, done) {
             var counter = 0,
                 doneResult = [],
@@ -643,9 +589,9 @@
                     if (steal.config("isBuild") && !steal.config("isTest")) {
                         var fs = require("fs");
                         try {
-                            var content = fs.readFileSync(steal.config("root") + path.substring(1, path.length), {encoding: "utf8"});
+                            var content = fs.readFileSync(steal.config("root") + path, {encoding: "utf8"});
                         } catch (e) {
-                            console.warn("No .conf file:", steal.config("root") + path.substring(1, path.length));
+                            console.warn("No .conf file:", steal.config("root") + path);
                         }
                         callback(content);
                     } else {
@@ -680,48 +626,79 @@
                 done(doneResult);
             }
         },
+        /**
+         * TODO: use node config merger to have the same codebase (middleware grunt server)
+         * get all config paths
+         * @param path
+         * @returns {Array}
+         */
         getConfigPaths = function (path) {
             var configs = [],
+                namespace = getNamespace()
             // get all configs that are in folders - we can bubble up the path (default and domain)
                 setConfigs = function (path) {
-                    var isDefault = path.indexOf("default") !== -1,
-                        dirs = path.split("/");
+                    var dirs = path.split("/"),
+                        confPath;
                     for (var i = 0, dir = "", tempPath = "", len = dirs.length; i < len; i++, dir = dirs[i]) {
                         if (dir && dir.indexOf("html") === -1) {
                             tempPath += "/" + dir;
-                            if (i > (isDefault ? 1 : 2)) {
+                            confPath = tempPath + "/" + dir + ".conf";
+                            if (dir !== namespace && configs.indexOf(confPath) === -1) {
                                 configs.push(tempPath + "/" + dir + ".conf");
                             }
                         }
                     }
                 };
-            //TODO use regex that will work with all page paths
-            setConfigs(path.replace(/^\/([a-z]*)\/page\/.*\.[a-z]{2,3}\//, "/$1/page/default/"));
+            setConfigs(path.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/"));
             setConfigs(path);
+            setConfigs("/" +  namespace.toLowerCase() + "/page/" + getDomain());
             return configs;
         },
+        /**
+         * get path from page
+         * @returns {*}
+         */
+        getNamespace = function () {
+            var path = getPath(),
+                namsepsace = path.replace(/^\//, "").split("/")[0];
+            return namsepsace[0].toUpperCase() + namsepsace.slice(1);
+        },
+        /**
+         * get path from page
+         * @returns {*}
+         */
         getPath = function () {
             if (steal.config("pathToBuild")) {
                 return steal.config("pathToBuild");
             } else if (window.location) {
                 return window.location.pathname;
             } else {
-                throw new Error("No path to build is set!");
+                throw new Error("Conf type loader can´t get a location (url)");
                 return null;
             }
         },
+        /**
+         * get current domain
+         * @returns {string}
+         */
         getDomain = function () {
             var domain = "",
                 path = getPath(),
-                match = path.match(/\/[a-z]*\/page\/([^\/]+)\//);
+                match = path.match(/\/[^\/]*\/page\/([^\/]+)\//);
             if (match) {
                 domain = match[1];
+            } else if(steal.config("domain")){
+                domain = steal.config("domain");
             } else {
                 domain = "default";
                 console.warn("No domain in path / url - use default domain");
             }
             return domain;
         },
+        /**
+         * extend function
+         * @returns {*}
+         */
         extend = function (/*obj_1, [obj_2], [obj_N]*/) {
             if (arguments.length < 1 || typeof arguments[0] !== 'object') {
                 return false;
@@ -770,6 +747,11 @@
 
             return target;
         },
+        /**
+         * empty object check
+         * @param obj
+         * @returns {boolean}
+         */
         isEmptyObject = function (obj) {
             var name;
             for (name in obj) {
@@ -777,6 +759,11 @@
             }
             return true;
         },
+        /**
+         * read cookie
+         * @param name
+         * @returns {*}
+         */
         readCookie = function (name) {
             var ck,
                 cv,
@@ -792,19 +779,29 @@
             }
             return undefined;
         },
+        /**
+         * set sass variables (domain, locale) from config
+         * @param conf
+         * @returns {*}
+         */
         setSassVariables = function (conf) {
             conf.sass = conf.sass || {};
 
             if (!conf.domain) {
-               console.warn("Domain is not set in config (domain)");
+                console.warn("Domain is not set in config (domain)");
             }
             if (!conf.locale) {
                 console.warn("Locale is not set in config (locale)");
             }
-            conf.namespace = conf.namespace || "";
+            conf.namespace = conf.namespace || "Jm";
             conf.sass[conf.namespace + "-domain"] = conf.domain ? conf.domain.replace(/\./g, "_") : "default";
             conf.sass[conf.namespace + "-locale"] = conf.locale;
             return conf;
+        },
+        setIsTestConfigWhenFuncunitIsLoaded= function(){
+            if(typeof ___FUNCUNIT_OPENED !== "undefined"){
+                steal.config("isTest", true);
+            }
         };
 
     /**
@@ -812,56 +809,58 @@
      * Type definition of .conf files
      *
      */
+    steal.type("conf js", function (options, success, error) {
+        var domain,
+            stealToUri,
+            config = JSON.parse(options.text),
+            configs;
+        setIsTestConfigWhenFuncunitIsLoaded();
+        if (!config) {
+            error("Config can't be parsed");
+        }
+        // ignore this config to load in production
+        //options.ignore = true;
+        if (!config.includes) {
+            config.includes = [];
+        }
+        // get temp domain from URL after we had a conf we use the domain from conf file
+        domain = getDomain();
+        if (domain) {
+            // replace domain placeholder in paths
+            stealToUri = steal.idToUri;
+            steal.idToUri = function (id, noJoin) {
+                id.path = id.path.replace(/%DOMAIN%/, domain);
+                return stealToUri(id, noJoin);
+            };
+        }
+        configs = getConfigPaths(getPath());
+        getAllConfigs(configs, function (results) {
+            var mergedConfig = mergeConfigs(config, results);
 
-    if (typeof steal !== "undefined") {
-
-        steal.type("conf js", function (options, success, error) {
-            var domain,
-                stealToUri,
-                config = JSON.parse(options.text),
-                configs;
-            if (!config) {
-                error("Config can't be parsed");
+            if (!mergedConfig.domain) {
+                mergedConfig.domain = domain;
             }
-            if (!config.includes) {
-                config.includes = [];
-            }
-            // get temp domain from URL after we had a conf we use the domain from conf file
-            domain = getDomain();
-            if (domain) {
-                // replace domain placeholder in paths
-                stealToUri = steal.idToUri;
-                steal.idToUri = function (id, noJoin) {
-                    id.path = id.path.replace(/%DOMAIN%/, domain);
-                    return stealToUri(id, noJoin);
-                };
-            }
-            configs = getConfigPaths(getPath());
-            getAllConfigs(configs, function (results) {
-                var mergedConfig = mergeConfigs(config, results);
 
-                if (!mergedConfig.domain) {
-                    mergedConfig.domain = domain;
-                }
+            // set local
+            mergedConfig.locale = steal.config("init-locale") || steal.config().env === 'development' && !steal.config("isBuild") && readCookie("locale") || mergedConfig["init-locale"] || (mergedConfig.locales && mergedConfig.locales[0]) || "default";
 
-                // set local
-                mergedConfig.locale = steal.config("init-locale") || steal.config().env === 'development' && !steal.config("isBuild") && readCookie("yd-dev-locale") || mergedConfig["init-locale"] || (mergedConfig.locales && mergedConfig.locales[0]) || "default";
-
-                mergedConfig.includes.unshift((mergedConfig.namespace || "") + "/locales/" + mergedConfig.domain + "/" + mergedConfig.locale + "/messages.po");
+            var messagePOFile = (mergedConfig.namespace || "") + "/locales/" + mergedConfig.domain + "/" + mergedConfig.locale + "/messages.po";
+            mergedConfig.localePath = messagePOFile;
+            mergedConfig.includes.unshift(messagePOFile);
 
 
-                mergedConfig = setSassVariables(mergedConfig);
+            mergedConfig = setSassVariables(mergedConfig);
+            processConfig(options, mergedConfig, success, error);
 
 
-                processConfig(options, mergedConfig, success, error);
-            });
         });
-    }
+    });
 
-
+    // node export
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = {
-            setSassVariables: setSassVariables
+            setSassVariables: setSassVariables,
+            controllerToPath: controllerToPath
         };
     }
 

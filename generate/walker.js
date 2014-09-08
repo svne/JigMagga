@@ -12,7 +12,6 @@ var isDomain = function (domainName) {
     return regexp.test(domainName);
 };
 
-var f;
 
 /**
  * create walker

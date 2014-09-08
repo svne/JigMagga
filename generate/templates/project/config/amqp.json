@@ -1,0 +1,18 @@
+{
+    //insert rabbitMq credentials here
+    "credentials": {
+        "host": "", 
+        "login": "",
+        "password": "",
+        "vhost": ""
+    },
+    "prefixes": {
+        "highprio": ".high",
+        "mediumprio": ".medium",
+        "lowprio": ".low",
+        "default": ".deploy"
+    },
+    "prefetch": 100,
+    "queueBaseName": "pages.generate",
+    "queueErrorBaseName": "pages.generate.error"
+}

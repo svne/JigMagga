@@ -32,12 +32,29 @@ module.exports = function(grunt) {
                             config: "generator.namespace",
                             type: "input",
                             message: "Please set the namespace of the project:",
-                            default: function(answer) {
-                                if (answer['generator.template'] === 'project') {
-                                    return;
+                            filter: function (value) {
+                                return value.toLowerCase();
+                            },
+                            validate: function (value) {
+                                if (!value.match(/^[a-z][a-z0-9]*$/i)) {
+                                    return "Please only use chars and numbers starting with a character";
+                                } else {
+                                    return true;
                                 }
-                                // step through all folders, searching for a folder with page/page.conf inside. this should be a json file and should contain value for "namespace". Give the first one you find as the default
-                                return walker.getDefaultNamespace();
+                            },
+                            when: function (answers) {
+                                return answers['generator.template'] === 'project';
+                            }
+                        },
+                        {
+                            config: "generator.namespace",
+                            type: "list",
+                            message: "Please set the namespace of the project:",
+                            choices: function(answer) {
+                                // step through all folders, searching for a folder with page/page.conf inside.
+                                // this should be a json file and should contain value for "namespace".
+                                // Give all namespaces you find as the list
+                                return walker.getNamespaces();
                             },
                             filter: function (value) {
                                 return value.toLowerCase();
@@ -48,6 +65,9 @@ module.exports = function(grunt) {
                                 } else {
                                     return true;
                                 }
+                            },
+                            when: function (answers) {
+                                return answers['generator.template'] !== 'project';
                             }
                         },
                         {
@@ -65,9 +85,28 @@ module.exports = function(grunt) {
                                 }
                             },
                             when: function (answers) {
-                                return answers['generator.template'] !== 'project' &&
+                                return answers['generator.template'] !== 'page' &&
+                                    answers['generator.template'] !== 'project' &&
                                     answers['generator.template'] !== 'locale' &&
                                     answers['generator.template'] !== 'repository';
+                            }
+                        },
+                        {
+                            config: "generator.name",
+                            type: "input",
+                            message: "Please define the name:",
+                            filter: function (value) {
+                                return value.toLowerCase();
+                            },
+                            validate: function(value) {
+                                if (!value.match(/^[\/a-z0-9.]*$/i)) {
+                                    return "Please only use chars or numbers";
+                                } else {
+                                    return true;
+                                }
+                            },
+                            when: function (answers) {
+                                return answers['generator.template'] === 'page';
                             }
                         },
                         {

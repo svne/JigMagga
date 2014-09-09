@@ -18,7 +18,7 @@ var isDomain = function (domainName) {
  * @namespace walker
  * @param path
  * @param config
- * @return {{getDefaultNamespace: getDefaultNamespace}}
+ * @return {{getDefaultNamespace: getNamespaces}}
  */
 module.exports = function (defaultFolderPath, config) {
     var getWalker = function (folderPath, listeners) {
@@ -35,12 +35,12 @@ module.exports = function (defaultFolderPath, config) {
      */
     return {
         /**
-         * return first namespace name in project folder
+         * return list of namespaces name in project folder
          * @param {string} rootPath
          * @return {*}
          */
-        getDefaultNamespace: function (rootPath) {
-            var defaultNamespace;
+        getNamespaces: function (rootPath) {
+            var defaultNamespaces = [];
 
             rootPath = rootPath || defaultFolderPath;
 
@@ -50,7 +50,7 @@ module.exports = function (defaultFolderPath, config) {
                         pageConfStats,
                         configPath,
                         config;
-                    if (defaultNamespace || folder !== 'page') {
+                    if (folder !== 'page') {
                         return next();
                     }
 
@@ -67,12 +67,12 @@ module.exports = function (defaultFolderPath, config) {
                         return next();
                     }
 
-                    defaultNamespace = config.namespace;
+                    defaultNamespaces.push(config.namespace);
                     next();
                 }
             });
 
-            return defaultNamespace;
+            return defaultNamespaces;
         },
 
         /**
@@ -242,17 +242,18 @@ module.exports = function (defaultFolderPath, config) {
          */
         getIndexPage: function () {
             var files = [], result;
+
             getWalker(projectPath, {
                 files: function (root, fileStats, next) {
                     var folderList = root.split('/'),
                         indexFile;
-
                     indexFile = _.find(fileStats, function (stats) {
                         return stats.name === 'index.html';
                     });
 
+                    var domainName = folderList[folderList.length - 2];
+
                     function inDomainOrDefault() {
-                        var domainName = folderList[folderList.length - 2];
                         return isDomain(domainName) || domainName === 'default';
                     }
 
@@ -261,16 +262,29 @@ module.exports = function (defaultFolderPath, config) {
                         !inDomainOrDefault()) {
                         return next();
                     }
-                    files.push(path.join(root, indexFile.name));
+
+                    files.push({
+                        namespace: folderList[folderList.length - 4],
+                        domain: domainName,
+                        path: path.join(root, indexFile.name)
+                    });
                 }
             });
 
-            if (files.length > 0) {
-                result = _.first(files).replace(projectPath, '');
-            } else {
+            if (!files.length) {
                 return false;
             }
-            return result;
+
+            var file = _.first(files);
+            result = file.path.replace(projectPath, '');
+
+            if (file.domain !== 'default') {
+                return result;
+            }
+
+            var domains = this.getAllDomains(file.namespace);
+            return result.replace('default', _.first(domains).name);
+
         },
 
         forEachFile: function (path, action, callback) {

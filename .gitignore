@@ -27,10 +27,5 @@ worker/logs/*.heapsnapshot
 coverage
 newrelic.js
 newrelic_agent.log
-jm
-abc
-craftbeer
-hello
 ta
-
 sw

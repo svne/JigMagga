@@ -1,0 +1,770 @@
+[
+    {
+        "id": 11792,
+        "name": "Wok-Gerichte",
+        "description": "Die Wok-Gerichte werden im Wok zubereitet.",
+        "imageUrl": "http://image.yourdelivery.de/lieferservice.de.testing/service/12413/categories/11792/Wok-Gerichte-0-0.jpg",
+        "main": false,
+        "sizes": [
+            {
+                "id": 18615,
+                "name": "Normal",
+                "description": null
+            }
+        ],
+        "meals": [
+            {
+                "id": 104482,
+                "name": "Asia Chicken",
+                "nr": "",
+                "description": "Hühnchenbrustfilet mit Paprika, Porree, Sellerie, Chilli-Öl, Broccoli, Reis und Orange-Spicy Sauce",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 215416,
+                        "sizeId": 18615,
+                        "cost": 795,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 104481,
+                "name": "Scampis & Oliven",
+                "nr": null,
+                "description": "Scampis mit grünen und schwarzen Oliven, roten Zwiebeln, Knoblauchöl, Tomaten, Weißweinsauce und Penne",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "garlic",
+                "sizes": [
+                    {
+                        "id": 215415,
+                        "sizeId": 18615,
+                        "cost": 895,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 104476,
+                "name": "American Beef",
+                "nr": "",
+                "description": "Rinderhüfte mit Erdnuss-Sauce, roten Zwiebeln, Mais, Jalapenos, Tomaten, Kidneybohnen, Kichererbsen und Kartoffeln",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 215413,
+                        "sizeId": 18615,
+                        "cost": 895,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 173272,
+                "name": "Penne & Pesto",
+                "nr": "",
+                "description": "Pasta mit grünem Pesto, Kirschtomaten, Pinienkernen, frischen Basilikum und Parmesan-Käse",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "vegetarian",
+                "sizes": [
+                    {
+                        "id": 325726,
+                        "sizeId": 18615,
+                        "cost": 795,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 243743,
+                "name": "Spinatpfanne Griechischer Art",
+                "nr": "",
+                "description": "mit Spinat, Tomaten, Feta-Käse, Basilikum, Knoblauch, Porree, Spinatsauce und Kartoffeln",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "garlic",
+                "sizes": [
+                    {
+                        "id": 418372,
+                        "sizeId": 18615,
+                        "cost": 795,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 379942,
+                "name": "Lachs im Wok",
+                "nr": "",
+                "description": "Lachsfilet, Porree, Spinat, Zuckerschoten, Sojasprossen, Spinatsauce, Penne",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 610503,
+                        "sizeId": 18615,
+                        "cost": 795,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            }
+        ],
+        "subcategories": null,
+        "daytime": null
+    },
+    {
+        "id": 11790,
+        "name": "Salate",
+        "description": "",
+        "imageUrl": "http://image.yourdelivery.de/lieferservice.de.testing/service/12413/categories/11790/Salate-0-0.jpg",
+        "main": false,
+        "sizes": [
+            {
+                "id": 18613,
+                "name": "Normal",
+                "description": null
+            }
+        ],
+        "meals": [
+            {
+                "id": 694337,
+                "name": "Red Thai Chicken",
+                "nr": "",
+                "description": "Eichblatt Salat hell mit getrockneter Tomate, frischer Mango, Gurke unf Hühnchen abgerundet mit dunklem Sesam on Top und scharfes \"Red Thai Dressing\"",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 1049855,
+                        "sizeId": 18613,
+                        "cost": 795,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 104463,
+                "name": "Herrensalat",
+                "nr": "",
+                "description": "Mischsalat mit Rinderhüfte, Feta-Käse, Kartoffeln, Kidneybohnen, Kichererbsen, Artischocken, Möhren, Peperoni und Ceasar-Dressing",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 215398,
+                        "sizeId": 18613,
+                        "cost": 795,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 104459,
+                "name": "Hühnchenbrust-Salat",
+                "nr": "",
+                "description": "Mischsalat mit Hühnchenbrustfilet, Cocktailtomaten, Paprika, Mais, Gurken, Möhren, Parmesankäse und Paprika-Senft-Dressing",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 215397,
+                        "sizeId": 18613,
+                        "cost": 795,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 104468,
+                "name": "Italienischer Salat",
+                "nr": "",
+                "description": "Rucola mit Eisbergsalat, Zuckerschoten, Kürbis, Basilikum, Mozzarella, Cocktailtomaten und Balsamico-Bianco",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 215400,
+                        "sizeId": 18613,
+                        "cost": 695,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 243684,
+                "name": "Avocado-Scampi Salat",
+                "nr": "",
+                "description": "Mischsalat mit Scampis, Avocado, Cocktailtomaten, Gurken, Penne & Pesto, Sesam und Joghurt-Orange-Dressing",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 418313,
+                        "sizeId": 18613,
+                        "cost": 895,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 173273,
+                "name": "Herbstsalat",
+                "nr": "",
+                "description": "Marinierte Champignons auf Feldsalat & Rucola mit Parmesan-Käse,  Cashewkernen, gegrillte Butternutkürbis, und Balsamico-Dressing",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 325727,
+                        "sizeId": 18613,
+                        "cost": 795,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 300174,
+                "name": "Estragon-Trauben Salat",
+                "nr": "",
+                "description": "Frische Estragon-Blätter mit Feldsalat, Rucola, Penne, Pecorino, Fleur de Sel, roten Zwiebeln und\nBalsamico Dressing",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 495792,
+                        "sizeId": 18613,
+                        "cost": 795,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 379939,
+                "name": "Lachs Salat",
+                "nr": "",
+                "description": "Feldsalat, Spinat, Croutons, gebratener Lachs, gebratene Zucchini, Joghurt-Orangen-Dressing",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 610500,
+                        "sizeId": 18613,
+                        "cost": 795,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            }
+        ],
+        "subcategories": null,
+        "daytime": null
+    },
+    {
+        "id": 43802,
+        "name": "Obstsalate",
+        "description": "",
+        "imageUrl": "http://image.yourdelivery.de/lieferservice.de.testing/service/12413/categories/43802/Obstsalate-0-0.jpg",
+        "main": false,
+        "sizes": [
+            {
+                "id": 58420,
+                "name": "Normal",
+                "description": null
+            }
+        ],
+        "meals": [
+            {
+                "id": 379943,
+                "name": "Obstsalat mit Vanillejoghurt",
+                "nr": "",
+                "description": "Vanillejoghurt, Melone, Apfel, Trauben, Ananas, Cranberries (Topping)",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 610504,
+                        "sizeId": 58420,
+                        "cost": 390,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 379944,
+                "name": "Obstsalat mit Erdbeejoghurt",
+                "nr": "",
+                "description": "Erdbeerjoghurt, Melone, Apfel, Trauben, Ananas, Cranberries (Topping)",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 610505,
+                        "sizeId": 58420,
+                        "cost": 390,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            }
+        ],
+        "subcategories": null,
+        "daytime": null
+    },
+    {
+        "id": 21427,
+        "name": "Desserts & Brot",
+        "description": "",
+        "imageUrl": "http://image.yourdelivery.de/lieferservice.de.testing/service/12413/categories/21427/Desserts+%26+Brot-0-0.jpg",
+        "main": false,
+        "sizes": [
+            {
+                "id": 30555,
+                "name": "Normal",
+                "description": null
+            }
+        ],
+        "meals": [
+            {
+                "id": 243753,
+                "name": "Milchreis",
+                "nr": "",
+                "description": "mit Zimt und Zucker",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 418394,
+                        "sizeId": 30555,
+                        "cost": 150,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 690964,
+                "name": "Grießbrei",
+                "nr": "",
+                "description": "mit Apfelmus und Schokosplits",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 1044674,
+                        "sizeId": 30555,
+                        "cost": 150,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 243754,
+                "name": "Baguette",
+                "nr": "",
+                "description": "",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 418395,
+                        "sizeId": 30555,
+                        "cost": 50,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 3471252,
+                "name": "Original Vanille Muffin",
+                "nr": null,
+                "description": "",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 4563987,
+                        "sizeId": 30555,
+                        "cost": 230,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 3471253,
+                "name": "Original Schoko Muffin",
+                "nr": null,
+                "description": "",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 4563988,
+                        "sizeId": 30555,
+                        "cost": 230,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            }
+        ],
+        "subcategories": null,
+        "daytime": null
+    },
+    {
+        "id": 27721,
+        "name": "Alkoholfreie Getränke",
+        "description": "",
+        "imageUrl": "http://image.yourdelivery.de/lieferservice.de.testing/service/12413/categories/27721/Alkoholfreie+Getr%C3%A4nke-0-0.jpg",
+        "main": false,
+        "sizes": [
+            {
+                "id": 38226,
+                "name": "Normal",
+                "description": null
+            }
+        ],
+        "meals": [
+            {
+                "id": 243764,
+                "name": "Bionade Holunder 0,33l",
+                "nr": null,
+                "description": "",
+                "imageUrl": "http://image.yourdelivery.de/lieferservice.de.testing/service/12413/categories/27721/meals/243764/Bionade+Holunder+0%2C33l-0-0.jpg",
+                "excludeFromMinCost": true,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 418411,
+                        "sizeId": 38226,
+                        "cost": 160,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 243767,
+                "name": "Bionade Litschi 0,33l.",
+                "nr": null,
+                "description": "",
+                "imageUrl": "http://image.yourdelivery.de/lieferservice.de.testing/service/12413/categories/27721/meals/243767/Bionade+Litschi+0%2C33l.-0-0.jpg",
+                "excludeFromMinCost": true,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 418414,
+                        "sizeId": 38226,
+                        "cost": 160,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 3471238,
+                "name": "Cola 1l",
+                "nr": null,
+                "description": "",
+                "imageUrl": "",
+                "excludeFromMinCost": true,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 4563973,
+                        "sizeId": 38226,
+                        "cost": 260,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 3471239,
+                "name": "fanta 1l",
+                "nr": null,
+                "description": "",
+                "imageUrl": "",
+                "excludeFromMinCost": true,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 4563974,
+                        "sizeId": 38226,
+                        "cost": 260,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 3471241,
+                "name": "Sprite 1l",
+                "nr": null,
+                "description": "",
+                "imageUrl": "",
+                "excludeFromMinCost": true,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 4563976,
+                        "sizeId": 38226,
+                        "cost": 260,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 3471242,
+                "name": "Cola Light 1l",
+                "nr": null,
+                "description": "",
+                "imageUrl": "",
+                "excludeFromMinCost": true,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 4563977,
+                        "sizeId": 38226,
+                        "cost": 260,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 3471243,
+                "name": "Stilles Wasser 1l",
+                "nr": null,
+                "description": "",
+                "imageUrl": "",
+                "excludeFromMinCost": true,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 4563978,
+                        "sizeId": 38226,
+                        "cost": 230,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            }
+        ],
+        "subcategories": null,
+        "daytime": null
+    },
+    {
+        "id": 471437,
+        "name": "Alkoholische Getränke",
+        "description": "",
+        "imageUrl": null,
+        "main": false,
+        "sizes": [
+            {
+                "id": 549441,
+                "name": "Normal",
+                "description": null
+            }
+        ],
+        "meals": [
+            {
+                "id": 3471249,
+                "name": "Berliner Kindel 6x0,33l",
+                "nr": null,
+                "description": "",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 4563982,
+                        "sizeId": 549441,
+                        "cost": 690,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            },
+            {
+                "id": 3471250,
+                "name": "Becks 0,5l",
+                "nr": null,
+                "description": "",
+                "imageUrl": "",
+                "excludeFromMinCost": false,
+                "tags": "",
+                "sizes": [
+                    {
+                        "id": 4563983,
+                        "sizeId": 549441,
+                        "cost": 200,
+                        "pfand": 0,
+                        "name": "Normal",
+                        "hasSpecials": false,
+                        "additionsGroups": null
+                    }
+                ],
+                "hasSpecials": false,
+                "additions": {}
+            }
+        ],
+        "subcategories": null,
+        "daytime": null
+    }
+]

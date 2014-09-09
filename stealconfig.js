@@ -2,16 +2,18 @@ steal.config({
     jmENV : "development",
     map: {
         "*": {
-            "jquery/jquery.js": (this.navigator && this.navigator.userAgent.indexOf("MSIE") !== -1) || (typeof global !== "undefined" && global.DEFAULTS.browser && DEFAULTS.browser.indexOf("msie") !== -1) ? "bower_components/jquery-old/jquery.js" :  "bower_components/jquery/jquery.min.js",
+            "jquery/jquery.js": steal.config("browser") && steal.config("browser").msie  && steal.config("browser").version < 10? "bower_components/jquery-old/dist/jquery.js" :  "bower_components/jquery/jquery.min.js",
             "jquery/jstorage": "bower_components/jstorage",
             "funcunit" : "bower_components/funcunit/dist/"
         }
     },
     paths: {
+        "jquery": steal.config("browser") && steal.config("browser").msie  && steal.config("browser").version < 10? "bower_components/jquery-old/dist/jquery.js" :  "bower_components/jquery/jquery.min.js",
         "jquery/": "bower_components/jquerypp/",
         "jquerypp/": "bower_components/jquerypp/",
         "can/": "bower_components/canjs/steal/canjs/",
         "qunit/": "bower_components/qunit/qunit/",
+        "qunit-tap/": "bower_components/qunit-tap/lib/",
         "locales/": "locales/"
     },
     shim: {
@@ -21,8 +23,14 @@ steal.config({
         "qunit": {
             deps: ["jquery", "qunit/qunit.css"]
         },
+        "jquery/jstorage": {
+            deps: ["jquery"]
+        },
         "funcunit": {
             deps: ["qunit"]
+        },
+        "lib/legacy.js" : {
+            deps: ["jquery"]
         },
         "can/util/fixture/fixture.js" : {
             ignore : true

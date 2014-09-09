@@ -1,6 +1,7 @@
 'use strict';
 var fs = require('fs'),
     UglifyJS = require("uglify-js"),
+    _ = require('lodash'),
     CleanCSS = require('clean-css'),
     es = require('event-stream'),
     sass = require('node-sass'),
@@ -15,7 +16,7 @@ var builder = {
         return es.map(function (data, callback) {
             data.build.package = makeStealPackage(data.build.dependencies, null, null, data.build);
             // put steal.production into js
-            data.build.package.js = fs.readFileSync(data.build.jigMaggaPath + "/steal/steal.production.js", {encoding: "utf8"}) + data.build.package.js;
+            data.build.package.js = fs.readFileSync(data.build.jigMaggaPath + "/steal/steal.js", {encoding: "utf8"}) + data.build.package.js;
             callback(null, data);
         });
     },
@@ -442,8 +443,9 @@ function makeStealPackage(moduleOptions, dependencies, cssPackage, buildOptions)
     });
 
     var jsCode = code.join(";") + ";steal.popPending();";
-    var stealConfig = buildOptions.stealConfig;
+    var stealConfig = _.cloneDeep(buildOptions.stealConfig);
     stealConfig.env = 'production';
+    delete stealConfig.types;
 
     var stealProductionConf = "steal.config(" + JSON.stringify(stealConfig) + ");";
     jsCode = stealProductionConf + '\n' + jsCode;

@@ -581,8 +581,10 @@ fetch the data again from the API.
 As jigs shouldn't connect to the API too often, the data is stored locally and shared. The CanJS calls [can.Model.findOne()](http://canjs.com/docs/can.Model.findOne.html) 
 and [can.Model.findAll()](http://canjs.com/docs/can.Model.findAll.html) can be replaced by `can.Model.findOneCached()` and
 `can.Model.findAllCached()`. They use the same parameters, but when you call one of the methods again with the same `params` parameter,
-it doesn't connect to the API but uses the local stored data. You can also use `can.Model.getCurrent()` to get the last stored data
-of a model with the recently used parameters. If you define a model called `Jm.Model.Customer` as done below,
+it doesn't connect to the API but uses the local data stored to memory locally. To retrieve the data from local storage (jStorage),
+for example after a page reload, use 'can.Model.findOneStored()'. You can also use `can.Model.getCurrent()`
+to get the last stored data (memory or local storage) of a model with the recently used parameters. If you define a model
+called `Jm.Model.Customer` as done below,
 
     steal('core/model', function () {
         "use strict";
@@ -599,7 +601,7 @@ of a model with the recently used parameters. If you define a model called `Jm.M
         }
     }
 
-you could use the following methods.
+you could use the any of the following methods.
 
     Jm.Model.Customer.findOneCached({
             id: 1000
@@ -610,9 +612,6 @@ you could use the following methods.
         function (error) {
             // error method
         });
-    Jm.Model.Customer.getCurrent(function (customer) {
-            // success method with the same data as in the findOneCached method if it was called before
-        });
 
     Jm.Model.Customer.findAllCached({
         },
@@ -622,11 +621,22 @@ you could use the following methods.
         function (error) {
             // error method
         });
-    Jm.Model.Customer.getCurrent(function (customers) {
-            // success method with the same data as in the findAllCached method if it was called before
+
+    Jm.Model.Customer.findOneStored({
+            id: 1000
+        },
+        function (customer) {
+            // success method
+        },
+        function (error) {
+            // error method
         });
 
-You can easily store the model data to the local storage to use it even after page reload by using the following.
+    Jm.Model.Customer.getCurrent(function (customer) {
+            // success method with the same data as in the findOneCached method if it was called before
+        });
+
+You can easily store the model data to the local storage to use it even after page reload by using the following:
 
     Jm.Model.Customer.findAllCached({
         },

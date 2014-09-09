@@ -50,7 +50,7 @@ log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
 // obtain application arguments by parsing command line
 var program = parseArguments(process.argv);
 
-var basePath = (program.target) ? path.join(process.cwd(), program.target) : process.cwd();
+var basePath = (program.namespace) ? path.join(process.cwd(), program.namespace) : process.cwd();
 log('base project path is %s', basePath);
 
 if (program.queue) {

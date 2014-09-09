@@ -23,6 +23,11 @@ var processes = [];
 
 var basePath = process.env.NODE_PROJECT_BASE_PATH || path.join(__dirname, '../../../yd/page');
 
+var namespace = process.env.NODE_PROJECT_NAME;
+if (!namespace) {
+    throw new Error('you have to set environment variable NODE_PROJECT_NAME');
+}
+
 process.on('exit', function () {
     processes.forEach(function (pr) {
         pr.kill();
@@ -34,7 +39,7 @@ describe('worker', function () {
     var command = './worker/index.js';
 
     describe('initialization', function () {
-        var args = ['-t', './yd', '-q', '-H'];
+        var args = ['-n', namespace, '-q', '-H'];
 
         it('should start generator subprocess', function (done) {
             var correctMessageRegExp = new RegExp('^started', 'ig');
@@ -144,7 +149,7 @@ describe('worker', function () {
     });
 
     describe('page generation and uploading', function () {
-        var args = ['-t', './yd', '-q', '-H', '-d', 'lieferando.de'];
+        var args = ['-n', namespace, '-q', '-H', '-d', 'lieferando.de'];
 
         var queues = {
             amqpQueue: 'pages.generate.lieferando.de.high'

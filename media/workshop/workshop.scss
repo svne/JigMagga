@@ -6,18 +6,18 @@
 
 @font-face {
     font-family: 'fontello';
-    src: url('/namespace/media/fonts/fontello.eot');
-    src: url('/namespace/media/fonts/fontello.eot#iefix') format('embedded-opentype'),
-    url('/namespace/media/fonts/fontello.woff') format('woff'),
-    url('/namespace/media/fonts/fontello.ttf') format('truetype'),
-    url('/namespace/media/fonts/fontello.svg#fontello') format('svg');
+    src: url('/sw/media/fonts/fontello.eot');
+    src: url('/sw/media/fonts/fontello.eot#iefix') format('embedded-opentype'),
+    url('/sw/media/fonts/fontello.woff') format('woff'),
+    url('/sw/media/fonts/fontello.ttf') format('truetype'),
+    url('/sw/media/fonts/fontello.svg#fontello') format('svg');
 }
 
 /*
  * Icons
  **********************************************************/
 
-@mixin namespace-icon {
+@mixin sw-icon {
     font-family: fontello;
     font-weight: normal;
     line-height: 1;
@@ -27,30 +27,30 @@
  * Animations
  **********************************************************/
 
-@-webkit-keyframes namespace-loader {
+@-webkit-keyframes sw-loader {
     0% {
-        @include namespace-transform(rotate(0deg));
+        @include sw-transform(rotate(0deg));
     }
     100% {
-        @include namespace-transform(rotate(360deg));
+        @include sw-transform(rotate(360deg));
     }
 }
 
-@-moz-keyframes namespace-loader {
+@-moz-keyframes sw-loader {
     0% {
-        @include namespace-transform(rotate(0deg));
+        @include sw-transform(rotate(0deg));
     }
     100% {
-        @include namespace-transform(rotate(360deg));
+        @include sw-transform(rotate(360deg));
     }
 }
 
-@keyframes namespace-loader {
+@keyframes sw-loader {
     0% {
-        @include namespace-transform(rotate(0deg));
+        @include sw-transform(rotate(0deg));
     }
     100% {
-        @include namespace-transform(rotate(360deg));
+        @include sw-transform(rotate(360deg));
     }
 }
 
@@ -58,9 +58,9 @@
  * loader // spinner
  **********************************************************/
 
-.namespace-loader {
-    @include namespace-animation(namespace-loader 1s linear infinite);
-    @include namespace-icon;
+.sw-loader {
+    @include sw-animation(sw-loader 1s linear infinite);
+    @include sw-icon;
     position: absolute;
     width: 30px;
     height: 30px;
@@ -72,7 +72,7 @@
  * General Layout
  **********************************************************/
 
-.namespace-inner {
+.sw-inner {
     position: relative;
     width: 1020px;
     margin: 0 auto;

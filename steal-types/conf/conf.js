@@ -454,12 +454,13 @@
 
 
             // prepare all jigs
-            var jigsKeys = Object.keys(config.jigs);
-            for (var i = 0; i < jigsKeys.length; i++) {
-                executeJigSlotLogic(jigsKeys[i], config.jigs[jigsKeys[i]]);
-                prepareJig(config, jigsKeys[i], config.jigs[jigsKeys[i]]);
+            if (config.jigs) {
+                var jigsKeys = Object.keys(config.jigs);
+                for (var i = 0; i < jigsKeys.length; i++) {
+                    executeJigSlotLogic(jigsKeys[i], config.jigs[jigsKeys[i]]);
+                    prepareJig(config, jigsKeys[i], config.jigs[jigsKeys[i]]);
+                }
             }
-
 
             // include all browser specify stuff
             browserIncludes(config);
@@ -536,9 +537,8 @@
                         });
                     }
                     options.text += "\n});";
-
+                    options.text += "});";
                 }
-                options.text += "});";
                 success();
             } else {
                 error("No includes or jigs defined");

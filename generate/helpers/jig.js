@@ -34,13 +34,13 @@ walker = walker(projectRoot, {});
 
 var insertJigSectionInPage = exports.insertJigSectionInPage = function (pagePath, namespace, jigClasses, callback) {
 
-    var classToInsert = format('.%s-content .%s-inner', namespace, namespace),
+    var classToInsert = format('.%s-content-inner', namespace),
         tag;
 
     jigClasses = _.isArray(jigClasses) ? jigClasses : [jigClasses];
-
     tag = jigClasses.reduce(function (result, jigClass) {
-       return result + format('\n                <section class="%s"></section>', jigClass);
+        // remove the leading '.' from jigClass when placing the class name in html
+        return result + format('\n                <section class="%s"></section>', jigClass.substring(1));
     }, '');
 
     walker.forEachPageInPath(pagePath, function (fileName, pathToFile, cb) {

@@ -14,6 +14,7 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                     can.Model[objectName][this._fullName][index] = $.Deferred();
                     can.Model[objectName][this._fullName][index].resolve(current);
                 } else {
+                    // No (local) data available, does an API request
                     can.Model[objectName][this._fullName][index] = this[methodName](params);
                 }
             } else if (data) {
@@ -31,17 +32,21 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             }
             return can.Model[objectName][this._fullName][index];
         },
+        // Find from local cache. If not found, will do an API request
         findAllCached: function (params, success, error, reset) {
             return this.cacheDeferred("findAll", params, success, error, reset);
         },
+        // Find from local cache. If not found, will do an API request
         findOneCached: function (params, success, error, reset) {
             return this.cacheDeferred("findOne", params, success, error, reset);
         },
+        // Find from local storage. If not found, will do an API request
         findOneStored: function (params, success, error, reset) {
+            var self = this,
+                data = $.jStorage.get(self._fullName);
             return this.cacheDeferred("findOne", params, function (model) {
-                $.jStorage.set(this._fullName, model);
                 success(model);
-            }, error, reset);
+            }, error, reset, data);
         },
         updateOneStored: function (data, success, error) {
             var self = this;
@@ -184,7 +189,7 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
         store: function () {
             var index = "",
                 objectName = "deferred_findOne";
-            $.jStorage.set(this.constructor._fullName, this.serialize());
+            $.jStorage.set(this.constructor._fullName, this.attr());
             can.Model[objectName] = can.Model[objectName] || {};
             can.Model[objectName][this.constructor._fullName] = can.Model[objectName][this.constructor._fullName] || {};
             can.Model[objectName][this.constructor._fullName].currentIndex = index;

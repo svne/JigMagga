@@ -19,7 +19,6 @@ bower_components/*
 !bower_components/bower.json
 node_modules/
 yd
-ta
 steal/
 tmp/*
 worker/config/*
@@ -28,3 +27,5 @@ worker/logs/*.heapsnapshot
 coverage
 newrelic.js
 newrelic_agent.log
+ta
+sw

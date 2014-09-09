@@ -1,0 +1,83 @@
+@import url('http://fonts.googleapis.com/css?family=Orbitron|Roboto:400,500,700|Roboto+Condensed:400,700&subset=latin,latin-ext');
+
+/*
+ * Icon Fonts
+ **********************************************************/
+
+@font-face {
+    font-family: 'fontello';
+    src: url('/sw/media/fonts/fontello.eot');
+    src: url('/sw/media/fonts/fontello.eot#iefix') format('embedded-opentype'),
+    url('/sw/media/fonts/fontello.woff') format('woff'),
+    url('/sw/media/fonts/fontello.ttf') format('truetype'),
+    url('/sw/media/fonts/fontello.svg#fontello') format('svg');
+}
+
+/*
+ * Icons
+ **********************************************************/
+
+@mixin sw-icon {
+    font-family: fontello;
+    font-weight: normal;
+    line-height: 1;
+}
+
+/*
+ * Animations
+ **********************************************************/
+
+@-webkit-keyframes sw-loader {
+    0% {
+        @include sw-transform(rotate(0deg));
+    }
+    100% {
+        @include sw-transform(rotate(360deg));
+    }
+}
+
+@-moz-keyframes sw-loader {
+    0% {
+        @include sw-transform(rotate(0deg));
+    }
+    100% {
+        @include sw-transform(rotate(360deg));
+    }
+}
+
+@keyframes sw-loader {
+    0% {
+        @include sw-transform(rotate(0deg));
+    }
+    100% {
+        @include sw-transform(rotate(360deg));
+    }
+}
+
+/*
+ * loader // spinner
+ **********************************************************/
+
+.sw-loader {
+    @include sw-animation(sw-loader 1s linear infinite);
+    @include sw-icon;
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    font-size: 30px;
+    color: #999;
+}
+
+/*
+ * General Layout
+ **********************************************************/
+
+.sw-inner {
+    position: relative;
+    width: 1020px;
+    margin: 0 auto;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+

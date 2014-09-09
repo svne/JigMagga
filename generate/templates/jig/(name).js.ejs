@@ -1,4 +1,8 @@
-steal('core/control', function (can) {
+steal('core/control',
+    '<%= namespace %>/media/css/<%= namespace %>-core.scss'
+).then(
+    './css/<%= name %>.scss',
+    function () {
     "use strict";
 
     /**

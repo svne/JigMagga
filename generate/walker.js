@@ -83,7 +83,7 @@ module.exports = function (defaultFolderPath, config) {
          * @return {array}
          */
         getAllPagesInDomains: function (namespace) {
-            
+
             var rootPath = path.join(projectPath, namespace),
                 results = [];
 
@@ -268,6 +268,7 @@ module.exports = function (defaultFolderPath, config) {
                         domain: domainName,
                         path: path.join(root, indexFile.name)
                     });
+                    next();
                 }
             });
 
@@ -282,7 +283,17 @@ module.exports = function (defaultFolderPath, config) {
                 return result;
             }
 
+            var otherDomainInNamespace = _.find(files, function (item) {
+                return item.namespace === file.namespace && item.domain !== 'default';
+            });
+            console.log(otherDomainInNamespace);
+
+            if (otherDomainInNamespace) {
+                return otherDomainInNamespace.path.replace(projectPath, '');
+            }
+
             var domains = this.getAllDomains(file.namespace);
+
             if (!domains.length) {
                 return result;
             }
@@ -336,7 +347,7 @@ module.exports = function (defaultFolderPath, config) {
             });
 
         },
-        
+
         forEachPageInPath: function (rootPath, action, callback) {
 
             this.forEachFile(rootPath, function (root, fileStats, next) {

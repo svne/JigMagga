@@ -1,5 +1,4 @@
 {
-    // insert credentials of static storage here
     "knox": {
         "S3_KEY": "",
         "S3_SECRET": "",

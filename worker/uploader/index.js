@@ -30,7 +30,10 @@ var config = require('../config');
 log('started, pid', process.pid);
 
 
-var uploader = new Uploader(config.main.knox);
+if (!program.write) {
+    var uploader = new Uploader(config.main.knox);
+}
+
 var router = new ProcessRouter(process);
 
 var messageStream = stream.duplex();

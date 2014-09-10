@@ -1,7 +1,6 @@
 {
-    //insert rabbitMq credentials here
     "credentials": {
-        "host": "", 
+        "host": "",
         "login": "",
         "password": "",
         "vhost": ""

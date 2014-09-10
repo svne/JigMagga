@@ -267,7 +267,7 @@ module.exports = function(grunt) {
                     keepalive : true,
                     open: true,
                     middleware:  function (connect, options, middlewares) {
-                        
+
                         // inject a custom middleware into the array of default middlewares
                         middlewares.unshift(function (req, res, next) {
                             if (req.url === "/") {

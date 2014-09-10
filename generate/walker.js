@@ -240,10 +240,13 @@ module.exports = function (defaultFolderPath, config) {
          * get first index page in the first project in the folder
          * @return {*}
          */
-        getIndexPage: function () {
+        getIndexPage: function (namespace) {
             var files = [], result;
-
-            getWalker(projectPath, {
+            var rootPath = projectPath;
+            if (namespace) {
+                rootPath += '/' + namespace;
+            }
+            getWalker(rootPath, {
                 files: function (root, fileStats, next) {
                     var folderList = root.split('/'),
                         indexFile;
@@ -286,7 +289,6 @@ module.exports = function (defaultFolderPath, config) {
             var otherDomainInNamespace = _.find(files, function (item) {
                 return item.namespace === file.namespace && item.domain !== 'default';
             });
-            console.log(otherDomainInNamespace);
 
             if (otherDomainInNamespace) {
                 return otherDomainInNamespace.path.replace(projectPath, '');

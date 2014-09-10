@@ -272,8 +272,7 @@ module.exports = function(grunt) {
                         middlewares.unshift(function (req, res, next) {
                             if (req.url === "/") {
                                 // if there is a namespace with a index page, jump to the index page in the first domain or in default
-                                var deafultIndex = walker.getIndexPage();
-
+                                var deafultIndex = walker.getIndexPage(grunt.option('namespace'));
                                 if (deafultIndex) {
                                     res.writeHead(301, {Location: deafultIndex, Expires: new Date().toGMTString()});
                                 } else {

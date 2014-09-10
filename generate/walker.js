@@ -283,6 +283,9 @@ module.exports = function (defaultFolderPath, config) {
             }
 
             var domains = this.getAllDomains(file.namespace);
+            if (!domains.length) {
+                return result;
+            }
             return result.replace('default', _.first(domains).name);
 
         },

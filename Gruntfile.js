@@ -311,7 +311,12 @@ module.exports = function(grunt) {
                                     res.end(ssInclude.parse(filename, fs.readFileSync(filename, {
                                         encoding: "utf8"
                                     })).contents);
+                                } else if (fs.existsSync(cwd + filename)) {
+                                    res.end(ssInclude.parse(cwd + filename, fs.readFileSync(cwd + filename, {
+                                        encoding: "utf8"
+                                    })).contents);
                                 } else if (fs.existsSync(filenameSHTML)) {
+
                                     res.end(ssInclude.parse(filenameSHTML, fs.readFileSync(filenameSHTML, {
                                         encoding: "utf8"
                                     })).contents);

@@ -213,7 +213,8 @@ exports.generatePage = function (origConfig, callback) {
                             neededData[call] = viewContainer[call];
                         }
                     }
-                    var predefinedHelper = new (require('./' + config.predefinedModules[predefinedModule].module))();
+                    var modulePath = path.join('../../..', config.namespace, 'library', config.predefinedModules[predefinedModule].module);
+                    var predefinedHelper = new (require(modulePath))();
                     script += namespaceCapital + ".predefined." + predefinedModule + ' = ' + JSON.stringify(
                         predefinedHelper.init(neededData)
                     ) + ";\n";

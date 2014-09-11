@@ -35,5 +35,5 @@
         },
         "defaultLogLevel": "info"
     },
-    "memwatch": true
+    "memwatch": false
 }

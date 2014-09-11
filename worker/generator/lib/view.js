@@ -1,3 +1,9 @@
+'use strict';
+
+var _ = require('lodash');
+var path = require('path');
+
+
 /**
  * deploy to the given object and it ancestors a attr function
  *
@@ -69,6 +75,8 @@ exports.utf8_decode = function (str_data) {
     return tmp_arr.join('');
 }
 
+
+
 /**
  * code to be used in our views on ejs, that needs to be available to the worker as well
  *
@@ -76,9 +84,8 @@ exports.utf8_decode = function (str_data) {
  * @type {Object}
  */
 
-module.exports.helper =  require('./view-helper-object');
 
-module.exports.helper['list'] =  function (coll, fn) {
+var list =  function (coll, fn) {
     var i = 0,
         l;
     if (coll) {
@@ -97,3 +104,17 @@ module.exports.helper['list'] =  function (coll, fn) {
     }
 
 };
+
+
+exports.getHelper = function (namespace) {
+    var helper = {list: list},
+        pathToModule = path.join('../../..', namespace, 'library/view-helper-object');
+
+    try {
+        helper = _.assign(helper, require(pathToModule));
+    } catch (e) {} finally {
+        return helper;
+    }
+
+};
+

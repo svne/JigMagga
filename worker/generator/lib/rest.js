@@ -142,6 +142,9 @@ exports.doCall = function (options, callback) {
                 cachedCalls[messageKey][requestId].resolve(deepExtend({},options));
             }
             catch (err) {
+                if (useFixtures()) {
+                   console.error('Error: fixture not in the JSON format');
+                }
                 options.success = false;
                 options.error = err;
                 cachedCalls[messageKey][requestId].resolve(options);

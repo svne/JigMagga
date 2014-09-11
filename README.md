@@ -135,13 +135,13 @@ The generator generates the initial jig folder with a view, controller, styles a
 
 There are two types of adding jigs:
 
-###### dynamic (slot system)
+###### 1) dynamic (slot system)
 In this case you have to answer the last (optional) question while the jig generation process and specify the parents div class (like a normal css selector) where the jig should appear when loading the page.
 The jig section itself will not show up inside the page HTML but will be editable through the corresponding page config.
 
 For more information see [slot system](#the-slot-system)
 
-###### static
+###### 2) static
 In that case the generator will add the initial jig section to the corresponding HTML page. Also the .conf file will be extended.
   
  

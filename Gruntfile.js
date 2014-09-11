@@ -270,7 +270,6 @@ module.exports = function(grunt) {
 
                         // inject a custom middleware into the array of default middlewares
                         middlewares.unshift(function (req, res, next) {
-                            console.log('url:', req.url);
                             if (req.url === "/") {
                                 // if there is a namespace with a index page, jump to the index page in the first domain or in default
                                 var deafultIndex = walker.getIndexPage(grunt.option('namespace'));
@@ -297,6 +296,7 @@ module.exports = function(grunt) {
                                     },
                                      error: function(error) {
                                         console.log(error);
+                                        res.end("");
                                     }
                                 });
                             }

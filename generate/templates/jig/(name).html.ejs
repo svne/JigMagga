@@ -17,7 +17,10 @@
 </div>
 <script type='text/javascript' src="/steal/steal.js"></script>
 <script type='text/javascript'>
-    steal("<%= namespace %>/jig/<%= name %>/<%= name %>.conf");
+    if(typeof ___FUNCUNIT_OPENED === "undefined"){
+        steal.config("domain", "default");
+        steal("<%= namespace %>/jig/<%= name %>/<%= name %>.conf")
+    }
 </script>
 </body>
 </html>

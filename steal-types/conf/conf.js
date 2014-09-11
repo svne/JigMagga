@@ -489,7 +489,6 @@
                 }
 
                 if ((config.jigs && !isEmptyObject(config.jigs)) || config.tracking) {
-
                     options.text += "steal('can/route', 'can/view',  'can/view/modifiers', ";
 
                     // write all jig paths to steal that dependencies are loaded before alloc a jig
@@ -511,6 +510,7 @@
                     options.text += "\nif(routeInit){return false;} routeInit = true;\n";
                     // init all routes and trigger ready
                     options.text += "\ncan.route." + config.namespace + "Ready = can.Deferred();\n";
+
 
                     // write all routes that jigs have
                     options.text += writeJigRoutes(config);
@@ -846,10 +846,14 @@
 
             var messagePOFile = (mergedConfig.namespace || "") + "/locales/" + mergedConfig.domain + "/" + mergedConfig.locale + "/messages.po";
             mergedConfig.localePath = messagePOFile;
-            mergedConfig.includes.unshift(messagePOFile);
+            if(steal.config("domain") !== "default"){
+                mergedConfig.includes.unshift(messagePOFile);
+            }
 
 
             mergedConfig = setSassVariables(mergedConfig);
+
+
             processConfig(options, mergedConfig, success, error);
 
 

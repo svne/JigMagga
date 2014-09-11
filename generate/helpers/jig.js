@@ -81,6 +81,9 @@ exports.create = function (config) {
         _.curry(fsExtra.createFolderIfNotExists)(jigPath),
         _.curry(fsExtra.copy)(tplPath, jigPath, params),
         function (next) {
+            if(config.domain === "none"){
+                return next();
+            }
             fsExtra.editConfigFile(pathToConfig, function (data) {
                 data.jigs = data.jigs || {};
 
@@ -102,9 +105,10 @@ exports.create = function (config) {
             }, next);
         },
         function (next) {
-            if (parent) {
+            if (parent || config.domain === "none") {
                 return next();
             }
+
             insertJigSectionInPage(pathToFolder, namespace, jigClass, next);
         }
     ], function (err) {

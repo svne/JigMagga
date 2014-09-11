@@ -131,12 +131,20 @@ The generated config file is empty. The generated JavaScript file just contains 
 Generating a jig
 ----------------
 To generate a Jig, the namespace, a jig name and a page to render the jig in is needed.
- 
-The generator will add the initial jig configuration in the selected page.
-  
-The generator generates a the initial jig and two pages to run the testcases. Also the initial testcase JavaScript file 
-  is generated.
+The generator generates the initial jig folder with a view, controller, styles and two pages to run the testcases. Also the initial testcase JavaScript file.
 
+There are two types of adding jigs:
+
+###### dynamic (slot system)
+In this case you have to answer the last (optional) question while the jig generation process and specify the parents div class (like a normal css selector) where the jig should appear when loading the page.
+The jig section itself will not show up inside the page HTML but will be editable through the corresponding page config.
+
+For more information see [slot system](#the-slot-system)
+
+###### static
+In that case the generator will add the initial jig section to the corresponding HTML page. Also the .conf file will be extended.
+  
+ 
 Generating a model
 ------------------
 
@@ -845,8 +853,19 @@ At last here is a short example of what you can do with SASS in _JigMagga_:
         font-size: 32px;
         color: #f00;
     }
-    
+        
 For detailed information about SASS please have a look at the [SASS documentation](http://sass-lang.com/documentation/file.SASS_REFERENCE.html)
+
+configurable SASS variables
+===========================
+
+You can also add as many SASS variables as you want to every config file. After that you can use them in every .scss file.
+
+    sass: {
+        "testcolor": "#f00",
+        "colorswitch": "value",
+        "option": true
+    }
 
 
 Grid
@@ -888,7 +907,7 @@ We also got a slot system for dynamically setting the position where a jig shoul
 The following example will show you how to add the "header jig" to your desired element in your HTML page.
 In this case we want to append the "header jig" to the header area of our index page.
 
-###### index.html
+ index.html
 
     <div class="jm-header">
         <div class="jm-grid"></div>

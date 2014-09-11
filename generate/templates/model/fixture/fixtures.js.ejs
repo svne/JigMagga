@@ -1,4 +1,15 @@
 steal("can/util/fixture", function () {
+
+    // load fixtures from fixture config that is also used by the HTML worker
+    can.ajax({
+        url: "/<%= namespace %>/config/fixtures.json",
+        success: function (fixtures) {
+            can.each(fixtures, function (fixture) {
+                can.fixture(fixture.method + " " + fixture.uri, fixture.data);
+            });
+        }
+    });
+
     // Example fixture for GET path api/<%= name %>
     // can.fixture("GET api/<%= name %>", "//<%= namespace %>/fixture/data/<%= name %>.json");
 });

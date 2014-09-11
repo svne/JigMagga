@@ -19,7 +19,7 @@ steal('core/control',
         {
             init : function () {
                 var self = this;
-                self.element.html(can.view(self.options.template));
+                self.element.html(can.view(self.options.template, self.options));
             }
         });
 });

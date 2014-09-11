@@ -17,22 +17,22 @@ var viewHelper = require("./view");
 /**
  * @name WorkerMessage
  * @type {object}
- * @property {string} locale 
- * @property {string} page 
- * @property {string} basedomain 
- * @property {string} domain 
+ * @property {string} locale
+ * @property {string} page
+ * @property {string} basedomain
+ * @property {string} domain
  */
 
 
 /**
  * init view container object
- * 
+ *
  * @param  {WorkerMessage} message
  * @param  {string} projectName
  * @return {object}
  */
 var initViewContainer = function (message, projectName) {
-    var viewContainer = _.cloneDeep(viewHelper.helper);
+    var viewContainer = _.cloneDeep(viewHelper.getHelper(projectName));
 
     viewContainer.shtml = false;
     viewContainer.IS_WORKER = true;
@@ -46,7 +46,7 @@ var initViewContainer = function (message, projectName) {
 
 /**
  * checks if error has code ENOENT that means that file not exists
- * 
+ *
  * @param  {{code: string}}}  err - error object
  * @return {Boolean}
  */
@@ -58,7 +58,7 @@ var isFileNotExist = function (err) {
 /**
  * get template from domain folder or from default folder
  * replace include tags inside template
- * 
+ *
  * @param  {WorkerMessage}   msg - message object
  * @param  {string}   basePath - path to folder that contains 'page' folder with configs
  * @param  {Function} callback
@@ -69,7 +69,7 @@ var obtainTemplate = function (msg, basePath, callback) {
         headLang = msg.locale.substr(0, 2),
         country = msg.locale.substr(-2);
 
-    
+
     function tplPath(pageFolderPath) {
         if (msg.origMessage.staticOld) {
             return pageFolderPath + '.html';
@@ -115,7 +115,7 @@ var obtainTemplate = function (msg, basePath, callback) {
 
 /**
  * generate uploadUrl and uploadS3 flag
- * 
+ *
  * @param  {{message: WorkerMessage, config: {pages: object[]}}} data
  * @return {{uploadUrl: string, uploadS3: boolean}}
  */
@@ -170,7 +170,7 @@ var generatePredefined = function (data) {
 
 /**
  * extend config with domain-pages if them exist in the config
- * 
+ *
  * @param  {object} config
  * @param  {string} basedomain
  * @return {object}
@@ -189,7 +189,7 @@ var extendWithDomainPage = function (config, basedomain) {
 
 /**
  * extend config with child-pages if them exists
- * 
+ *
  * @param  {object} config
  * @param  {string} childpage
  * @return {object}
@@ -198,18 +198,18 @@ var extendWithChildPage = function (config, childpage) {
     if (!childpage) {
         return config;
     }
-    
+
     if (!config['child-pages'] || !config['child-pages'][childpage]) {
         throw new Error('Unknown child page: ' +  childpage);
     }
-    
-    return deepExtend({}, config, config['child-pages'][childpage]); 
+
+    return deepExtend({}, config, config['child-pages'][childpage]);
 };
 
 /**
  * extends config with viewContainer, predefined object, domain page, child pages
  * and obtain a template
- * 
+ *
  * @param  {{message: WorkerMessage, config: {locales: array}}}   data
  * @param  {object}   workerConfig
  * @param  {Function} callback
@@ -228,7 +228,7 @@ module.exports = function (data, workerConfig, callback) {
     if (isStaticOld) {
         domainPagePath = path.join(projectName, 'page', message.basedomain, 'static-old/');
     } else {
-        domainPagePath = format("%s/page/%s/%s/", projectName, message.basedomain, message.page);        
+        domainPagePath = format("%s/page/%s/%s/", projectName, message.basedomain, message.page);
     }
 
     data.locale = data.message.locale;

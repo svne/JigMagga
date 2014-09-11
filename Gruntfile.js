@@ -210,7 +210,7 @@ module.exports = function(grunt) {
                         {
                             config: "generator.parent",
                             type: "input",
-                            message: "Please define parent css class (optional):",
+                            message: "Slot system: Please define parent css class (optional):",
                             filter: function (value) {
 
                                 value = value.trim().toLowerCase();
@@ -270,6 +270,7 @@ module.exports = function(grunt) {
 
                         // inject a custom middleware into the array of default middlewares
                         middlewares.unshift(function (req, res, next) {
+                            console.log('url:', req.url);
                             if (req.url === "/") {
                                 // if there is a namespace with a index page, jump to the index page in the first domain or in default
                                 var deafultIndex = walker.getIndexPage(grunt.option('namespace'));

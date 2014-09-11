@@ -16,7 +16,7 @@ var builder = {
         return es.map(function (data, callback) {
             data.build.package = makeStealPackage(data.build.dependencies, null, null, data.build);
             // put steal.production into js
-            data.build.package.js = fs.readFileSync(data.build.jigMaggaPath + "/steal/steal.js", {encoding: "utf8"}) + data.build.package.js;
+            data.build.package.js = fs.readFileSync(data.build.jigMaggaPath + "/steal/steal.production.js", {encoding: "utf8"}) + data.build.package.js;
             callback(null, data);
         });
     },
@@ -172,7 +172,6 @@ var builder = {
         minify: function () {
             var internalCache = {};
             return es.map(function (data, callback) {
-                console.log("_----->",data.build.minify && data.build.jsgenerate);
                 if (data.build.minify && data.build.jsgenerate) {
                     var browser = data.build.stealConfig.browser;
                     async.mapSeries(data.build.dependencies, function (item, cb) {
@@ -445,11 +444,12 @@ function makeStealPackage(moduleOptions, dependencies, cssPackage, buildOptions)
     var jsCode = code.join(";") + ";steal.popPending();";
     var stealConfig = fs.readFileSync(__dirname + '/../../stealconfig.js', 'utf8');
 
-    stealConfig = stealConfig.toString().replace('steal.config({', 'steal.config({env: "production",');
-    // stealConfig.env = 'production';
-    // // delete stealConfig.types;
 
-    jsCode = stealConfig + '\n' + jsCode;
+    var stealConfigProduction = '\nsteal.config({env: "production", ext: {scss: null, conf: null} });';
+
+    var minifyStealConfigCode = UglifyJS.minify(stealConfig + stealConfigProduction, {fromString: true}).code;
+
+    jsCode = minifyStealConfigCode + '\n' + jsCode;
 
     var csspackage = builder.css.makePackage(csses, cssPackage);
 

@@ -490,7 +490,7 @@
 
                 if ((config.jigs && !isEmptyObject(config.jigs)) || config.tracking) {
 
-                    options.text += "steal('can/route', 'can/view',";
+                    options.text += "steal('can/route', 'can/view',  'can/view/modifiers', ";
 
                     // write all jig paths to steal that dependencies are loaded before alloc a jig
                     // eg. steal("yd/jig/bla/bla.js", function(){ .....

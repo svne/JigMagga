@@ -850,7 +850,6 @@
                 mergedConfig.includes.unshift(messagePOFile);
             }
 
-
             mergedConfig = setSassVariables(mergedConfig);
 
 

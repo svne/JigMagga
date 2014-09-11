@@ -16,7 +16,10 @@ var builder = {
         return es.map(function (data, callback) {
             data.build.package = makeStealPackage(data.build.dependencies, null, null, data.build);
             // put steal.production into js
-            data.build.package.js = fs.readFileSync(data.build.jigMaggaPath + "/steal/steal.production.js", {encoding: "utf8"}) + data.build.package.js;
+            var stealProduction =  fs.readFileSync(data.build.jigMaggaPath + "/steal/steal.production.js", {encoding: "utf8"});
+            var errorLogger =  UglifyJS.minify(fs.readFileSync(data.build.jigMaggaPath + "/lib/error-logger.js", {encoding: "utf8"}) , {fromString: true}).code;
+            data.build.package.js = stealProduction + errorLogger + data.build.package.js;
+
             callback(null, data);
         });
     },

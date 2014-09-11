@@ -3,10 +3,10 @@ steal('test', function () {
 
     module("<%= Namespace %>.Jig.<%= Name %>", {
         setup: function () {
-            F.open("/<%= Namespace %>/jig/<%= name %>/<%= name %>.html", function(){
+            F.open("/<%= namespace %>/jig/<%= name %>/<%= name %>.html", function(){
                 stop()
                 F.win.steal.config("domain", "default");
-                F.win.steal("<%= Namespace %>/jig/<%= name %>/<%= name %>.conf", function(){
+                F.win.steal("<%= namespace %>/jig/<%= name %>/<%= name %>.conf", function(){
                 start();
                 });
             });

@@ -395,4 +395,12 @@ module.exports = function(grunt) {
         generate[grunt.config("generator.template")].create.call(this, config);
     });
 
+    /**
+     *
+     */
+
+    grunt.registerTask("build", "Will build css and js production files", function() {
+
+    });
+
 };

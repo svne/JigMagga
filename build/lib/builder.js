@@ -443,12 +443,13 @@ function makeStealPackage(moduleOptions, dependencies, cssPackage, buildOptions)
     });
 
     var jsCode = code.join(";") + ";steal.popPending();";
-    var stealConfig = _.cloneDeep(buildOptions.stealConfig);
-    stealConfig.env = 'production';
-    delete stealConfig.types;
+    var stealConfig = fs.readFileSync(__dirname + '/../../stealconfig.js', 'utf8');
 
-    var stealProductionConf = "steal.config(" + JSON.stringify(stealConfig) + ");";
-    jsCode = stealProductionConf + '\n' + jsCode;
+    stealConfig = stealConfig.toString().replace('steal.config({', 'steal.config({env: "production",');
+    // stealConfig.env = 'production';
+    // // delete stealConfig.types;
+
+    jsCode = stealConfig + '\n' + jsCode;
 
     var csspackage = builder.css.makePackage(csses, cssPackage);
 

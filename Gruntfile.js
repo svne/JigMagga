@@ -210,7 +210,7 @@ module.exports = function(grunt) {
                         {
                             config: "generator.parent",
                             type: "input",
-                            message: "Please define parent css class (optional):",
+                            message: "Slot system: Please define parent css class (optional):",
                             filter: function (value) {
 
                                 value = value.trim().toLowerCase();
@@ -296,6 +296,7 @@ module.exports = function(grunt) {
                                     },
                                      error: function(error) {
                                         console.log(error);
+                                        res.end("");
                                     }
                                 });
                             }
@@ -392,6 +393,14 @@ module.exports = function(grunt) {
             };
 
         generate[grunt.config("generator.template")].create.call(this, config);
+    });
+
+    /**
+     *
+     */
+
+    grunt.registerTask("build", "Will build css and js production files", function() {
+
     });
 
 };

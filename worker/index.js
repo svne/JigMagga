@@ -183,7 +183,11 @@ if (config.main.memwatch) {
 
 process.on('SIGTERM', function () {
     log('warn', 'process terminated remotely', {exit: true});
-    uploader.kill();
-    generator.kill();
+    if (uploader && _.isFunction(uploader.kill)) {
+        uploader.kill();
+    }
+    if (generator && _.isFunction(generator.kill)) {
+        generator.kill();
+    }
     process.exit();
 });

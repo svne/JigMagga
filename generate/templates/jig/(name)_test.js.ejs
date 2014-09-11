@@ -3,7 +3,13 @@ steal('test', function () {
 
     module("<%= Namespace %>.Jig.<%= Name %>", {
         setup: function () {
-            F.open(steal.URI( "./" ).normalize().toString() + "<%= name %>.html");
+            F.open("/<%= namespace %>/jig/<%= name %>/<%= name %>.html", function(){
+                stop()
+                F.win.steal.config("domain", "default");
+                F.win.steal("<%= namespace %>/jig/<%= name %>/<%= name %>.conf", function(){
+                start();
+                });
+            });
         }
     });
 

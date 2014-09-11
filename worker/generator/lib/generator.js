@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * Created with JetBrains WebStorm.
  * User: ydadmin
@@ -80,6 +82,67 @@ var getExcludedPredefinedVariables = function (jigs) {
     });
 };
 
+/**
+ * generates script tags with path of production script in the src
+ *
+ * @param  {string} namespace
+ * @param  {array}  browsers
+ * @param  {string}  scriptName
+ * @return {string}
+ */
+var generateProductionScriptTags = function (namespace, browsers, scriptName) {
+    var result = '',
+        nonIE = '<!--[if !IE]> --><script id="%s-application-script" type="text/javascript" src="/%s"></script><!-- <![endif]-->',
+        IE = '<!--[if IE %d]><script id="%s-application-script-ie%d" type="text/javascript" src="/%s"></script><![endif]-->';
+
+    result = util.format(nonIE, namespace, scriptName);
+    if (!browsers) {
+        return result;
+    }
+
+    browsers.forEach(function (item) {
+        if (!item.msie) {
+           return result += util.format(nonIE, namespace, scriptName);
+        }
+        var version = Number(item.version);
+        var ieScriptName = scriptName.replace('/production-', '/production-msie' + item.version + '-');
+
+        result += util.format(IE, version, namespace, version, ieScriptName);
+    });
+
+    return result;
+};
+
+/**
+ * generates link tags with path to production css styles in the href
+ * @param  {array} browsers
+ * @param  {string} scriptName
+ * @return {string}
+ */
+var generateProductionStyleTags = function (browsers, scriptName) {
+    var styleName = scriptName.replace(/js$/i, 'css'),
+        result = '',
+        nonIE = '<!--[if !IE]> --><link rel="stylesheet" type="text/css" href="/%s" /> <!-- <![endif]-->',
+        IE = '<!--[if IE %d]><link rel="stylesheet" type="text/css" href="/%s" /><![endif]-->';
+
+    result = util.format(nonIE, styleName);
+    if (!browsers) {
+        return result;
+    }
+
+    browsers.forEach(function (item) {
+        if (!item.msie) {
+           return result += util.format(nonIE, styleName);
+        }
+        var version = Number(item.version);
+        var ieStyleName = styleName.replace('/production-', '/production-msie' + item.version + '-');
+
+        result += util.format(IE, version, ieStyleName);
+    });
+
+    return result;
+};
+
 
 exports.init = function (knoxConf, gettext, diskSavePath) {
     gt = gettext;
@@ -107,8 +170,6 @@ exports.generatePage = function (origConfig, callback) {
 
 
     try {
-
-
         if (config["child-page-path"]) {
             config["child-page-path"] = _.map(config["child-page-path"], function (page) {
                 return {
@@ -213,7 +274,8 @@ exports.generatePage = function (origConfig, callback) {
                             neededData[call] = viewContainer[call];
                         }
                     }
-                    var predefinedHelper = new (require('./' + config.predefinedModules[predefinedModule].module))();
+                    var modulePath = path.join('../../..', config.namespace, 'library', config.predefinedModules[predefinedModule].module);
+                    var predefinedHelper = new (require(modulePath))();
                     script += namespaceCapital + ".predefined." + predefinedModule + ' = ' + JSON.stringify(
                         predefinedHelper.init(neededData)
                     ) + ";\n";
@@ -222,16 +284,15 @@ exports.generatePage = function (origConfig, callback) {
             }
         }
 
-
         script += '</script>';
-        script += util.format('<!--[if !IE]> --><script id="%s-application-script" type="text/javascript" src="/%s"></script><!-- <![endif]-->', namespace, config["scriptName"]);
-        script += util.format('<!--[if IE 7]><script id="%s-application-script-ie7" type="text/javascript" src="/%s"></script><![endif]-->', namespace, config["scriptName"].replace('/production-', '/production-msie7.0-'));
-        script += util.format('<!--[if IE 8]><script id="%s-application-script-ie8" type="text/javascript" src="/%s"></script><![endif]-->', namespace, config["scriptName"].replace('/production-', '/production-msie8.0-'));
-        script += util.format('<!--[if IE 9]><script id="%s-application-script-ie9" type="text/javascript" src="/%s"></script><![endif]-->', namespace, config["scriptName"].replace('/production-', '/production-msie9.0-'));
+        script += generateProductionScriptTags(namespace, config.browsers, config.scriptName);
+        var style = generateProductionStyleTags(config.browsers, config.scriptName);
 
         var scriptTagRegExp = new RegExp('<script[^>]+id="' + namespace + '-application-script"[^>]*><\\/script>');
+        var styleTagRegExp = new RegExp('<link[^>]+id="' + namespace + '-application-style"[^>]*>');
+
         //var finalHtml = config["template"].replace(/<script[^>]+id="yd-application-script"[^>]*><\/script>/, script);
-        var finalHtml = config["template"].replace(scriptTagRegExp, script);
+        var finalHtml = config["template"].replace(scriptTagRegExp, script).replace(styleTagRegExp, style);
         url += ".html";
         filename = config["upload-worker"] ?
             saveDiskPath + "/production." + url.replace(/\//g, "_") :
@@ -536,7 +597,7 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
                             if (nextConfig.triggerGt) {
                                 triggerValue = placeholderHelper.getParamByString(nextConfig.triggerGt.field.replace(/[{}]/g, ""), config["predefined"]);
                                 if (triggerValue !== undefined && triggerValue <= nextConfig.triggerGt.value) {
-                                    delete nextConfig;
+                                    nextConfig = undefined;
                                 } else {
                                     configs.unshift(nextConfig);
                                 }

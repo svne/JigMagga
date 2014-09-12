@@ -434,25 +434,6 @@ exports.generateJsonPage = function (config) {
     });
 };
 
-var uploadFileS3 = function (conf, cb) {
-    var uploader = new Uploader(knoxConfig);
-    uploader.push({
-        from: conf.from,
-        to: conf.to,
-        deleteAfter: true,
-        errorCb: function () {
-            if (cb) {
-                cb({message: "Failed to upload: " + conf.from});
-            }
-        },
-        successCb: function () {
-            if (cb) {
-                cb(null, conf.from);
-            }
-        }
-    });
-    pageCounter++;
-};
 
 
 var apiMessageCounter = 0;
@@ -641,4 +622,3 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
     });
 };
 exports.apiCalls = apiCalls;
-exports.uploadFileS3 = uploadFileS3;

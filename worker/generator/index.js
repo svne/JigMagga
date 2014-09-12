@@ -178,6 +178,7 @@ messageStream
 
 
         var result = {
+                bucketName: data.bucketName,
                 message: data.message,
                 key: data.key || undefined
             },

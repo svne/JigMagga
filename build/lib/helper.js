@@ -54,7 +54,11 @@ var uploaderStream = function (uploader, buildOptions, callback) {
     var random = Math.round(Math.random() * 1000);
 
     var zipName = 'zip' + Date.now() + '_' + random + '.zip';
-    var pathToZip = path.join(buildOptions.jigMaggaPath, 'tmp', zipName);
+    var pathToTmp = path.join(buildOptions.jigMaggaPath, 'tmp');
+    var pathToZip = path.join(pathToTmp, zipName);
+
+    fs.ensureDirSync(pathToTmp);
+
 
     var stream = fs.createWriteStream(pathToZip);
 

@@ -31,8 +31,8 @@ var viewHelper = require("./view");
  * @param  {string} projectName
  * @return {object}
  */
-var initViewContainer = function (message, projectName) {
-    var viewContainer = _.cloneDeep(viewHelper.getHelper(projectName));
+var initViewContainer = function (message, projectName, config) {
+    var viewContainer = _.cloneDeep(viewHelper.getHelper(projectName, config));
 
     viewContainer.shtml = false;
     viewContainer.IS_WORKER = true;
@@ -221,7 +221,7 @@ module.exports = function (data, workerConfig, callback) {
         mainLocale = data.config['init-locale'] || data.config.locales[0],
 //        exc = message.exc,
         projectName = data.basePath.split('/').reverse()[0],
-        viewContainer = initViewContainer(message, projectName), // init view container
+        viewContainer = initViewContainer(message, projectName, data.config), // init view container
         pageWithoutPath = message.page.replace(/^.*\//, ""),
         domainPagePath;
 

@@ -106,14 +106,14 @@ var list =  function (coll, fn) {
 };
 
 
-exports.getHelper = function (namespace) {
+exports.getHelper = function (namespace, config) {
     var helper = {list: list},
         pathToProjectModule = path.join('../../..', namespace, 'library/view-helper-object'),
         pathToGlobalModule = '../../../lib/view-helpers/view-helper-object.js';
 
-    helper = _.assign(helper, require(pathToGlobalModule));
+    helper = _.assign(helper, require(pathToGlobalModule)(config));
     try {
-        helper = _.assign(helper, require(pathToModule));
+        helper = _.assign(helper, require(pathToProjectModule));
     } catch (e) {} finally {
         return helper;
     }

@@ -188,7 +188,7 @@ var uploadStream = function (source) {
 };
 
 if (program.queue) {
-    redisClient.on('ready', function () {
+    redisClient.once('ready', function () {
         log('redis client is ready', {redis: true});
 
         redisListStream.pipe(uploadStream(redisListStream));

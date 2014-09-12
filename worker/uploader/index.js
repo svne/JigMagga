@@ -107,7 +107,7 @@ var createRedisListStream = function (client, listKey) {
    });
 };
 
-var redisListStream = createRedisListStream(redisClient, config.redis.keys.list);
+var redisListStream = createRedisListStream(redisClient, helper.getRedisKey(config.redis.keys.list, process.pid));
 redisListStream.pause();
 
 router.addRoutes({

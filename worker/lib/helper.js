@@ -318,5 +318,9 @@ module.exports = {
             callback(null, files);
         });
 
+    },
+
+    getRedisKey: function (name, pid) {
+        return name + ':' + pid;
     }
 };

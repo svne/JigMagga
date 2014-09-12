@@ -16,8 +16,8 @@ var builder = {
         return es.map(function (data, callback) {
             data.build.package = makeStealPackage(data.build.dependencies, null, null, data.build);
             // put steal.production into js
-            var stealProduction =  fs.readFileSync(data.build.jigMaggaPath + "/steal/steal.production.js", {encoding: "utf8"});
-            var errorLogger =  UglifyJS.minify(fs.readFileSync(data.build.jigMaggaPath + "/lib/error-logger.js", {encoding: "utf8"}) , {fromString: true}).code;
+            var stealProduction = fs.readFileSync(data.build.jigMaggaPath + "/steal/steal.production.js", {encoding: "utf8"});
+            var errorLogger = UglifyJS.minify(fs.readFileSync(data.build.jigMaggaPath + "/lib/error-logger.js", {encoding: "utf8"}), {fromString: true}).code;
             data.build.package.js = stealProduction + errorLogger + data.build.package.js;
 
             callback(null, data);
@@ -73,12 +73,16 @@ var builder = {
                 if (data.build.minify && data.build.cssgenerate) {
                     async.mapSeries(data.build.dependencies, function (item, cb) {
                         if (item.buildType === "css") {
-                            if (internalCache[item.id.path]) {
-                                item.text = internalCache[item.id.path];
+                            if (internalCache[item.id.path] &&  item.text === internalCache[item.id.path].notminify) {
+                                item.text = internalCache[item.id.path].minify;
                             } else {
-                                internalCache[item.id.path] = item.text = new CleanCSS({
-                                    processImport: false
-                                }).minify(item.text);
+                                internalCache[item.id.path] = {
+                                    notminify: item.text,
+                                    minify: new CleanCSS({
+                                        processImport: false
+                                    }).minify(item.text)
+                                };
+                                item.text = internalCache[item.id.path].minify;
                             }
                         }
                         cb(null, item);
@@ -179,10 +183,14 @@ var builder = {
                     var browser = data.build.stealConfig.browser;
                     async.mapSeries(data.build.dependencies, function (item, cb) {
                         if (item.buildType === "js") {
-                            if (internalCache[item.id.path]) {
-                                internalCache[item.id.path] = item.text;
+                            if (internalCache[item.id.path] &&  item.text === internalCache[item.id.path].notminify) {
+                                item.text = internalCache[item.id.path].minify;
                             } else {
-                                internalCache[item.id.path] = item.text = UglifyJS.minify(item.text, {fromString: true, screw_ie8: browser && browser.msie ? false : true }).code;
+                                internalCache[item.id.path] = {
+                                    notminify: item.text,
+                                    minify: UglifyJS.minify(item.text, {fromString: true, screw_ie8: browser && browser.msie ? false : true }).code
+                                };
+                                item.text = internalCache[item.id.path].minify;
                             }
                         }
                         cb(null, item);
@@ -420,7 +428,6 @@ function makeStealPackage(moduleOptions, dependencies, cssPackage, buildOptions)
     for (var key in loadingCallsCss) {
         code.push("steal.executed('" + loadingCallsCss[key].path + "')");
     }
-
 
 
     if (buildOptions.stealOwnModules) {

@@ -354,14 +354,20 @@ module.exports = {
         this.uploadArchive(uploadList, buildOptions, onUpload);
 
     },
-
+    /**
+     * TODO the data stream is no array anymore rewrite that to use single object.
+     * @returns {*}
+     */
     saveFileToDiskOrUpload: function () {
         var that = this;
         return es.map(function (data, callback) {
+            if(!Array.isArray(data)){
+                data = [data];
+            }
             var fullPath,
                 browser,
-                uploadPath,
                 buildOptions = data[0].build,
+                uploadPath,
                 name;
 
             uploadList = {};
@@ -404,7 +410,9 @@ module.exports = {
             async.eachSeries(Object.keys(uploadList), function (page, next) {
                 process.stdout.write('Start archiving and uploading items for page: ' + page + '\n');
                 that.uploadFiles(uploadList[page], buildOptions, next);
-            }, callback);
+            }, function(err){
+                callback(err, data[0]);
+            });
 
         });
     },

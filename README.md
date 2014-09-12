@@ -825,6 +825,29 @@ Examples for using the translation function in JavaScript, EJS and Mustache:
 
 The po file is loaded by the configuration file plugin. As the po file has to be loaded before any files with translations
  it doesn't make sense to steal it later in the process.
+ 
+A po file for a certain domain would look like the following.
+
+    # Translations for Jm package. Path: jm/locales/lieferando.de/en_EN/messages.po
+    # Copyright (C) 2011 THE PACKAGE'S COPYRIGHT HOLDER
+    # This file is distributed under the same license as the PACKAGE package.
+    # Automatically generated.
+    #
+    msgid ""
+    msgstr ""
+    "Project-Id-Version: sw\n"
+    "Report-Msgid-Bugs-To: it@lieferando.de\n"
+    "Last-Translator: IT <it@lieferando.de>\n"
+    "Language-Team: IT\n"
+    "MIME-Version: 1.0\n"
+    "Content-Type: text/plain; charset=UTF-8\n"
+    "Content-Transfer-Encoding: 8bit\n"
+    "Language: en_EN\n"
+    "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+    
+    msgid "jm-jig-customers-title"
+    msgstr "This is a text with two placeholders %s %s"
+
 
 Jig interaction
 ===============

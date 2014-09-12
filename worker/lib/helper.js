@@ -159,14 +159,16 @@ module.exports = {
             }, 15000);
         }(modulePath));
 
-
-        child.on('message', function (data) {
+        var onMessage = function onMessage(data) {
             if (!data.ready) {
                 return;
             }
+            child.removeListener('message', onMessage);
             callback(null, child);
             clearTimeout(waitTime);
-        });
+        };
+
+        child.on('message', onMessage);
     },
 
     /**

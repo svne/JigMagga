@@ -576,7 +576,7 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
                             // For now child-child-pages are not possible
                             delete nextConfig["child-pages"];
                             if (nextConfig.triggerGt) {
-                                triggerValue = placeholderHelper.getParamByString(nextConfig.triggerGt.field.replace(/[{}]/g, ""), config["predefined"]);
+                                var triggerValue = placeholderHelper.getParamByString(nextConfig.triggerGt.field.replace(/[{}]/g, ""), config["predefined"]);
                                 if (triggerValue !== undefined && triggerValue <= nextConfig.triggerGt.value) {
                                     nextConfig = undefined;
                                 } else {

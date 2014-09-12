@@ -62,7 +62,7 @@ if (program.queue) {
     });
 
     //if queue argument exists connect to amqp queues
-    var connection = amqp.getConnection(config.amqp.credentials);
+    var connection = amqp.getConnection(config.amqp);
     var queues = helper.getQueNames(program, config.amqp);
 
     log('queues in pool %j', queues, {});

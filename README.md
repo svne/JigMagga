@@ -3,7 +3,7 @@
 JigMagga
 ========
 
-_JigMagga_ is a widget based configuration file driven frontend JavaScript MVC framework.
+_JigMagga_ is a widget based configuration file driven isomorphic JavaScript MVC framework.
 
 It uses all technologies of [bitovi JavaScript MVC](https://github.com/bitovi/javascriptmvc) ([CanJS], [steal], [funcunit], [documentJS])
   but replaces the core JavaScript MVC parts such as the generator and the deployment by [Grunt] tasks and serverside workers.
@@ -465,12 +465,26 @@ In the view the data is now reachable by `{{headline}}` (mustache) or rather `<%
 If you send an observable object like a model to the view, the view gets automatically updated when the model gets updated
 (`{{customer.name}}` for mustache or `<%= customer.name %>` in EJS).
 
+Please check the [can.view](http://canjs.com/docs/can.view.html) documentation for the full functionality.
+
+View helpers
+------------
+
+Sometimes it is needed to add view helpers to the system. View helpers are small functions that are reformating parts of the view.
+
+When generating a project, a empty view helper object file is generated to place view helper methods inside. It is called `library/view-helper-object.js`.
+
+Additionaly there are global defined view helpers in JigMagga. They are located in `lib/view-helpers/view-helper-object.js`.
+
+The most important view helper is the `pageLink` view helper. 
 Links to other pages listed in the domain config can be rendered by the following and are then working in develop mode
 and in the published page.
 
+    {{pageLink "index"}}
+    
     <%= pageLink("index") %>
 
-Please check the [can.view](http://canjs.com/docs/can.view.html) documentation for the full functionality.
+
  
 Events
 ------

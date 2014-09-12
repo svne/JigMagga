@@ -144,7 +144,7 @@ var uploadItem = function (data, callback) {
             handleError(err, {upload: true, url: data.url});
         } else {
             uploadsAmount += 1;
-            log('success', res, {upload: true, url: data.url, uploadsAmount: uploadsAmount});
+            log('success', res, {upload: true, url: data.url, page: data.page, uploadsAmount: uploadsAmount});
             router.send('message:uploaded', data.messageKey);
         }
         uploadPageTimeDiff.stop();

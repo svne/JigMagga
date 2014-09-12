@@ -22,7 +22,13 @@ var createUploaderStream = function (message, key, bucketName, uploaderRouter, r
             data = null;
             next();
         };
-        var result = {bucketName: bucketName, url: message.url, data: data, messageKey: key};
+        var result = {
+            bucketName: bucketName,
+            url: message.url,
+            page: message.page,
+            data: data,
+            messageKey: key
+        };
         if (program.queue) {
             uploaderRouter.send('reduce:timeout');
             var redisKey = helper.getRedisKey(config.redis.keys.list, uploaderRouter.processInstance.pid);

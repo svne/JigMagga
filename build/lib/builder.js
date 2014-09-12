@@ -30,8 +30,8 @@ var builder = {
                 if (data.build.jsgenerate) {
                     async.mapSeries(data.build.dependencies, function (item, cb) {
                         if (item.type === "mustache" || item.type === "ejs") {
-                            if (internalCache[item.id.path]) {
-                                item.text = internalCache[item.id.path];
+                            if (internalCache[item.id.path] && internalCache[item.id.path].notcompiled === item.text) {
+                                item.text = internalCache[item.id.path].compiled;
                                 cb(null, item);
                             } else {
                                 canCompile({
@@ -43,7 +43,11 @@ var builder = {
                                         cb(error, item);
 
                                     } else {
-                                        internalCache[item.id.path] = item.text = output;
+                                        internalCache[item.id.path] = {
+                                            notcompiled : item.text,
+                                            compiled : output
+                                        };
+                                        item.text = output;
                                         cb(null, item);
                                     }
                                 });
@@ -103,7 +107,7 @@ var builder = {
                     async.mapSeries(data.build.dependencies, function (item, cb) {
                         if (item.type === "scss") {
                             var sassImport = sassHelper.sassImportFn(data.sass);
-                            if (internalCache[item.id.path] && internalCache[item.id.path].sassImport === sassImport) {
+                            if (internalCache[item.id.path] && internalCache[item.id.path].sassImport === sassImport && internalCache[item.id.path].notcompiled === item.text) {
                                 item.text = internalCache[item.id.path].text;
                                 cb(null, item);
                             } else {
@@ -111,6 +115,7 @@ var builder = {
                                     data: sassImport + "\n" + item.text,
                                     success: function (css) {
                                         internalCache[item.id.path] = {};
+                                        internalCache[item.id.path].notcompiled = item.text;
                                         internalCache[item.id.path].sassImport = sassImport;
                                         internalCache[item.id.path].text = item.text = css;
                                         cb(null, item);

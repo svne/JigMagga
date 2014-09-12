@@ -641,7 +641,7 @@ you could use the any of the following methods.
         });
 
     Jm.Model.Customer.getCurrent(function (customer) {
-            // success method with the same data as in the findOneCached method if it was called before
+            // success method with the same data as in the find* method if it was called before
         });
 
 You can easily store the model data to the local storage to use it even after page reload by using the following:
@@ -661,7 +661,29 @@ If you want to clear the model data, you can use `flush()` on the model data. It
         function (customers) {
             customers.flush()
         });
+        
+To use a model in a controller it can easily be stealed. A typical contoller would look like the following.
 
+    steal('core/control',
+        'jm/models/customer',
+        function () {
+        "use strict";
+
+        can.Control.extend('Jm.Jig.Customers',
+            /** @Static */
+            {},
+            /** @Prototype */
+            {
+                init : function () {
+                    var self = this,
+                        customersModel = Jm.Models.Customer.findAll();
+    
+                    customersModel.done(function (customers) {
+                        self.element.html(can.view(self.options.template, {customers: customers}));
+                    });
+                }
+            });
+    });
 
 Live binding
 ------------
@@ -790,6 +812,16 @@ _JigMagga_ uses sprintf.js by Ash Searle and gettext.js by Joshua I. Miller.
 The gettext functionality is only used in development mode and in build and deployment process. All `_()` functions are replaced
 by the equivalent `sprintf()` function with the replaced msgid. This is done while loading all JavaScript files.
 For this the systemJS JavaScript plugin is extended.
+
+In Mustache templates there is a view helper, that also gets replacedby the equivalent `sprintf()` function.
+
+Examples for using the translation function in JavaScript, EJS and Mustache:
+
+    alert(_("jm-jig-customers-title", x, y));
+    
+    <%= _("jm-jig-customers-title") %>
+    
+    {{_ "jm-jig-customers-title"}}
 
 The po file is loaded by the configuration file plugin. As the po file has to be loaded before any files with translations
  it doesn't make sense to steal it later in the process.

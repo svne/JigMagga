@@ -1,6 +1,7 @@
 steal("steal/instrument", "jquery").then("qunit", "qunit-tap", function () {
 
     QUnit.config.autostart = false;
+    QUnit.config.autorun = false;
 
     QUnit.config.urlConfig.push({
         id: "coverage",

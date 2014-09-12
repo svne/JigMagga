@@ -54,6 +54,7 @@ steal.config({
         mustache: "can/view/mustache/mustache.js",
         coffee: "steal/coffee/coffee.js",
         conf: "steal-types/conf/conf.js",
-        po: "steal-types/po/po.js"
+        po: "steal-types/po/po.js",
+        json: "steal-types/json/json.js"
     }
 });

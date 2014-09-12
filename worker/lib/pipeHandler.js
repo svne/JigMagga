@@ -14,7 +14,7 @@ var program = parseArguments(process.argv);
 var getMeta = helper.getMeta;
 
 
-var createUploaderStream = function (message, key, uploaderRouter, redisClient) {
+var createUploaderStream = function (message, key, bucketName, uploaderRouter, redisClient) {
     return stream.accumulate(function(err, data, next) {
         var that = this;
         var cb =  function () {
@@ -22,7 +22,7 @@ var createUploaderStream = function (message, key, uploaderRouter, redisClient) 
             data = null;
             next();
         };
-        var result = {url: message.url, data: data, messageKey: key};
+        var result = {bucketName: bucketName, url: message.url, data: data, messageKey: key};
         if (program.queue) {
             uploaderRouter.send('reduce:timeout');
             return redisClient.rpush(config.redis.keys.list, JSON.stringify(result), function (err) {
@@ -56,6 +56,7 @@ module.exports = function (uploaderRouter, queuePool, redisClient, errorHandler)
         var archiverStream,
             destination,
             message,
+            bucketName,
             key;
 
         try {
@@ -66,6 +67,7 @@ module.exports = function (uploaderRouter, queuePool, redisClient, errorHandler)
         }
 
         message = data.message;
+        bucketName = data.bucketName;
         key = data.key;
         log('message from pipe generator, key %s', key,  getMeta(message));
 
@@ -87,7 +89,7 @@ module.exports = function (uploaderRouter, queuePool, redisClient, errorHandler)
         archiverStream = archiver.bulkArchive(data.uploadList);
 
         data = null;
-        destination = createUploaderStream(message, key, uploaderRouter, redisClient);
+        destination = createUploaderStream(message, key, bucketName, uploaderRouter, redisClient);
 
         var tc = stream.tryCatch();
 

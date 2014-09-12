@@ -7,16 +7,16 @@
         {"from": "media/img/**"}
     ],
     "robots": {
-        "from": "page/<%= domain %>/robots.txt",
+        "from": "page/<%- domain %>/robots.txt",
         "to": "robots.txt",
         "required": true
     },
     "sitemap": {
-        "from": "page/<%= domain %>/sitemap.xml",
+        "from": "page/<%- domain %>/sitemap.xml",
         "to": "sitemap.xml"
     },
     "payment": {
-        "from": "page/<%= domain %>/config.json",
+        "from": "page/<%- domain %>/config.json",
         "to": "/config/config.json",
         "required": true
     }

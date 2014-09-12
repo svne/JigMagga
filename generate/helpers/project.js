@@ -49,7 +49,10 @@ exports.create = function (config) {
         },
         function (next) {
             var tplPath = getTplPath('project'),
-                params = baseHelper.getPlaceholders({namespace: namespace});
+                params = baseHelper.getPlaceholders({
+                    namespace: namespace,
+                    domain: '<%= domain %>' // add domain in order to render media config file
+                });
 
             fsExtra.copy(tplPath, destinationPath, params, next);
         },

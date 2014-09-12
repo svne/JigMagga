@@ -1,4 +1,4 @@
-steal("can/control", function () {
+steal("can/control", "lib/view-helpers", function () {
 
     can.Control.prototype.renderJig = function (configSelector, selector, options) {
         var Controller;

@@ -642,10 +642,13 @@
                     for (var i = 0, dir = "", tempPath = "", len = dirs.length; i < len; i++, dir = dirs[i]) {
                         if (dir && dir.indexOf("html") === -1) {
                             tempPath += "/" + dir;
-                            confPath = tempPath + "/" + dir + ".conf";
-                            if (dir !== namespace && configs.indexOf(confPath) === -1) {
-                                configs.push(tempPath + "/" + dir + ".conf");
+                            if (tempPath.indexOf("page") !== -1) {
+                                confPath = tempPath + "/" + dir + ".conf";
+                                if (dir !== namespace && configs.indexOf(confPath) === -1) {
+                                    configs.push(tempPath + "/" + dir + ".conf");
+                                }
                             }
+                            
                         }
                     }
                 };

@@ -16,6 +16,7 @@ var _ = require('lodash'),
 
 var log = require('../lib/logger')('uploader', {component: 'uploader', processId: String(process.pid)}),
     ProcessRouter  = require('../lib/router'),
+    helper = require('../lib/helper'),
     stream = require('../lib/streamHelper'),
     error = require('../lib/error'),
     TimeDiff = require('../lib/timeDiff'),
@@ -29,10 +30,6 @@ var WorkerError = error.WorkerError;
 var config = require('../config');
 log('started, pid', process.pid);
 
-
-if (!program.write) {
-    var uploader = new Uploader(config.main.knox);
-}
 
 var router = new ProcessRouter(process);
 
@@ -50,6 +47,21 @@ var handleError = function (text, data) {
     log('error', text, {error: true});
 
     return router.send('error', new WorkerError(text, data.message.origMessage, data.key));
+};
+
+
+var uploaderStorage = {};
+
+var getUploader = function (bucketName) {
+    if (uploaderStorage[bucketName]) {
+        return uploaderStorage[bucketName];
+    }
+
+    var knoxOptions = _.cloneDeep(config.main.knox);
+    knoxOptions.S3_BUCKET = knoxOptions.S3_BUCKET || bucketName;
+
+    uploaderStorage[bucketName] = new Uploader(knoxOptions);
+    return uploaderStorage[bucketName];
 };
 
 
@@ -95,7 +107,7 @@ var createRedisListStream = function (client, listKey) {
    });
 };
 
-var redisListStream = createRedisListStream(redisClient, config.redis.keys.list);
+var redisListStream = createRedisListStream(redisClient, helper.getRedisKey(config.redis.keys.list, process.pid));
 redisListStream.pause();
 
 router.addRoutes({
@@ -124,6 +136,8 @@ var uploadItem = function (data, callback) {
     if (_.isString(data)) {
         data = JSON.parse(data);
     }
+    var uploader = getUploader(data.bucketName);
+
     var uploadPageTimeDiff = timeDiff.create('upload:page');
     var next = function (err, res) {
         if (err) {

@@ -3,7 +3,7 @@
 JigMagga
 ========
 
-_JigMagga_ is a widget based configuration file driven frontend JavaScript MVC framework.
+_JigMagga_ is a widget based configuration file driven isomorphic JavaScript MVC framework.
 
 It uses all technologies of [bitovi JavaScript MVC](https://github.com/bitovi/javascriptmvc) ([CanJS], [steal], [funcunit], [documentJS])
   but replaces the core JavaScript MVC parts such as the generator and the deployment by [Grunt] tasks and serverside workers.

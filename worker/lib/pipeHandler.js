@@ -25,7 +25,9 @@ var createUploaderStream = function (message, key, bucketName, uploaderRouter, r
         var result = {bucketName: bucketName, url: message.url, data: data, messageKey: key};
         if (program.queue) {
             uploaderRouter.send('reduce:timeout');
-            return redisClient.rpush(config.redis.keys.list, JSON.stringify(result), function (err) {
+            var redisKey = helper.getRedisKey(config.redis.keys.list, uploaderRouter.processInstance.pid);
+
+            return redisClient.rpush(redisKey, JSON.stringify(result), function (err) {
                 if (err) {
                     return that.emit('error', new WorkerError(err.message || err), data.message.origMessage);
                 }

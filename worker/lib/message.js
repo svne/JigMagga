@@ -80,7 +80,7 @@ module.exports = {
 
     /**
      * create a unique key for message
-     * 
+     *
      * @param  {object} message
      * @return {string}
      */
@@ -89,12 +89,12 @@ module.exports = {
         return md5(JSON.stringify(message) + Date.now() + random);
     },
 
-    
+
     getMessageParser: function () {
         var that = this;
         /**
          * returns stream that parses each message from rabbit
-         * 
+         *
          * @param {{content: Buffer, properties: {contentType: string}}} data
          * @return {{message: object, key: string, queueShift: function}}
          */
@@ -107,18 +107,16 @@ module.exports = {
                 data = data[0];
             }
 
-            if (contentType === 'text/plain') {
+            if (contentType === 'text/plain' || contentType === 'text/json') {
                 try {
-                    message = JSON.parse(data.content.toString('utf-8'));
+                    message = _.isPlainObject(data.content) ?
+                        data.content : JSON.parse(data.content.toString('utf-8'));
                 } catch (e) {
                     if (_.isFunction(data.queueShift)) {
                         data.queueShift();
                     }
                     this.emit('err', new WorkerError('Date from queue is not JSON', data.content.toString('utf-8')));
                 }
-            }
-            if (contentType === 'text/json' || (!contentType && _.isPlainObject(data))) {
-                message = data.content;
             }
 
             if (message) {
@@ -137,11 +135,11 @@ module.exports = {
          * stream that analyze the messages. If there is no locale key inside
          * it emits one message for each locale from the message config
          *
-         * The same for page property if there is no page field stream will 
+         * The same for page property if there is no page field stream will
          * emit one message for each static page inside config.
-         * 
+         *
          * If in the message there are page and locale it just emit this message
-         * 
+         *
          * @param  {{config: object, message: object}} data
          * @return {object}
          */
@@ -199,7 +197,7 @@ module.exports = {
                             return currentResult.concat(localePages);
                         }, []);
                     }
-                }   
+                }
             } catch (err) {
                 this.emit('err', new WorkerError(err.message || err, data.message, data.key));
             }

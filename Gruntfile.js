@@ -309,8 +309,8 @@ module.exports = function(grunt) {
                                 var cwd = options.base[0] + "/",
                                     filename = req.url,
                                     filenameSHTML = path.join(cwd, filename.replace(/\.html/, ".shtml")),
-                                    defaultBase = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/")),
-                                    defaultBaseSHTML = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/").replace(/\.html/, ".shtml"));
+                                    defaultBase = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,5}\//, "/default/")),
+                                    defaultBaseSHTML = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,5}\//, "/default/").replace(/\.html/, ".shtml"));
                                 if (fs.existsSync(filename)) {
                                     console.log('found as filename', filename);
                                     res.end(ssInclude.parse(filename, fs.readFileSync(filename, {

@@ -271,11 +271,14 @@ module.exports = function(grunt) {
                         // inject a custom middleware into the array of default middlewares
                         middlewares.unshift(function (req, res, next) {
                             if (req.url === "/") {
+                                console.log('incoming url:', req.url);
                                 // if there is a namespace with a index page, jump to the index page in the first domain or in default
                                 var deafultIndex = walker.getIndexPage(grunt.option('namespace'));
                                 if (deafultIndex) {
+                                    console.log('default index:', deafultIndex);
                                     res.writeHead(301, {Location: deafultIndex, Expires: new Date().toGMTString()});
                                 } else {
+                                    console.log('no index files yet. Open the readme.md');
                                     // if no index file is generated yet, print out the README.md
                                     require('marked')(fs.readFileSync("./README.md", {encoding: "utf8"}), function (err, html) {
                                         if (err) {
@@ -302,29 +305,36 @@ module.exports = function(grunt) {
                             }
                             // check default directory for html file
                             else if (req.url && req.url.search(/\.[s]{0,1}html/) !== -1) {
+                                console.log('looking for a file in a disk', req.url);
                                 var cwd = options.base[0] + "/",
                                     filename = req.url,
-                                    filenameSHTML = cwd + filename.replace(/\.html/, ".shtml"),
-                                    defaultBase = cwd + filename.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/"),
-                                    defaultBaseSHTML = cwd + filename.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/").replace(/\.html/, ".shtml");
+                                    filenameSHTML = path.join(cwd, filename.replace(/\.html/, ".shtml")),
+                                    defaultBase = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/")),
+                                    defaultBaseSHTML = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/").replace(/\.html/, ".shtml"));
                                 if (fs.existsSync(filename)) {
+                                    console.log('found as filename', filename);
                                     res.end(ssInclude.parse(filename, fs.readFileSync(filename, {
                                         encoding: "utf8"
                                     })).contents);
                                 } else if (fs.existsSync(cwd + filename)) {
+                                    console.log('found as cwd + filename', cwd + filename);
                                     res.end(ssInclude.parse(cwd + filename, fs.readFileSync(cwd + filename, {
                                         encoding: "utf8"
                                     })).contents);
                                 } else if (fs.existsSync(filenameSHTML)) {
+                                    console.log('found as filenameSHTML', filenameSHTML);
 
                                     res.end(ssInclude.parse(filenameSHTML, fs.readFileSync(filenameSHTML, {
                                         encoding: "utf8"
                                     })).contents);
                                 } else if (fs.existsSync(defaultBase)) {
+                                    console.log('found as defaultBase', defaultBase);
+
                                     res.end(ssInclude.parse(defaultBase, fs.readFileSync(defaultBase, {
                                         encoding: "utf8"
                                     })).contents);
                                 } else if (fs.existsSync(defaultBaseSHTML)) {
+                                    console.log('found as defaultBaseSHTML', defaultBaseSHTML);
                                     res.end(ssInclude.parse(defaultBaseSHTML, fs.readFileSync(defaultBaseSHTML, {
                                         encoding: "utf8"
                                     })).contents);

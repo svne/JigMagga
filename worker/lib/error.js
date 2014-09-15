@@ -25,7 +25,7 @@ exports.getErrorHandler = function (log, callback) {
 
         if (!(err instanceof WorkerError)) {
             log('error', 'Fatal error. process will be terminated %s, %s', err.message, err.stack, {uncaughtException: true});
-            return process.kill();
+            return process.exit();
         }
         callback(err);
     };

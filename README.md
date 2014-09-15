@@ -594,6 +594,32 @@ _JigMagga_ models are observable objects that can easily connect to APIs.
 Please check the [CanJS model documentation](http://canjs.com/docs/can.Model.html) and the [CanJS map documentation](http://canjs.com/docs/can.Map.html)
 for more information on the base functionality.
 
+A model that is not connecting to APIs and uses an instantiation method could look like the following.
+
+    steal('core/model', function () {
+        "use strict";
+
+        can.Model.extend('Jm.Model.Session',
+            {
+            },
+            {
+                init: function () {
+                    this.logout();
+                },
+                login: function () {
+                    this.attr("id", Date.now());
+                    this.attr("state", "loggedIn");
+                },
+                logout: function () {
+                    this.attr("state", "loggedOut");
+                    if (this.attr("id")) {
+                        this.removeAttr("id");
+                    }
+                }
+            }
+        }
+    }
+
 _JigMagga_ extends the CanJS functionality by few methods that are able to handle locally stored data.
 For this it uses the library jStorage.
  
@@ -676,7 +702,7 @@ If you want to clear the model data, you can use `flush()` on the model data. It
             customers.flush()
         });
         
-To use a model in a controller it can easily be stealed. A typical contoller would look like the following.
+To use a model in a controller it can easily be stealed. A typical contoller could look like the following.
 
     steal('core/control',
         'jm/models/customer',
@@ -696,6 +722,38 @@ To use a model in a controller it can easily be stealed. A typical contoller wou
                         self.element.html(can.view(self.options.template, {customers: customers}));
                     });
                 }
+            });
+    });
+        
+A typical contoller that fetches stored model data and listens to changes would look like the following.
+
+    steal('core/control',
+        'jm/models/session',
+        function () {
+        "use strict";
+
+        can.Control.extend('Jm.Jig.User',
+            /** @Static */
+            {},
+            /** @Prototype */
+            {
+                init : function () {
+                    var self = this;
+    
+                    Jm.Models.Session.getCurrent(function (session) {
+                        self.options.session = session;
+                        self.on(); 
+                        self.element.html(can.view(self.options.template, self.options));
+                    });
+                },
+                ".jm-jig-user-login click": function (el, ev) {
+                    this.options.session.login();
+                    this.options.session.store();
+                    console.log(this.options.session.attr("id");
+                },
+                "{session} change": function (el, ev, attr, how, newVal, oldVal) {
+                    console.log(attr, how, newVal, oldVal)
+                }
             });
     });
 

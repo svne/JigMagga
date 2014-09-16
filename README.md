@@ -5,10 +5,10 @@ JigMagga
 
 _JigMagga_ is a widget based configuration file driven isomorphic JavaScript MVC framework.
 
-It uses all technologies of [bitovi JavaScript MVC](https://github.com/bitovi/javascriptmvc) ([CanJS], [steal], [funcunit], [documentJS])
+It uses all technologies of [Bitovi JavaScript MVC](https://github.com/bitovi/javascriptmvc) ([CanJS], [steal], [funcunit], [documentJS])
   but replaces the core JavaScript MVC parts such as the generator and the deployment by [Grunt] tasks and serverside workers.
 
-_JigMagga_ can be used to create a one page applications, but it's main goal is - because of SEO - to generate thousands of pages
+_JigMagga_ can be used to create a one page applications, but its main goal is - because of SEO - to generate thousands of pages
 in many domains. All with an optimized frontend application and shared widgets. 
 
 Widgets in JigMagga are called jigs. They can be rendered in the frontend application or because of SEO requirements, get 
@@ -168,7 +168,7 @@ When creating a project, the namespace folder is put into the `.gitignore` file.
 Stealing files
 ==============
 
-_JigMagga_ uses bitovi's [Steal] for the dependency management in the frontend application. [Steal] is built upon [SystemJS](https://github.com/systemjs/systemjs) 
+_JigMagga_ uses Bitovi's [Steal] for the dependency management in the frontend application. [Steal] is built upon [SystemJS](https://github.com/systemjs/systemjs)
   and can map files to plugins.
 
 Steal comes bundled with plugins for CSS, [LESS](http://lesscss.org), [EJS](http://embeddedjs.com/), [Mustache](http://mustache.github.io/) 
@@ -863,7 +863,7 @@ You can add a fixture file to the `page.conf` includes. They will automatically 
          }
      ]
 
-A simple fixture definition is generated automatically with creation of first model and it looks like this.
+A simple fixture definition is generated automatically with creation of the first model on the project, and it looks like this:
 
      steal("jm/config/fixtures.json", "can/util/fixture", function (fixtures) {
 
@@ -875,8 +875,8 @@ A simple fixture definition is generated automatically with creation of first mo
          // can.fixture("GET api/jm", "//jm/fixture/data/jm.json");
      });
 
-You can see that definition file obtains as a dependency `jm/config/fixtures.json` configuration file that is a list
-of mappings between api requests and data files. Here is the example:
+You can see that definition file obtains as a dependency configuration file  `jm/config/fixtures.json`, that is a list
+of mappings between the api requests and data files. Here is an example:
 
       [
           {
@@ -886,11 +886,11 @@ of mappings between api requests and data files. Here is the example:
           }
       ]
 
-Inside definition module you can notice the creation of "can fixture" for each item in the config fixtures list. Also in this
-module you can override some fixtures definition in order to create more complex logic. All features of can.fixture module
+Inside the definition module you can notice the creation of "can fixture" for each item in the config fixtures list. Also in this
+module you can override some fixture definitions in order to create more complex logic. All features of can.fixture module
 could be found here [can.fixture](http://canjs.com/docs/can.fixture.html)
 
-The fixture file `jm/fixture/data/jm.json` should have the same JSON format as a real API call woud have. In the model
+The fixture file `jm/fixture/data/jm.json` should have the same JSON format as a real API call would have. In the model
 nothing more has to be done. Every call to `GET /api/customers` will now automatically result in the content of the given file.
 The API isn't called any more.
 
@@ -898,7 +898,7 @@ You can use fixtures not only in the frontend development environment but also i
 (or --fixtures) flag it will try to obtain data from json data files that are specified in the `jm/config/fixtures.json`
 instead of using rest calls for that.
 
-In bigger teams with an own API team it is a good choice to define the interface by defining fixture files and the corresponding
+In bigger teams with their own API team it is a good choice to define the interface by defining fixture files and the corresponding
  result schema and request schema files. Schema files can easily be generated with the [JSON schema genarator](http://www.jsonschema.net/).
 
 Using locales
@@ -1158,8 +1158,8 @@ The build process is not yet distributed to _JigMagga_.
 HTML-Workers
 ------------
 
-Main goal of a worker is to generate static html pages, combining together all configurations file and jigs and after that uploading them
-to the CDN. It has two main working mode. First - is when worker is connected to the rabbitMQ. And on each event in the queue it generate one or more pages. Second it could be triggered to generate one or more page via command line arguments.
+Main goal of a worker is to generate static html pages, combining together all configuration files and jigs and after that uploading them
+to the CDN. It has two main working modes. The first is when the worker is connected to the rabbitMQ and for each event in the queue it generates one or more pages. On the second mode it can be triggered to generate one or more page via command line arguments.
 
 For instance in order to generate and then save on disk all static pages in the domain `you.domain.com` in the project with namespace
 `namespace` you have to do following:
@@ -1170,41 +1170,45 @@ In order to generate just the index page and upload it:
 
 `node ./worker/index.js -n namespace -d you.domain.com -p index -u index`
 
-If you want to do the same but without uploading and just save the result on disk do following:
+If you want to do the same but without uploading and just save the result on disk, do following:
 
 `node ./worker/index.js -n namespace -d you.domain.com -p index -u index -w`
 
-In order to see all possible worker command line arguments you should invoke next command `node ./worker/index.js -h`
+In order to see all possible worker command line arguments you should invoke the following command:
+
+`node ./worker/index.js -h`
 
 
 ####Worker Configuration####
 
 All worker configuration files should be at the `config` folder that should be at the root of project inside JigMagga. If you have just
-generated a project you can find in this folder next files:
+generated a project you can find in this folder these files:
 
-- *amqp.json* - file with amqp credentials, where you can define to what amqp server you worker has to connect and how it should calculate the name of the queue
+- *amqp.json* - a file with amqp credentials, where you can define to what amqp server you worker has to connect and how it should calculate the name of the queue
 - *api.json* - config with api server credentials
-- *fixtures.json* - list of maping between api requests and files with fixture data
+- *fixtures.json* - list of mappings between api requests and files with fixture data
 - *main.json* - config with cdn api credentials, logger parameters and some other stuff
 - *redis.json* - credentials of redis server
 
 If you want to specify some different values from some other environment you should just create a file with this environment
-in the name, rewrite some key and set NODE_ENV environment variable. For instance if you want to connect to some special amqp server in live environment you have to create a file with name `amqp.live.json` specify in it just what you want to override and than set NODE_ENV
-before you invoke the worker `NODE_ENV=live node ./worker/index.js -n namespace -d you.domain.com -w`
+in the name, rewrite some key and set the NODE_ENV environment variable. For instance if you want to connect to some special amqp server in live environment you have to create a file with name `amqp.live.json` specify in it just what you want to override and than set NODE_ENV
+before you invoke the worker:
+
+`NODE_ENV=live node ./worker/index.js -n namespace -d you.domain.com -w`
 
 ####Working with a Queue####
 
-If you want to connect your worker to amqp server you have to use -q (or --queue) flag and specify the credentials of your amqp
+If you want to connect your worker to an amqp server you have to use -q (or --queue) flag and specify the credentials of your amqp
 server. For instance `node ./worker/index.js -n yournamespace -q`. After starting worker connects to three different queues:
 - *mainQueue* is used for obtaining messages with pages that should be generated by worker, each message should be in json format and have basedomain, page and url fields,
-- *errorQueue*, in this queue worker push the message if some error with some message happened
-- *doneQueue*, worker push message to this queue after some message is generated and ready to upload
+- *errorQueue*, the worker push the message to this queue, if some error with some message happened
+- *doneQueue*, worker will push a message to this queue after the message is generated and ready for uploading
 
-Name of the main queue is calculated in the next way [queueBaseName]+[baseDomainName]+[prefix]. queueBaseName could be changed in
-the config, baseDomainName is set by setting -d (--basedomain flag), Prefixes could be set in the config and mainly mean priority of the queue
-default equal `deploy` all of them could be changed in the config. By default there are three priority (prefix) keys that add a prefix: -H (--highprio), -M (--mediumprio), -L (--lowprio).
+Name of the main queue is calculated in the following way: [queueBaseName]+[baseDomainName]+[prefix]. queueBaseName can be changed in
+the config, baseDomainName is set by setting -d (--basedomain flag). The prefix can be set in the config and they mainly stand for the priority of the queue. If no prefix
+is specified, then the prefix will be `deploy`. All of them can be changed in the config. By default there are three priority (prefix) keys that add a prefix: -H (--highprio), -M (--mediumprio), -L (--lowprio).
 
-Name of the error queue is calculated in the same way as main but it always contains error prefix inside. Name of the "done" queue
+Name of the error queue is calculated in the same way as for main, but it always contains the error prefix inside. Name of the "done" queue
 is always 'pages.generate.done'.
 
 By default if you start worker like that: `node ./worker/index.js -n yournamespace -q` it will connect to next queues
@@ -1219,13 +1223,13 @@ By default if you start worker like that: `node ./worker/index.js -n yournamespa
 ```
 
 ####Uploading pages to the CDN####
-Currently html worker could upload resources to cdn's that has compatible with Amazon S3 API. All credentials could be specified in the
+Currently html worker can upload resources to CDN's that are compatible with the Amazon S3 API. All credentials can be specified in the
 main file inside knox namespace.
 
->Note: If you do not want to upload file you have to specify -w flag that means that your goal is to save generated files to disk. 
+>Note: If you do not want to upload the file(s), you have to specify -w flag which means that your goal is to save the generated files to disk.
 
-Bucket name could be set by setting the S3_BUCKET key. In this case all files your project will be uploaded to this bucket. If you want to have a one bucket per domain you have to set S3_BUCKET to false (or just delete this key)
-and specify your buckets in the buckets filed for live and stage environment. For instance if in your project you have to domains `foo.com` and `m.foo.com` your buckets config could be like this:
+Bucket name can be set by setting the S3_BUCKET key. In this case all files of your project will be uploaded to this bucket. If you want to have one bucket per each domain, you have to set the S3_BUCKET key to false (or just delete this key),
+and specify your buckets for the live and stage environments. For instance if in your project you have two domains `foo.com` and `m.foo.com`, your buckets config could be like this:
    "buckets": {
        "live": {
            "foo.com": "www.live-bucket.com",
@@ -1236,17 +1240,17 @@ and specify your buckets in the buckets filed for live and stage environment. Fo
            "m.foo.com": "stage.m.bucket.com"
        }
    }
-If you will not specify your buckets in the config file, bucket name will be calculated in next way. If the live flag (-l or --live)
-is present the name is www.{basedomain} where basedomain is obtaining from incoming message or from command line. If current env is not live the bucket name will be stage.{basedomain}.
+If you don't specify your buckets in the config file, bucket name will be calculated as follows: If the live flag (-l or --live)
+is present, the name will be www.{basedomain} where basedomain is obtained from the incoming message or from command line. If current env is not live the bucket name will be stage.{basedomain}.
 
 ####Static page generation####
-Static page is a page with url that is not depend of data that is in this page.
-For instance index or imprint page is static.
-Worker allows you easily generate all your static page in some domain. For doing that you have to just execute worker without -p (--page) and -u (--url) flags
+Static page is a page with a URL that does not depend of data that is in this page.
+For instance the index and imprint pages are static.
+The worker allows you to easily generate all your static pages in some domain. For doing that you have to just execute the worker without -p (--page) and -u (--url) flags
 
 `node ./worker/index.js -n namespace -d you.domain.com`
 
-In this case worker will merge all configuration file for that namespace and domain, grab all static page, generate them and upload after that.
+In this case the worker will merge all the configuration files for that namespace and domain, grab all static pages, generate them and upload after that.
 
 
 Js/Css-Builder

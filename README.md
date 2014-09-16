@@ -1100,26 +1100,30 @@ The build process is not yet distributed to _JigMagga_.
 HTML-Workers
 ------------
 
-Main goal of a worker is to generate static html pages combining together all configurations file and jigs and after that upload them
-to the CDN. It has two main working mode. First - is when worker is connected to the rabbitMQ. And on each event in the
-queue it generate one or more pages. Second it could be triggered to generate one or more page via command line arguments.
+Main goal of a worker is to generate static html pages, combining together all configurations file and jigs and after that uploading them
+to the CDN. It has two main working mode. First - is when worker is connected to the rabbitMQ. And on each event in the queue it generate one or more pages. Second it could be triggered to generate one or more page via command line arguments.
 
 For instance in order to generate and then save on disk all static pages in the domain `you.domain.com` in the project with namespace
-`yournamespace` you have to do following:
+`namespace` you have to do following:
 
-`node ./worker/index.js -n yournamespace -d you.domain.com -w`
+`node ./worker/index.js -n namespace -d you.domain.com -w`
 
-In order to generate an just index page and upload it:
+In order to generate just the index page and upload it:
 
-`node ./worker/index.js -n yournamespace -d you.domain.com -p index -u index`
+`node ./worker/index.js -n namespace -d you.domain.com -p index -u index`
+
+If you want to do the same but without uploading and just save the result on disk do following:
+
+`node ./worker/index.js -n namespace -d you.domain.com -p index -u index -w`
 
 In order to see all possible worker command line arguments you should invoke next command `node ./worker/index.js -h`
 
 
 ####Worker Configuration####
 
-All worker config files should be at the config folder that should be at the root of project inside JigMagga. If you have just
+All worker configuration files should be at the `config` folder that should be at the root of project inside JigMagga. If you have just
 generated a project you can find in this folder next files:
+
 - *amqp.json* - file with amqp credentials, where you can define to what amqp server you worker has to connect and how it should calculate the name of the queue
 - *api.json* - config with api server credentials
 - *fixtures.json* - list of maping between api requests and files with fixture data
@@ -1127,10 +1131,10 @@ generated a project you can find in this folder next files:
 - *redis.json* - credentials of redis server
 
 If you want to specify some different values from some other environment you should just create a file with this environment
-in the name, rewrite some key and set NODE_ENV environment variable For instance if you want to connect to some special amqp server in live environment you have to create a file with name amqp.live.json specify in it just what you want to override and than set NODE_ENV
-before you invoke the worker `NODE_ENV=live node ./worker/index.js -n yournamespace -d you.domain.com -w`
+in the name, rewrite some key and set NODE_ENV environment variable. For instance if you want to connect to some special amqp server in live environment you have to create a file with name `amqp.live.json` specify in it just what you want to override and than set NODE_ENV
+before you invoke the worker `NODE_ENV=live node ./worker/index.js -n namespace -d you.domain.com -w`
 
-####Working with Queue####
+####Working with a Queue####
 
 If you want to connect your worker to amqp server you have to use -q (or --queue) flag and specify the credentials of your amqp
 server. For instance `node ./worker/index.js -n yournamespace -q`. After starting worker connects to three different queues:
@@ -1140,7 +1144,7 @@ server. For instance `node ./worker/index.js -n yournamespace -q`. After startin
 
 Name of the main queue is calculated in the next way [queueBaseName]+[baseDomainName]+[prefix]. queueBaseName could be changed in
 the config, baseDomainName is set by setting -d (--basedomain flag), Prefixes could be set in the config and mainly mean priority of the queue
-default equal `deploy` and could be changed in the config
+default equal `deploy` all of them could be changed in the config. By default there are three priority (prefix) keys that add a prefix: -H (--highprio), -M (--mediumprio), -L (--lowprio).
 
 Name of the error queue is calculated in the same way as main but it always contains error prefix inside. Name of the "done" queue
 is always 'pages.generate.done'.
@@ -1148,23 +1152,22 @@ is always 'pages.generate.done'.
 By default if you start worker like that: `node ./worker/index.js -n yournamespace -q` it will connect to next queues
 `"amqpQueue":"pages.generate.deploy","amqpErrorQueue":"pages.generate.error.deploy","amqpDoneQueue":"pages.generate.done"`
 
+```
   node ./worker/index.js -n yournamespace -q -H
-  >>> "amqpQueue":"pages.generate.high","amqpErrorQueue":"pages.generate.error.high","amqpDoneQueue":"pages.generate.done"
+  // "amqpQueue":"pages.generate.high","amqpErrorQueue":"pages.generate.error.high","amqpDoneQueue":"pages.generate.done"
 
   node ./worker/index.js -n yournamespace -q -H -d foo.com
-  >>> "amqpQueue":"pages.generate.foo.com.high","amqpErrorQueue":"pages.generate.foo.com.error.high","amqpDoneQueue":"pages.generate.done"
-
+  // "amqpQueue":"pages.generate.foo.com.high","amqpErrorQueue":"pages.generate.foo.com.error.high","amqpDoneQueue":"pages.generate.done"
+```
 
 ####Uploading pages to the CDN####
 Currently html worker could upload resources to cdn's that has compatible with Amazon S3 API. All credentials could be specified in the
 main file inside knox namespace.
 
->Note: If you do not want to upload file you have to specify
+>Note: If you do not want to upload file you have to specify -w flag that means that your goal is to save generated files to disk. 
 
-Bucketname could be set by setting the S3_BUCKET key. In this case all files your project will be uploaded
-to this bucket. If you want to have a one bucket per domain you have to set S3_BUCKET to false (or just delete this key)
-and specify your buckets in the buckets filed for live and stage environment. For instance if in your project you have to domains
-`foo.com` and `m.foo.com` your buckets config could be like this:
+Bucket name could be set by setting the S3_BUCKET key. In this case all files your project will be uploaded to this bucket. If you want to have a one bucket per domain you have to set S3_BUCKET to false (or just delete this key)
+and specify your buckets in the buckets filed for live and stage environment. For instance if in your project you have to domains `foo.com` and `m.foo.com` your buckets config could be like this:
    "buckets": {
        "live": {
            "foo.com": "www.live-bucket.com",
@@ -1178,15 +1181,17 @@ and specify your buckets in the buckets filed for live and stage environment. Fo
 If you will not specify your buckets in the config file, bucket name will be calculated in next way. If the live flag (-l or --live)
 is present the name is www.{basedomain} where basedomain is obtaining from incoming message or from command line. If current env is not live the bucket name will be stage.{basedomain}.
 
+####Static page generation####
+Static page is a page with url that is not depend of data that is in this page.
+For instance index or imprint page is static.
+Worker allows you easily generate all your static page in some domain. For doing that you have to just execute worker without -p (--page) and -u (--url) flags
+
+`node ./worker/index.js -n namespace -d you.domain.com`
+
+In this case worker will merge all configuration file for that namespace and domain, grab all static page, generate them and upload after that.
 
 
 
-TBD
-- static pages
-- queue
-- dynamic pages (using "{url}")
-- caching of JSON files to the CDN
-- childpages
 
 You want to join the JigMagga team?
 ===================================

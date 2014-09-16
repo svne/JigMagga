@@ -1249,6 +1249,18 @@ Worker allows you easily generate all your static page in some domain. For doing
 In this case worker will merge all configuration file for that namespace and domain, grab all static page, generate them and upload after that.
 
 
+Js/Css-Builder
+------------ 
+
+You can build your css and js production files with the build tool.
+
+    node build/index.js -p ".*" -n jm -d domain.com -v "0.1" -u
+
+- -u upload files to the CDN bucket in your project configuration without -u it will save the file to disk
+- -p the page that you want to build. You can use regex pattern.
+- -n your project namespace 
+- -d your domain 
+- -v the version that the js and css production files will get 
 
 
 You want to join the JigMagga team?

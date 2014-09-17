@@ -163,7 +163,6 @@ exports.getConnection = function (config) {
         amqpUrl += '?' + querystring.stringify(config.options);
     }
 
-    console.log(amqpUrl);
     return amqplib.connect(amqpUrl);
 };
 

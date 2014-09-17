@@ -42,6 +42,11 @@ router.addRoutes({
      */
     'new:message': function (data) {
         messageStream.write(data);
+    },
+
+    'message:uploaded': function (key) {
+        log('deleting api cache for message with key %s', key);
+        generator.deleteCachedCall(key);
     }
 });
 
@@ -89,12 +94,11 @@ emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
 var apiStream = es.map(function (data, next) {
     log('[*] send api request', helper.getMeta(data.message));
     // Take first snapshot
-    var apiMessageKey = generator.createApiMessageKey(data.key);
+    // var apiMessageKey = generator.createApiMessageKey(data.key);
     var apiCallTimeDiff = timeDiff.create('apiCall:message:' + data.message.page);
 
-    data.config.apiMessageKey = apiMessageKey;
+    data.config.apiMessageKey = data.key;
     generator.apiCalls([data.config], emitter, function (err, res) {
-        generator.deleteCachedCall(apiMessageKey);
 
         if (err) {
             var errorText = format('error in apiCall %j %j ', err, res);

@@ -63,6 +63,7 @@ if (program.queue) {
 
     //if queue argument exists connect to amqp queues
     var connection = amqp.getConnection(config.amqp);
+    log('worker connected to AMQP server on %s', config.amqp.credentials.host);
     var queues = helper.getQueNames(program, config.amqp);
 
     log('queues in pool %j', queues, {});
@@ -117,6 +118,8 @@ var generatorRoutes = {
 var uploaderRoutes = {
     'message:uploaded': function (key) {
         helper.executeAck(key);
+        generatorRouter.send('message:uploaded', key);
+
         log('message uploaded %s', key);
     },
     error: workerErrorHandler

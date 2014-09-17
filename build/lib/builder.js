@@ -107,7 +107,7 @@ var builder = {
                     async.mapSeries(data.build.dependencies, function (item, cb) {
                         if (item.type === "scss") {
                             var sassImport = sassHelper.sassImportFn(data.sass);
-                            if (internalCache[item.id.path] && internalCache[item.id.path].sassImport === sassImport && internalCache[item.id.path].notcompiled === item.text) {
+                            if (internalCache[item.id.path] && internalCache[item.id.path].notcompiled === item.text && JSON.stringify(internalCache[item.id.path].sassImport) === JSON.stringify(sassImport)) {
                                 item.text = internalCache[item.id.path].text;
                                 cb(null, item);
                             } else {
@@ -123,7 +123,8 @@ var builder = {
                                     error: function (error) {
                                         throw new Error(error);
                                     },
-                                    outputStyle: 'compressed'
+                                    includePaths: [data.build.jigMaggaPath],
+                                    outputStyle: 'nested'
                                 });
                             }
                         } else {

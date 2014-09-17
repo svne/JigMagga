@@ -1,7 +1,8 @@
 steal("can/control", "lib/view-helpers", function () {
 
     can.Control.prototype.renderJig = function (configSelector, selector, options) {
-        var Controller;
+        var Controller,
+            jigs = steal.config(steal.config("namespace")).jigs;
 
         if (!options && typeof selector === "object") {
             options = selector;
@@ -13,14 +14,14 @@ steal("can/control", "lib/view-helpers", function () {
             configSelector = configSelector.substring(configSelector.lastIndexOf(" ") + 1 || 0);
         }
 
-        if (!steal.config("jigs") || !steal.config("jigs")[configSelector]) {
+        if (!jigs|| !jigs[configSelector]) {
             throw new Error("No config for " + configSelector);
             return;
         }
 
-        options = can.extend(true, {}, steal.config("jigs")[configSelector].options, options);
+        options = can.extend(true, {}, jigs[configSelector].options, options);
 
-        Controller = eval(steal.config("jigs")[configSelector].controller);
+        Controller = eval(jigs[configSelector].controller);
         if (Controller) {
             new Controller(selector, options);
         }

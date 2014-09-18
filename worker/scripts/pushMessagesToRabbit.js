@@ -6,6 +6,7 @@ var path = require('path');
 
 var amqp = require('amqp');
 
+
 args
     .option('-f, --fixture <n>', 'define the relative path to file with fixtures')
     .option('-e, --env <n>', 'set the node environment')
@@ -17,7 +18,7 @@ process.env.NODE_PROJECT_NAME = args.namespace || process.env.NODE_PROJECT_NAME;
 process.env.NODE_ENV = args.env || process.env.NODE_ENV;
 
 
-var config = require('../config');
+var config = require(__dirname + '/../config');
 var queueName = args.queue || 'pages.generate.high';
 
 var fixtures = require(path.join(process.cwd(), args.fixture));
@@ -28,17 +29,36 @@ var amqpPublishOptions = {
 
 var amqpConnection = amqp.createConnection(config.amqp.credentials);
 
-var publishMessages = function (exchange, queue) {
+/**
+ * publish function to puplish a set of messages
+ * @param exchange
+ * @param queue
+ * @param callback
+ */
+var publishMessages = function (exchange, queue, callback) {
+    var length = fixtures.length;
     console.log('amount of records is ', fixtures.length);
 
     fixtures.forEach(function (message) {
-        exchange.publish(queue, message, amqpPublishOptions);
+        // proper scope for message
+        !function (message) {
+            // use a small timout because rabbit can not handle the amount of concurrency messages
+            setTimeout(function () {
+                exchange.publish(queue, message, amqpPublishOptions);
+                length--;
+                if(!length){
+                    callback();
+                }
+            }, 100)
+        }(message);
     });
 };
 console.log('start');
-
+/**
+ * Main Task
+ */
 amqpConnection.on('ready', function () {
-    console.log("Connected to RabbitMQ");
+    console.log("Connected to RabbitMQ \n", "Host: ", config.amqp.credentials.host, " Queue: ", queueName);
     var exc = amqpConnection.exchange("amq.direct", {type: "direct"});
 
     exc.on('open', function () {
@@ -47,8 +67,9 @@ amqpConnection.on('ready', function () {
         amqpConnection.queue(queueName, {durable: true, autoDelete: false}, function (queue) {
             queue.bind('amq.direct', queueName);
             console.log('queue obtained');
-            publishMessages(exc, queueName);
-            process.exit();
+            publishMessages(exc, queueName, function(){
+                process.exit();
+            });
         });
     });
 });

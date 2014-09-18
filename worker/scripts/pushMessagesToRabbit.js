@@ -1,10 +1,26 @@
 #! /usr/local/bin/node
 'use strict';
+var args = require('commander');
+
+var path = require('path');
 
 var amqp = require('amqp');
 
+args
+    .option('-f, --fixture <n>', 'define the relative path to file with fixtures')
+    .option('-e, --env <n>', 'set the node environment')
+    .option('-q, --queue <n>', 'define a queue to put a messages in it. default is pages.generate.high')
+    .option('-n, --namespace <n>', 'set the namespace of project')
+    .parse(process.argv);
+
+process.env.NODE_PROJECT_NAME = args.namespace || process.env.NODE_PROJECT_NAME;
+process.env.NODE_ENV = args.env || process.env.NODE_ENV;
+
+
 var config = require('../config');
-var fixtures = require('../testData/restaurants.json');
+var queueName = args.queue || 'pages.generate.high';
+
+var fixtures = require(path.join(process.cwd(), args.fixture));
 var amqpPublishOptions = {
     contentType: 'text/plain',
     deliveryMode: 1
@@ -20,6 +36,7 @@ var publishMessages = function (exchange, queue) {
     });
 };
 console.log('start');
+
 amqpConnection.on('ready', function () {
     console.log("Connected to RabbitMQ");
     var exc = amqpConnection.exchange("amq.direct", {type: "direct"});
@@ -27,10 +44,10 @@ amqpConnection.on('ready', function () {
     exc.on('open', function () {
         console.log('exchange is open');
 
-        amqpConnection.queue('pages.generate.high', {durable: true, autoDelete: false}, function (queue) {
-            queue.bind('amq.direct', 'pages.generate.high');
+        amqpConnection.queue(queueName, {durable: true, autoDelete: false}, function (queue) {
+            queue.bind('amq.direct', queueName);
             console.log('queue obtained');
-            publishMessages(exc, 'pages.generate.high');
+            publishMessages(exc, queueName);
             process.exit();
         });
     });

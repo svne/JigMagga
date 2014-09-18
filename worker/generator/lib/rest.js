@@ -1,12 +1,15 @@
 'use strict';
 
 var util = require('util');
+var _ = require('lodash');
 var fs = require('fs');
 var placeholderHelper = require("./placeholders.js");
 var Q = require('q');
 var deepExtend = require("deep-extend");
 var http = require('http-get');
 var querystring = require("querystring");
+
+var diffToTime = require('../../lib/timeDiff').diffToTime;
 
 var httpMock = require('./httpMock');
 
@@ -21,7 +24,7 @@ var cachedCalls = {};
 
 var getRequestId = function (options) {
     return options.db + options.path + JSON.stringify(options.query).replace(/[^a-z0-9]/gi, "");
-}
+};
 
 exports.clearCache = function () {
     cachedCalls = {};
@@ -92,7 +95,7 @@ exports.addCall = function (apicall, config, paramsFromQueue, apiconfig) {
     }
     // generate container for api call
     return {
-        db: apiconfig["db"],
+        db: apiconfig.db,
         language: paramsFromQueue.language,
         path: url, // path to api call
         query: urlParams,
@@ -120,7 +123,9 @@ exports.doCall = function (options, callback) {
     if (cachedCalls[messageKey][requestId]) {
         return cachedCalls[messageKey][requestId].promise.done(function(result) {
             result.requestId = result.requestId || requestId;
-            callback(null, result);
+            var res = _.cloneDeep(result);
+            res.fromCache = true;
+            callback(null, res);
         });
     }
 
@@ -133,11 +138,12 @@ exports.doCall = function (options, callback) {
     if (useFixtures()) {
         getOptions.apiCallDescriptor = options.apiCallDescriptor;
     }
+    var diff = process.hrtime();
     http.get(getOptions, function (error, result) {
-
         if (result) {
             try {
                 options.result = JSON.parse(result.buffer.toString());
+                options.time = diffToTime(process.hrtime(diff));
                 options.success = true;
                 cachedCalls[messageKey][requestId].resolve(deepExtend({},options));
             }

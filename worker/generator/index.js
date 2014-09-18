@@ -76,8 +76,12 @@ var emitter = new EventEmitter();
 emitter.on('call:parsing', function (name, config) {
     log('Parsing call for jig %s config: %j', name, config, {api:true});
 });
-emitter.on('call:success', function (requestId) {
+emitter.on('call:success', function (requestId, time, fromCache) {
     log('Api call success for %s', requestId, {api: true});
+
+    if (!fromCache) {
+        log('time diff for %s in msec: %d', requestId, time, {timediff: true, diff: time, prefix: 'rest:call'});
+    }
 });
 
 emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {

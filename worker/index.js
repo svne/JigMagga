@@ -141,6 +141,8 @@ helper.createChildProcesses(args, function (err, result) {
     generatorRouter = new ProcessRouter(generator);
     uploaderRouter = new ProcessRouter(uploader);
 
+    // add pipe handler a function that should be executed on pipe
+    // event from the generator
     generatorRoutes.pipe = createPipeHandler(uploaderRouter, queuePool, redisClient, workerErrorHandler);
 
     generatorRouter.addRoutes(generatorRoutes);

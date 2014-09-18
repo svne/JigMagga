@@ -555,8 +555,7 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
                         failedCalls.push("Error in rest call: " + results[key].path + " " + JSON.stringify(results[key].query));
                     } else {
                         config["predefined"][results[key].viewParam] = results[key].result;
-
-                        emitter.emit('call:success', results[key].requestId);
+                        emitter.emit('call:success', results[key].requestId, results[key].time, results[key].fromCache);
                     }
                 }
             }

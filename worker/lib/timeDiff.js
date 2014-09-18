@@ -34,4 +34,6 @@ TimeDiff.prototype.create = function(prefix) {
     };
 };
 
+TimeDiff.diffToTime = diffToTime;
+
 module.exports = TimeDiff;

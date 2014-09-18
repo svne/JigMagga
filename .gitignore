@@ -28,5 +28,6 @@ worker/logs/*.heapsnapshot
 coverage
 newrelic.js
 newrelic_agent.log
+npm-debug.log
 ta
 sw

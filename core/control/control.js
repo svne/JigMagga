@@ -155,6 +155,10 @@ steal("can/control", "lib/view-helpers", function () {
                     break;
             }
             return date;
+        },
+        convertDateToWeekday: function (date) {
+            var dayNamesMin = [  _("yd-datepicker-so"), _("yd-datepicker-mo"), _("yd-datepicker-di"), _("yd-datepicker-mi"), _("yd-datepicker-do"), _("yd-datepicker-fr"), _("yd-datepicker-sa") ];
+            return dayNamesMin[date.getDay()];
         }
     };
     

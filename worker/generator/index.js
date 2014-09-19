@@ -140,7 +140,8 @@ var saveZipToDisck = function (uploadList, data) {
     var archiveStream = archiver.bulkArchive(uploadList);
     var result = {
         message: data.message,
-        key: data.key || undefined
+        key: data.key || undefined,
+        bucketName: data.bucketName
     };
 
     log('creating zip file for message', helper.getMeta(data.message));
@@ -212,6 +213,7 @@ messageStream
         } else {
             //if the amount is more then 200 create an archive write it to disk and
             //send to the worker the archive link
+
 
             saveZipToDisck(uploadPages, data);
         }

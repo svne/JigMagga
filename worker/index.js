@@ -1,4 +1,4 @@
-#! /usr/bin/node
+#! /usr/bin/nodetime
 'use strict';
 
 
@@ -110,7 +110,13 @@ var generatorRoutes = {
      */
     'new:zip': function (data) {
         log('new zip saved by generator', helper.getMeta(data.message));
-        uploaderRouter.send('new:zip', {url: data.message.url, zipPath: data.zipPath});
+        uploaderRouter.send('new:zip', {
+            url: data.message.url,
+            page: data.message.page,
+            zipPath: data.zipPath,
+            bucketName: data.bucketName,
+            messageKey: data.key
+        });
     },
     error: workerErrorHandler
 };

@@ -1158,11 +1158,11 @@ The build process is not yet distributed to _JigMagga_.
 HTML-Workers
 ------------
 
-Main goal of a worker is to generate static html pages, combining together all configuration files and jigs and after that uploading them
-to the CDN. It has two main working modes. The first is when the worker is connected to the rabbitMQ and for each event in the queue it generates one or more pages. On the second mode it can be triggered to generate one or more page via command line arguments.
+Main goal of a worker is to generate static html pages, combining together all configuration files and jigs and after that upload them
+to the CDN. It has two main working modes. The first is when the worker is connected to the rabbitMQ and for each event in the queue it generates one or more pages. On the second mode it can be triggered to generate one or more pages via command line arguments.
 
-For instance in order to generate and then save on disk all static pages in the domain `you.domain.com` in the project with namespace
-`namespace` you have to do following:
+For instance in order to generate and then save on disk all the static pages in the domain `you.domain.com` in the project with namespace
+`namespace`, you have to do following:
 
 `node ./worker/index.js -n namespace -d you.domain.com -w`
 

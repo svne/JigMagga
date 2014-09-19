@@ -22,6 +22,7 @@ process.env.NODE_PROJECT_NAME = args.namespace || process.env.NODE_PROJECT_NAME;
 process.env.NODE_ENV = args.env || process.env.NODE_ENV;
 
 
+
 var config = require(__dirname + '/../config');
 var queueName = args.queue;
 

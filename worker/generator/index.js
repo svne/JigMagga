@@ -7,6 +7,7 @@
 
 var EventEmitter = require('events').EventEmitter,
     format = require('util').format,
+    fsExtra = require('fs-extra'),
     fs = require('fs'),
     _ = require('lodash'),
     path = require('path'),
@@ -146,13 +147,17 @@ var saveZipToDisck = function (uploadList, data) {
 
     log('creating zip file for message', helper.getMeta(data.message));
     var zipPath = helper.getZipName({}, data.message, data.basePath);
-    archiveStream
-        .pipe(fs.createWriteStream(zipPath))
-        .on('finish', function () {
-            log('[!] saved to %s', zipPath);
-            result.zipPath = zipPath;
-            router.send('new:zip', result);
-        });
+
+
+    fsExtra.ensureDir(path.join(data.basePath, 'tmp'), function (err) {
+        archiveStream
+            .pipe(fs.createWriteStream(zipPath))
+            .on('finish', function () {
+                log('[!] saved to %s', zipPath);
+                result.zipPath = zipPath;
+                router.send('new:zip', result);
+            });
+    });
 };
 process.send({ready: true});
 

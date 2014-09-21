@@ -6,9 +6,13 @@ var path = require('path');
 
 var amqp = require('amqp');
 
+var fs = require('fs');
+
 
 args
     .option('-f, --fixture <n>', 'define the relative path to file with fixtures')
+    .option('-s, --static', 'will generate all statuc pages without dynamic params / domain is required')
+    .option('-d, --basedomain <n>', 'only required when --static flag is active')
     .option('-e, --env <n>', 'set the node environment')
     .option('-q, --queue <n>', 'define a queue to put a messages in it. default is pages.generate.high')
     .option('-n, --namespace <n>', 'set the namespace of project')
@@ -19,15 +23,48 @@ process.env.NODE_ENV = args.env || process.env.NODE_ENV;
 
 
 var config = require(__dirname + '/../config');
+var domainConfig = null;
+var fixtures = [];
+
+
+/**
+ * will return an array with all static pages in a rabbit message format
+ * @param pages
+ * @returns {Array}
+ */
+var generateStaticMessages = function(pages){
+    var statics = [];
+    for(var page in pages){
+        for(var locale in pages[page]){
+            if(pages[page][locale] && pages[page][locale].indexOf("{")  == -1){
+                statics.push({
+                    "url": pages[page][locale],
+                    "basedomain": args.basedomain,
+                    "page": page,
+                    "locale": locale
+                })
+            }
+        }
+    }
+    return statics;
+};
+
+if(args.static){
+    domainConfig = JSON.parse(fs.readFileSync(path.join(__dirname + '/../..', args.namespace + "/page/" + args.basedomain + "/" + args.basedomain + ".conf")));
+    fixtures = fixtures.concat(generateStaticMessages(domainConfig.pages));
+}
+
 var queueName = args.queue || 'pages.generate.high';
 
-var fixtures = require(path.join(process.cwd(), args.fixture));
+fixtures = fixtures.concat(require(path.join(process.cwd(), args.fixture)));
 var amqpPublishOptions = {
     contentType: 'text/plain',
     deliveryMode: 1
 };
 
 var amqpConnection = amqp.createConnection(config.amqp.credentials);
+
+
 
 /**
  * publish function to puplish a set of messages

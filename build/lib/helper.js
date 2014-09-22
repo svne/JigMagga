@@ -4,7 +4,7 @@
 var path = require('path'),
     async = require('async'),
     es = require('event-stream'),
-    extend = require('node.extend'),
+    extend = require('deep-extend'),
     archiver = require('archiver'),
     Uploader = require('jmUtil').ydUploader,
     configMerger = require('./configMerger'),
@@ -220,7 +220,7 @@ module.exports = {
     splitPagesIntoSingleStreams: function () {
         return es.through(function write(data) {
             for (var i = 0; i < data.length; i++) {
-                var dataCopy = extend(true, {}, data[i]);
+                var dataCopy = extend({}, data[i]);
                 this.emit('data', dataCopy);
             }
         });
@@ -253,7 +253,7 @@ module.exports = {
                 for (var y = -1; y < data.browsers.length; y++) {
                     data.build.browser = data.browsers[y] || null;
                     data.build.locale = data.locales[i];
-                    this.emit('data', extend(true, {}, data));
+                    this.emit('data', extend({}, data));
                 }
             }
         });

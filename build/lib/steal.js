@@ -3,8 +3,7 @@ var stealBuild = require("steal"),
     helper = require('./helper.js'),
     async = require('async'),
     util = require("util"),
-    fs = require('fs'),
-    extend = require('node.extend');
+    fs = require('fs');
 
 /**
  *

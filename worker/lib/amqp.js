@@ -123,12 +123,18 @@ var cancelStream = function (callback) {
  * @param  {*} message
  * @param  {?object} options
  */
-var publish = exports.publish = function (message, options) {
+var publish = exports.publish = function (message, options, callback) {
     options = options || {};
-    var contentType = options.contentType || 'text/plain';
+    callback = callback || function (err) {
+        if (err) {
+            throw new Error(err);
+        }
+    };
+    options.contentType = options.contentType || 'text/plain';
 
     message = _.isString(message) ? message : JSON.stringify(message);
     var queue = options.queue || this.name;
+    delete options.queue;
 
     this.connection
         .then(function (connected) {
@@ -137,13 +143,15 @@ var publish = exports.publish = function (message, options) {
 
                 return ok.then(function () {
                     message = new Buffer(message);
-                    channel.sendToQueue(queue, message, {contentType: contentType});
+                    channel.sendToQueue(queue, message, options);
                     channel.close();
                 });
             });
         })
-        .catch(function (err) {
-            throw new Error(err);
+        .then(function (res) {
+            callback(null, res);
+        }, function (err) {
+            callback(err);
         });
 };
 

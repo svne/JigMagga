@@ -12,12 +12,12 @@ describe('QueuePool', function () {
         amqpQueue: 'page.generate.high',
         amqpDoneQueue: 'page.generate.done'
     };
-    var connection = amqp.getConnection(config.amqp.credentials);
+    var connection = amqp.getConnection(config.amqp);
     var queuePool = new amqp.QueuePool(queues, connection);
 
     it('should create a pool of queues with getStream and publish methods', function () {
         expect(queuePool).to.include.keys('amqpQueue', 'amqpDoneQueue');
-        
+
         expect(queuePool.amqpQueue).to.have.property('getStream');
         expect(queuePool.amqpQueue).to.have.property('publish');
     });

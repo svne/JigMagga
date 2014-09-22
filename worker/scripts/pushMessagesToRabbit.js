@@ -1,13 +1,11 @@
 #! /usr/local/bin/node
 'use strict';
-var args = require('commander');
+var args = require('commander'),
+    async = require('async'),
+    fs = require('fs'),
+    path = require('path');
 
-var path = require('path');
-
-var amqp = require('amqp');
-
-var fs = require('fs');
-
+var amqp = require('../lib/amqp');
 
 args
     .option('-f, --fixture <n>', 'define the relative path to file with fixtures')
@@ -22,9 +20,9 @@ process.env.NODE_PROJECT_NAME = args.namespace || process.env.NODE_PROJECT_NAME;
 process.env.NODE_ENV = args.env || process.env.NODE_ENV;
 
 
-var config = require(__dirname + '/../config');
-var domainConfig = null;
-var fixtures = [];
+var config = require(__dirname + '/../config'),
+    domainConfig = null,
+    fixtures = [];
 
 
 /**
@@ -36,13 +34,13 @@ var generateStaticMessages = function(pages){
     var statics = [];
     for(var page in pages){
         for(var locale in pages[page]){
-            if(pages[page][locale] && pages[page][locale].indexOf("{")  == -1){
+            if(pages[page][locale] && pages[page][locale].indexOf("{")  === -1){
                 statics.push({
                     "url": pages[page][locale],
                     "basedomain": args.basedomain,
                     "page": page,
                     "locale": locale
-                })
+                });
             }
         }
     }
@@ -62,55 +60,36 @@ var amqpPublishOptions = {
     deliveryMode: 1
 };
 
-var amqpConnection = amqp.createConnection(config.amqp.credentials);
+console.log('amqp server', config.amqp.credentials);
+var amqpConnection = amqp.getConnection(config.amqp);
 
+var pool = new amqp.QueuePool({queue: queueName}, amqpConnection);
 
 
 /**
- * publish function to puplish a set of messages
- * @param exchange
+ * publish function to publish a set of messages
  * @param queue
  * @param callback
  */
-var publishMessages = function (exchange, queue, callback) {
-    var length = fixtures.length;
+var publishMessages = function (queue, callback) {
     console.log('amount of records is ', fixtures.length);
 
-    fixtures.forEach(function (message) {
-        // proper scope for message
-        !function (message) {
-            // use a small timout because rabbit can not handle the amount of concurrency messages
-            setTimeout(function () {
-                exchange.publish(queue, message, amqpPublishOptions);
-                length--;
-                if(!length){
-                    callback();
-                }
-            }, 100)
-        }(message);
-    });
+    async.eachSeries(fixtures, function (message, next) {
+        queue.publish(message, amqpPublishOptions, next);
+    }, callback);
 };
 console.log('start');
+
+console.log('queue obtained');
 /**
  * Main Task
  */
-amqpConnection.on('ready', function () {
-    console.log("Connected to RabbitMQ \n", "Host: ", config.amqp.credentials.host, " Queue: ", queueName);
-    var exc = amqpConnection.exchange("amq.direct", {type: "direct"});
-
-    exc.on('open', function () {
-        console.log('exchange is open');
-
-        amqpConnection.queue(queueName, {durable: true, autoDelete: false}, function (queue) {
-            queue.bind('amq.direct', queueName);
-            console.log('queue obtained');
-            publishMessages(exc, queueName, function(){
-                process.exit();
-            });
-        });
-    });
-});
-
-amqpConnection.on('error', function (err) {
-    console.log('amqp error', err);
+publishMessages(pool.queue, function(err) {
+    if (err) {
+        return console.log('amqp err', err);
+    }
+    console.log('finish... exiting');
+    setTimeout(function () {
+        process.exit();
+    }, 200);
 });

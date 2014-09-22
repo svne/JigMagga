@@ -154,7 +154,7 @@ describe('worker', function () {
         var queues = {
             amqpQueue: 'pages.generate.lieferando.de.high'
         };
-        var connection = amqp.getConnection(config.amqp.credentials);
+        var connection = amqp.getConnection(config.amqp);
         var queuePool = new amqp.QueuePool(queues, connection);
 
         var workerProcess;
@@ -280,7 +280,7 @@ describe('worker', function () {
                             var timeDelta = Date.now() - lastModified.valueOf();
 
                             expect(timeDelta).to.be.not.above(1 * 60 * 1000);
-                            
+
                             checkHTML(msg, body, next);
                         }
                     ], callback);
@@ -294,9 +294,9 @@ describe('worker', function () {
             });
 
             queuePool.amqpQueue.publish(JSON.stringify(msg));
-            
+
         };
-    
+
         it('should upload correct html for menu page', function (done) {
             uploadAndValidate(workerProcess, menu, done);
         });

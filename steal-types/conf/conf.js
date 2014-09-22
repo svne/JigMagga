@@ -487,6 +487,7 @@
                 } else {
                     steal.apply(steal, config.includes);
                 }
+                options.text += 'steal.config("namespace", "' + upperSizeFirstLetter(config.namespace) + '");';
 
                 if ((config.jigs && !isEmptyObject(config.jigs)) || config.tracking) {
                     options.text += "steal('can/route', 'can/view',  'can/view/modifiers', ";
@@ -636,26 +637,35 @@
             var configs = [],
                 namespace = getNamespace()
             // get all configs that are in folders - we can bubble up the path (default and domain)
-                setConfigs = function (path) {
-                    var dirs = path.split("/"),
-                        confPath;
-                    for (var i = 0, dir = "", tempPath = "", len = dirs.length; i < len; i++, dir = dirs[i]) {
-                        if (dir && dir.indexOf("html") === -1) {
-                            tempPath += "/" + dir;
-                            if (tempPath.indexOf("page") !== -1) {
-                                confPath = tempPath + "/" + dir + ".conf";
-                                if (dir !== namespace && configs.indexOf(confPath) === -1) {
-                                    configs.push(tempPath + "/" + dir + ".conf");
-                                }
+            setConfigs = function (path) {
+                var dirs = path.split("/"),
+                    confPath;
+                for (var i = 0, dir = "", tempPath = "", len = dirs.length; i < len; i++, dir = dirs[i]) {
+                    if (dir && dir.indexOf("html") === -1) {
+                        tempPath += "/" + dir;
+                        if (tempPath.indexOf("page") !== -1) {
+                            confPath = tempPath + "/" + dir + ".conf";
+                            if (dir !== namespace && configs.indexOf(confPath) === -1) {
+                                configs.push(tempPath + "/" + dir + ".conf");
                             }
-                            
                         }
+
                     }
-                };
+                }
+            };
             setConfigs(path.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/"));
             setConfigs(path);
-            setConfigs("/" +  namespace.toLowerCase() + "/page/" + getDomain());
+            setConfigs("/" + namespace.toLowerCase() + "/page/" + getDomain());
             return configs;
+        },
+        /**
+         *  upper case the first letter of a string
+         *
+         * @param controller
+         * @returns {string}
+         */
+        upperSizeFirstLetter = function (string) {
+            return string.toString()[0].toUpperCase() + string.toString().slice(1)
         },
         /**
          * get path from page
@@ -664,7 +674,7 @@
         getNamespace = function () {
             var path = getPath(),
                 namsepsace = path.replace(/^\//, "").split("/")[0];
-            return namsepsace[0].toUpperCase() + namsepsace.slice(1);
+            return upperSizeFirstLetter(namsepsace);
         },
         /**
          * get path from page
@@ -690,7 +700,7 @@
                 match = path.match(/\/[^\/]*\/page\/([^\/]+)\//);
             if (match) {
                 domain = match[1];
-            } else if(steal.config("domain")){
+            } else if (steal.config("domain")) {
                 domain = steal.config("domain");
             } else {
                 domain = "default";
@@ -801,8 +811,8 @@
             conf.sass[conf.namespace + "-locale"] = conf.locale;
             return conf;
         },
-        setIsTestConfigWhenFuncunitIsLoaded= function(){
-            if(typeof ___FUNCUNIT_OPENED !== "undefined"){
+        setIsTestConfigWhenFuncunitIsLoaded = function () {
+            if (typeof ___FUNCUNIT_OPENED !== "undefined") {
                 steal.config("isTest", true);
             }
         };
@@ -849,7 +859,7 @@
 
             var messagePOFile = (mergedConfig.namespace || "") + "/locales/" + mergedConfig.domain + "/" + mergedConfig.locale + "/messages.po";
             mergedConfig.localePath = messagePOFile;
-            if(steal.config("domain") !== "default"){
+            if (steal.config("domain") !== "default") {
                 mergedConfig.includes.unshift(messagePOFile);
             }
 

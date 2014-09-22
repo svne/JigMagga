@@ -1,4 +1,4 @@
-#! /usr/bin/nodetime
+#! /usr/local/bin/node
 'use strict';
 
 
@@ -191,8 +191,7 @@ if (config.main.memwatch) {
     });
 }
 
-
-process.on('SIGTERM', function () {
+var exit = function () {
     log('warn', 'process terminated remotely', {exit: true});
     if (uploader && _.isFunction(uploader.kill)) {
         uploader.kill();
@@ -201,4 +200,7 @@ process.on('SIGTERM', function () {
         generator.kill();
     }
     process.exit();
-});
+};
+
+process.on('SIGTERM', exit);
+process.on('SIGHUP', exit);

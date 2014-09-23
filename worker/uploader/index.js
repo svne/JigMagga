@@ -153,11 +153,13 @@ var uploadItem = function (data, callback) {
 
     log('start uploading new file url: %s', data.url);
 
+    var url = (data.url === '/') ? 'index' : data.url;
+
     if (data.zipPath) {
-        return uploader.uploadFile(data.zipPath, data.url, {deleteAfter: true}, next);
+        return uploader.uploadFile(data.zipPath, url, {deleteAfter: true}, next);
     }
 
-    uploader.uploadContent(new Buffer(data.data), data.url, {
+    uploader.uploadContent(new Buffer(data.data), url, {
         headers: {'X-Myra-Unzip': 1},
         type: 'application/octet-stream'
     }, next);

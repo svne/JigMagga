@@ -13,7 +13,7 @@ steal.config({
         "can/": "bower_components/canjs/steal/canjs/",
         "qunit/": "bower_components/qunit/qunit/",
         "qunit-tap/": "bower_components/qunit-tap/lib/",
-        "locales/": "locales/"
+        "can/view" : "can/view/modifiers"
     },
     shim: {
         jquery: {

@@ -1,5 +1,6 @@
 'use strict';
 var inherits = require('util').inherits;
+var _ = require('lodash');
 
 var WorkerError = function (message, originalMessage, messageKey) {
     this.name = 'WorkerError';  
@@ -29,4 +30,22 @@ exports.getErrorHandler = function (log, callback) {
         }
         callback(err);
     };
+};
+
+/**
+ * creates an exit handler that has to kill all child processes before exit
+ * @param {Function} log
+ * @param {Array} childProcesses
+ * @return {Function}
+ */
+exports.getExitHandler = function (log, childProcesses) {
+   return function () {
+       log('warn', 'process terminated remotely', {exit: true});
+       childProcesses.forEach(function (child) {
+           if (child && _.isFunction(child.kill)) {
+               child.kill();
+           }
+       });
+       process.exit();
+   };
 };

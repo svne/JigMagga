@@ -180,10 +180,15 @@ helper.createChildProcesses(args, function (err, result) {
     });
 
     main.on('error:message', workerErrorHandler);
+    var exitHandler = error.getExitHandler(log, [uploader, generator]);
+
+    process.on('SIGTERM', exitHandler);
+    process.on('SIGHUP', exitHandler);
+    uploader.on('exit', exitHandler);
+    generator.on('exit', exitHandler);
 });
 
 process.on('uncaughtException', error.getErrorHandler(log, workerErrorHandler));
-
 
 if (config.main.memwatch) {
     var memwatch = require('memwatch');
@@ -192,17 +197,3 @@ if (config.main.memwatch) {
         log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
     });
 }
-
-var exit = function () {
-    log('warn', 'process terminated remotely', {exit: true});
-    if (uploader && _.isFunction(uploader.kill)) {
-        uploader.kill();
-    }
-    if (generator && _.isFunction(generator.kill)) {
-        generator.kill();
-    }
-    process.exit();
-};
-
-process.on('SIGTERM', exit);
-process.on('SIGHUP', exit);

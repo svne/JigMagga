@@ -489,7 +489,7 @@
                 }
                 options.text += 'steal.config("namespace", "' + upperSizeFirstLetter(config.namespace) + '");';
 
-                if ((config.jigs && !isEmptyObject(config.jigs)) || config.tracking) {
+                if ((config.jigs && !isEmptyObject(config.jigs))) {
                     options.text += "steal('can/route', ";
 
                     // write all jig paths to steal that dependencies are loaded before alloc a jig

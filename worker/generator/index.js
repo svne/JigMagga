@@ -96,7 +96,8 @@ emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
  * @param  {object}   data
  * @param  {Function} next
  */
-var apiStream = es.map(function (data, next) {
+var apiStream = es.through(function (data) {
+    var that = this;
     log('[*] send api request', helper.getMeta(data.message));
     // Take first snapshot
     // var apiMessageKey = generator.createApiMessageKey(data.key);
@@ -107,12 +108,11 @@ var apiStream = es.map(function (data, next) {
 
         if (err) {
             var errorText = format('error in apiCall %j %j ', err, res);
-            handleError(errorText, data);
-            return next();
+            return handleError(errorText, data);
         }
         data.apiCallResult = res;
         apiCallTimeDiff.stop();
-        return next(null, data);
+        return that.emit('data', data);
     });
 });
 

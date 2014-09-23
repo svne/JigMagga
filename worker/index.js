@@ -1,4 +1,4 @@
-#! /usr/bin/nodetime
+#! /usr/local/bin/node
 'use strict';
 
 
@@ -54,12 +54,14 @@ var basePath = (program.namespace) ? path.join(process.cwd(), program.namespace)
 log('base project path is %s', basePath);
 
 if (program.queue) {
-    // get redis Client
-    var redisClient = getRedisClient(config.redis, function error(err) {
-        log('redis Error %j', err, {redis: true});
-    }, function success() {
-        log('redis client is ready', {redis: true});
-    });
+    if (!config.redis.disabled) {
+        // get redis Client
+        var redisClient = getRedisClient(config.redis, function error(err) {
+            log('redis Error %j', err, {redis: true});
+        }, function success() {
+            log('redis client is ready', {redis: true});
+        });
+    }
 
     //if queue argument exists connect to amqp queues
     var connection = amqp.getConnection(config.amqp);
@@ -178,10 +180,15 @@ helper.createChildProcesses(args, function (err, result) {
     });
 
     main.on('error:message', workerErrorHandler);
+    var exitHandler = error.getExitHandler(log, [uploader, generator]);
+
+    process.on('SIGTERM', exitHandler);
+    process.on('SIGHUP', exitHandler);
+    uploader.on('exit', exitHandler);
+    generator.on('exit', exitHandler);
 });
 
 process.on('uncaughtException', error.getErrorHandler(log, workerErrorHandler));
-
 
 if (config.main.memwatch) {
     var memwatch = require('memwatch');
@@ -190,15 +197,3 @@ if (config.main.memwatch) {
         log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
     });
 }
-
-
-process.on('SIGTERM', function () {
-    log('warn', 'process terminated remotely', {exit: true});
-    if (uploader && _.isFunction(uploader.kill)) {
-        uploader.kill();
-    }
-    if (generator && _.isFunction(generator.kill)) {
-        generator.kill();
-    }
-    process.exit();
-});

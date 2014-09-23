@@ -229,10 +229,10 @@ module.exports = {
         var that = this;
         async.parallel({
             generator: function (next) {
-                that.createSubProcess(__dirname + '/../generator/index.js', args, next);
+                that.createSubProcess(__dirname + '/../generator/index.js', _.cloneDeep(args), next);
             },
             uploader: function (next) {
-                that.createSubProcess(__dirname + '/../uploader/index.js', args, next);
+                that.createSubProcess(__dirname + '/../uploader/index.js', _.cloneDeep(args), next);
             }
         }, callback);
     },

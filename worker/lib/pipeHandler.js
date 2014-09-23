@@ -29,21 +29,22 @@ var createUploaderStream = function (message, key, bucketName, uploaderRouter, r
             data: data,
             messageKey: key
         };
-        if (program.queue) {
-            uploaderRouter.send('reduce:timeout');
-            var redisKey = helper.getRedisKey(config.redis.keys.list, uploaderRouter.processInstance.pid);
-
-            return redisClient.rpush(redisKey, JSON.stringify(result), function (err) {
-                if (err) {
-                    return that.emit('error', new WorkerError(err.message || err), data.message.origMessage);
-                }
-                log('generated message sent to redis', getMeta(message));
-                cb();
-            });
+        if (!program.queue || config.redis.disabled) {
+            log('[WORKER] send message to upload', getMeta(message));
+            uploaderRouter.send('pipe', result);
+            return cb();
         }
-        log('[WORKER] send message to upload', getMeta(message));
-        uploaderRouter.send('pipe', result);
-        cb();
+
+        uploaderRouter.send('reduce:timeout');
+        var redisKey = helper.getRedisKey(config.redis.keys.list, uploaderRouter.processInstance.pid);
+
+        return redisClient.rpush(redisKey, JSON.stringify(result), function (err) {
+            if (err) {
+                return that.emit('error', new WorkerError(err.message || err), data.message.origMessage);
+            }
+            log('generated message sent to redis', getMeta(message));
+            cb();
+        });
     });
 };
 

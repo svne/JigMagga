@@ -54,12 +54,14 @@ var basePath = (program.namespace) ? path.join(process.cwd(), program.namespace)
 log('base project path is %s', basePath);
 
 if (program.queue) {
-    // get redis Client
-    var redisClient = getRedisClient(config.redis, function error(err) {
-        log('redis Error %j', err, {redis: true});
-    }, function success() {
-        log('redis client is ready', {redis: true});
-    });
+    if (!config.redis.disabled) {
+        // get redis Client
+        var redisClient = getRedisClient(config.redis, function error(err) {
+            log('redis Error %j', err, {redis: true});
+        }, function success() {
+            log('redis client is ready', {redis: true});
+        });
+    }
 
     //if queue argument exists connect to amqp queues
     var connection = amqp.getConnection(config.amqp);

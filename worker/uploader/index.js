@@ -37,7 +37,7 @@ var messageStream = stream.duplex();
 
 var REDIS_CHECK_TIMEOUT = 100;
 
-if (program.queue) {
+if (program.queue && !config.redis.disabled) {
     var redisClient = getRedisClient(config.redis, function error(err) {
         log('redis Error %j', err, {redis: true});
     });
@@ -187,7 +187,7 @@ var uploadStream = function (source) {
     });
 };
 
-if (program.queue) {
+if (program.queue && !config.redis.disabled) {
     redisClient.once('ready', function () {
         log('redis client is ready', {redis: true});
 

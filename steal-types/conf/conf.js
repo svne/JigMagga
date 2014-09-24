@@ -489,8 +489,8 @@
                 }
                 options.text += 'steal.config("namespace", "' + upperSizeFirstLetter(config.namespace) + '");';
 
-                if ((config.jigs && !isEmptyObject(config.jigs)) || config.tracking) {
-                    options.text += "steal('can/route', 'can/view',  'can/view/modifiers', ";
+                if ((config.jigs && !isEmptyObject(config.jigs))) {
+                    options.text += "steal('can/route', 'can/view/modifiers', ";
 
                     // write all jig paths to steal that dependencies are loaded before alloc a jig
                     // eg. steal("yd/jig/bla/bla.js", function(){ .....

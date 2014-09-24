@@ -29,7 +29,7 @@ var queueName = args.queue;
 
 var options = {
     hostname: config.amqp.credentials.host,
-    port: config.amqp.credentials.port || 15672,
+    port: config.amqp.credentials.port || 80,
     path: "/api/queues/" + config.amqp.credentials.vhost + "/" + queueName,
     method: 'GET',
     auth: config.amqp.credentials.login + ":" + config.amqp.credentials.password
@@ -53,5 +53,5 @@ http.get(options, function (res) {
         }
     });
 }).on('error', function (e) {
-    console.log("Got error: " + e.message);
+    console.log("Got error: " + e.message, "\n", options);
 });

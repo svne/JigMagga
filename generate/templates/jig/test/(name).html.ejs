@@ -17,7 +17,7 @@
 </div>
 <script type='text/javascript' src="/steal/steal.js"></script>
 <script type='text/javascript'>
-    if(typeof ___FUNCUNIT_OPENED === "undefined"){
+    if (window.name !== "funcunit") {
         steal.config("domain", "default");
         steal("<%= namespace %>/jig/<%= name %>/test/<%= name %>.conf")
     }

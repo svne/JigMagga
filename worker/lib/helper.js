@@ -3,6 +3,7 @@ var _ = require('lodash'),
     walk = require('walk'),
     async = require('async'),
     format = require('util').format,
+    fs = require('fs'),
     fsExtra = require('fs-extra'),
     path = require('path'),
     spawn = require('child_process').spawn;
@@ -13,7 +14,7 @@ var log = require('./logger')('worker', {component: 'worker', processId: process
 
 var timeDiff = new TimeDiff(log);
 
-// @type {Object.<string, {count: number, queueShift: function, timeDiff: TimeDiff}>} - storage of message acknowledge functions
+// @type {Object.<string, {count: number, queueShift: function}>} - storage of message acknowledge functions
 var messageAckStorage = {};
 
 module.exports = {
@@ -317,8 +318,7 @@ module.exports = {
     },
 
     /**
-     * generate a redis key by adding pid to redis key name
-     *
+     * generate a redis key by adding pid to redis
      * @param {String} name
      * @param {(String|Number)} pid
      * @return {string}

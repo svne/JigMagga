@@ -200,9 +200,13 @@ module.exports = {
                 }
             } catch (err) {
                 this.emit('err', new WorkerError(err.message || err, data.message, data.key));
+                return data.queueShift();
             }
 
-
+            if (!result.length) {
+                this.emit('err', new WorkerError('there is no such pages in config file', data.message, data.key));
+                return data.queueShift();
+            }
             result.forEach(function (item) {
                 that.emit('data', item);
             });

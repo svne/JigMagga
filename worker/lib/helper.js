@@ -3,7 +3,6 @@ var _ = require('lodash'),
     walk = require('walk'),
     async = require('async'),
     format = require('util').format,
-    fs = require('fs'),
     fsExtra = require('fs-extra'),
     path = require('path'),
     spawn = require('child_process').spawn;
@@ -14,7 +13,7 @@ var log = require('./logger')('worker', {component: 'worker', processId: process
 
 var timeDiff = new TimeDiff(log);
 
-// @type {Object.<string, {count: number, queueShift: function}>} - storage of message acknowledge functions
+// @type {Object.<string, {count: number, queueShift: function, timeDiff: TimeDiff}>} - storage of message acknowledge functions
 var messageAckStorage = {};
 
 module.exports = {
@@ -196,18 +195,13 @@ module.exports = {
     },
 
     /**
-     * returns stream that write input to the zip file name created by getZipName method
+     * save files on disk from file list
+     * create the path for each file if it does not exist
      *
-     * @param  {{write: boolean}} program
-     * @param  {{page: string, url: string, locale: string}} message
-     * @param  {string} basePath
-     * @return {Writable}
+     * @param {Array.<{path:String, content:String}>} fileList
+     * @param {function} log
+     * @param {function} callback
      */
-    createSaveZipStream: function (program, message, basePath) {
-        return fs.createWriteStream(this.getZipName(program, message, basePath));
-    },
-
-
     saveFiles: function (fileList, log, callback) {
         async.each(fileList, function (file, next) {
             log('save file to:', file.path);
@@ -218,7 +212,7 @@ module.exports = {
     /**
      * creates a generator and uploader process in asynchronous mode
      *
-     * @param  {array}   args      - array that throw to each process
+     * @param  {array.<String>}   args      - array that throw to each process
      * @param  {Function} callback
      */
     createChildProcesses: function (args, callback) {
@@ -322,6 +316,13 @@ module.exports = {
 
     },
 
+    /**
+     * generate a redis key by adding pid to redis key name
+     *
+     * @param {String} name
+     * @param {(String|Number)} pid
+     * @return {string}
+     */
     getRedisKey: function (name, pid) {
         return name + ':' + pid;
     }

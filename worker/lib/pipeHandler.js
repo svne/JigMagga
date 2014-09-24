@@ -1,6 +1,5 @@
 'use strict';
-var fs = require('fs'),
-    archiver = require('./archiver');
+var archiver = require('./archiver');
 
 var helper = require('./helper'),
     stream = require('./streamHelper'),

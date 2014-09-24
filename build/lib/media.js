@@ -187,6 +187,11 @@ module.exports = {
                     if (err) {
                         return callback(err);
                     }
+                    if (!files.length) {
+                        console.log('there is no media files for mask:', data.build.package.mediaSource);
+                        return callback(null);
+                    }
+
                     data.build.package = data.build.package || {};
                     data.build.package.mediaFiles = files;
                     callback(null, data);

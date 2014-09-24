@@ -11,12 +11,16 @@
 'use strict';
 var args = require('commander');
 var http = require('http');
+var util = require('util');
 
 args
     .option('-e, --env <n>', 'set the node environment')
     .option('-q, --queue <n>', 'define a queue name to check')
     .option('-n, --namespace <n>', 'set the namespace of project')
+    .option('-o, --httpoptions [value]', 'parse http options that will be extend from config', JSON.parse)
     .parse(process.argv);
+
+
 
 process.env.NODE_PROJECT_NAME = args.namespace || process.env.NODE_PROJECT_NAME;
 process.env.NODE_ENV = args.env || process.env.NODE_ENV;
@@ -27,13 +31,14 @@ var config = require(__dirname + '/../config');
 var queueName = args.queue;
 
 
-var options = {
+var options = util._extend({
     hostname: config.amqp.credentials.host,
-    port: config.amqp.credentials.port || 80,
+    port: config.amqp.credentials.port || 15672,
     path: "/api/queues/" + config.amqp.credentials.vhost + "/" + queueName,
     method: 'GET',
     auth: config.amqp.credentials.login + ":" + config.amqp.credentials.password
-};
+}, args.httpoptions);
+
 
 
 http.get(options, function (res) {

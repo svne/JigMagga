@@ -6,11 +6,11 @@ module.exports = {
     /**
      * return a stream with zip archive of file from file list
      * 
-     * @param  {array} fileList  [list of objects {content: string, url: string, time: timestamp}]
+     * @param  {Array.<{content: string, url: string, time: timestamp}>} fileList
      * @return {stream}
      */
     bulkArchive: function (fileList) {
-        var archive = archiver('zip');
+        var archive = archiver('zip', {zlib: {level: 1}});
         var fileListLength = fileList.length;
 
         for (var i = 0; i < fileListLength; i++) {

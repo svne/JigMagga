@@ -76,16 +76,19 @@ var ProcessRouter = function (processInstance, pipeFdNumber) {
  */
 ProcessRouter.prototype._createPipeHandler = function (handler) {
     var that = this;
-    var composedBuffer = new Buffer(0);
+    var composedBuffer;
+    var bufferList = [];
 
     this.pipe.on('data', function (buffer) {
+        bufferList.push(buffer);
         if (!isLastChunkIn(buffer)) {
-            return composedBuffer = Buffer.concat([composedBuffer, buffer]);
+            return;
         }
-        composedBuffer = Buffer.concat([composedBuffer, buffer]);
+        composedBuffer = Buffer.concat(bufferList);
         var data = removeIdentifier(composedBuffer).toString();
         data = data.split(LAST_CHUNK_IDENTIFIER);
-        composedBuffer = new Buffer(0);
+        composedBuffer = null;
+        bufferList = [];
         for (var i = 0; i < data.length; i++) {
             handler.call(that, data[i]);
         }

@@ -14,6 +14,8 @@ var log = require('./logger')('worker', {component: 'worker', processId: process
     TimeDiff = require('./timeDiff');
 
 var timeDiff = new TimeDiff(log);
+var config = require('../config');
+
 
 /**
  * Pipes message from source stream to filter stream then to configuration
@@ -29,7 +31,7 @@ module.exports = function (source, generator, basePath, program) {
 
     tc(source)
         .pipe(tc(es.through(function (data) {
-            if (!helper.isMessageFormatCorrect(data.message)) {
+            if (!helper.isMessageFormatCorrect(data.message, config)) {
                 if (_.isFunction(data.queueShift)) {
                     data.queueShift();
                 }
@@ -60,7 +62,7 @@ module.exports = function (source, generator, basePath, program) {
         .pipe(tc(configMerge.getConfigStream()))
         .on('data', function (data) {
             data.message = messageHelper.createMessage(data.message, program, data.config);
-            data.bucketName = helper.generateBucketName(data, program);
+            data.bucketName = helper.generateBucketName(data, program, config.main.knox.buckets);
 
             generator.send('new:message', data);
             emitter.emit('send:message', helper.getMeta(data.message));

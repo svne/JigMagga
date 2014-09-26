@@ -252,8 +252,8 @@ module.exports = {
      * @param  {object}  message
      * @return {Boolean}
      */
-    isMessageFormatCorrect: function (message) {
-        return Boolean((message.basedomain && !this.isDomainInSkipList(message.basedomain)) &&
+    isMessageFormatCorrect: function (message, config) {
+        return Boolean((message.basedomain && !this.isDomainInSkipList(message.basedomain, config.main.skipDomains)) &&
                     ((message.url && message.page) || (!message.url && !message.page)));
     },
 

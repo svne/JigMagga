@@ -16,20 +16,23 @@ var channel = null;
  * @param  {Function}  callback
  */
 var getChannel = function (connection, queue, callback) {
-    if (queue.channel) {
-        return process.nextTick(function () {
-            callback(null, queue.channel);
+    if (queue.channelPromise) {
+        return queue.channelPromise.done(function (ch) {
+            queue.channel = queue.channel || ch;
+            callback(null, ch);
         });
     }
 
     connection
         .then(function (connected) {
-            return connected.createChannel().then(function (ch) {
+            queue.channelPromise = connected.createChannel().then();
+            return queue.channelPromise.then(function (ch) {
                 queue.channel = ch;
                 return callback(null, ch);
             });
         })
         .catch(function (err) {
+            console.log(err);
            return callback(err);
         });
 };
@@ -136,23 +139,18 @@ var publish = exports.publish = function (message, options, callback) {
     var queue = options.queue || this.name;
     delete options.queue;
 
-    this.connection
-        .then(function (connected) {
-            return connected.createChannel().then(function (channel) {
-                var ok = channel.assertQueue(queue, {durable: true});
+    getChannel(this.connection, this, function (err, channel) {
+        var ok = channel.assertQueue(queue, {durable: true});
 
-                return ok.then(function () {
-                    message = new Buffer(message);
-                    channel.sendToQueue(queue, message, options);
-                    channel.close();
-                });
-            });
-        })
-        .then(function (res) {
+        return ok.then(function () {
+           message = new Buffer(message);
+           channel.sendToQueue(queue, message, options);
+        }).then(function (res) {
             callback(null, res);
         }, function (err) {
             callback(err);
         });
+    });
 };
 
 

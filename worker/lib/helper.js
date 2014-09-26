@@ -3,16 +3,10 @@ var _ = require('lodash'),
     walk = require('walk'),
     async = require('async'),
     format = require('util').format,
-    fs = require('fs'),
     fsExtra = require('fs-extra'),
     path = require('path'),
     spawn = require('child_process').spawn;
 
-var config = require('../config');
-var log = require('./logger')('worker', {component: 'worker', processId: process.pid}),
-    TimeDiff = require('./timeDiff');
-
-var timeDiff = new TimeDiff(log);
 
 // @type {Object.<string, {count: number, queueShift: function}>} - storage of message acknowledge functions
 var messageAckStorage = {};
@@ -44,8 +38,7 @@ module.exports = {
         if (!messageAckStorage[data.key]) {
             messageAckStorage[data.key] = {
                 count: 1,
-                queueShift: data.queueShift,
-                timeDiff: timeDiff.create('message:' + data.message.page)
+                queueShift: data.queueShift
             };
         } else {
             messageAckStorage[data.key].count += 1;
@@ -70,7 +63,6 @@ module.exports = {
         }
 
         messageAckStorage[messageKey].queueShift();
-        messageAckStorage[messageKey].timeDiff.stop();
         messageAckStorage[messageKey] = null;
     },
 
@@ -205,7 +197,6 @@ module.exports = {
      */
     saveFiles: function (fileList, log, callback) {
         async.each(fileList, function (file, next) {
-            log('save file to:', file.path);
             fsExtra.outputFile(file.path, file.content, next);
         }, callback);
     },
@@ -240,9 +231,8 @@ module.exports = {
      * @param  {{live: boolean, liveuncached: boolean}} program [description]
      * @return {string}
      */
-    generateBucketName: function (data, program) {
-        var baseDomain = data.message.basedomain,
-            buckets = config.main.knox.buckets;
+    generateBucketName: function (data, program, buckets) {
+        var baseDomain = data.message.basedomain;
         if (program.live || program.liveuncached) {
             return buckets.live[baseDomain] || 'www.' + baseDomain;
         }
@@ -250,8 +240,8 @@ module.exports = {
         return buckets.stage[baseDomain] || 'stage.' + baseDomain;
     },
 
-    isDomainInSkipList: function (domain) {
-        return config.main.skipDomains.indexOf(domain) >= 0;
+    isDomainInSkipList: function (domain, skipDomains) {
+        return skipDomains.indexOf(domain) >= 0;
     },
 
     /**

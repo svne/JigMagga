@@ -14,7 +14,7 @@ steal("can/control", "lib/view-helpers", function () {
             configSelector = configSelector.substring(configSelector.lastIndexOf(" ") + 1 || 0);
         }
 
-        if (!jigs|| !jigs[configSelector]) {
+        if (!jigs || !jigs[configSelector]) {
             throw new Error("No config for " + configSelector);
             return;
         }
@@ -26,6 +26,9 @@ steal("can/control", "lib/view-helpers", function () {
             new Controller(selector, options);
         }
     };
+
+
+
 
     can.Control.prototype.browserNotification = function (title, body, icon, onclick) {
         if ("Notification" in window) {
@@ -63,16 +66,16 @@ steal("can/control", "lib/view-helpers", function () {
 
             // Permission Check
             if (Notification.permission === "default") {
-                self.defaults.browserNotificationLatest = {
+                self.browserNotification.defaults.browserNotificationLatest = {
                     title: title,
                     body: body,
                     onclick: onclick
                 };
-                clearInterval(self.defaults.browserNotificationTimer);
-                self.defaults.browserNotificationTimer = setInterval(function () {
-                    if (Notification.permission === "granted" && self.defaults.browserNotificationLatest) {
-                        createNotification(self.defaults.browserNotificationLatest);
-                        self.defaults.browserNotificationLatest = null;
+                clearInterval(self.browserNotification.defaults.browserNotificationTimer);
+                self.browserNotification.defaults.browserNotificationTimer = setInterval(function () {
+                    if (Notification.permission === "granted" && self.browserNotification.defaults.browserNotificationLatest) {
+                        createNotification(self.browserNotification.browserNotification.defaults.browserNotificationLatest);
+                        self.browserNotification.defaults.browserNotificationLatest = null;
                     }
                 }, 10000);
             } else if (Notification.permission === "granted") {
@@ -85,15 +88,20 @@ steal("can/control", "lib/view-helpers", function () {
         }
     };
 
+    can.Control.prototype.browserNotification.defaults = {
+        browserNotificationLatest: null,
+        browserNotificationTimer: null
+    };
+
     can.Control.prototype.browserNotificationPermission = function () {
-            if ("Notification" in window) {
-                Notification.requestPermission(function (permission) {
-                    if (!('permission' in Notification)) {
-                        Notification.permission = permission;
-                    }
-                });
-            }
-        };
+        if ("Notification" in window) {
+            Notification.requestPermission(function (permission) {
+                if (!('permission' in Notification)) {
+                    Notification.permission = permission;
+                }
+            });
+        }
+    };
 
     can.Control.prototype.helper = {
         isKeyNumeric: function (which) {
@@ -131,28 +139,28 @@ steal("can/control", "lib/view-helpers", function () {
         },
         convertDateStringToGermanDate: function (date, format) {
             switch (format) {
-                case "dd/mm/yy":
-                    return date.replace(/\//g, ".");
-                default:
-                    return date;
+            case "dd/mm/yy":
+                return date.replace(/\//g, ".");
+            default:
+                return date;
             }
         },
         convertDateStringToDate: function (dateString, format) {
             var dateMatch,
                 date = new Date();
             switch (format) {
-                case "dd.mm.yyyy.hh.mm":
-                    dateMatch = dateString.match(/(\d\d)[.\/](\d\d)[.\/](\d\d\d\d)[.\/](\d\d)[.\/](\d\d)/);
-                    if (dateMatch) {
-                        date = new Date(parseInt(dateMatch[3], 10), parseInt(dateMatch[2], 10) - 1, parseInt(dateMatch[1], 10), parseInt(dateMatch[4], 10), parseInt(dateMatch[5], 10));
-                    }
-                    break;
-                default:
-                    dateMatch = dateString.match(/(\d\d)[.\/](\d\d)[.\/](\d\d\d\d)/);
-                    if (dateMatch) {
-                        date = new Date(parseInt(dateMatch[3], 10), parseInt(dateMatch[2], 10) - 1, parseInt(dateMatch[1], 10));
-                    }
-                    break;
+            case "dd.mm.yyyy.hh.mm":
+                dateMatch = dateString.match(/(\d\d)[.\/](\d\d)[.\/](\d\d\d\d)[.\/](\d\d)[.\/](\d\d)/);
+                if (dateMatch) {
+                    date = new Date(parseInt(dateMatch[3], 10), parseInt(dateMatch[2], 10) - 1, parseInt(dateMatch[1], 10), parseInt(dateMatch[4], 10), parseInt(dateMatch[5], 10));
+                }
+                break;
+            default:
+                dateMatch = dateString.match(/(\d\d)[.\/](\d\d)[.\/](\d\d\d\d)/);
+                if (dateMatch) {
+                    date = new Date(parseInt(dateMatch[3], 10), parseInt(dateMatch[2], 10) - 1, parseInt(dateMatch[1], 10));
+                }
+                break;
             }
             return date;
         },
@@ -161,6 +169,6 @@ steal("can/control", "lib/view-helpers", function () {
             return dayNamesMin[date.getDay()];
         }
     };
-    
+
     return can;
 });

@@ -8,6 +8,7 @@ var _ = require('lodash'),
     path = require('path'),
     spawn = require('child_process').spawn;
 
+var config = require('../config');
 var log = require('./logger')('worker', {component: 'worker', processId: process.pid}),
     TimeDiff = require('./timeDiff');
 
@@ -241,7 +242,7 @@ module.exports = {
      */
     generateBucketName: function (data, program) {
         var baseDomain = data.message.basedomain,
-            buckets = require('../config').main.knox.buckets;
+            buckets = config.main.knox.buckets;
         if (program.live || program.liveuncached) {
             return buckets.live[baseDomain] || 'www.' + baseDomain;
         }
@@ -250,7 +251,7 @@ module.exports = {
     },
 
     isDomainInSkipList: function (domain) {
-        return require('../config').main.skipDomains.indexOf(domain) >= 0;
+        return config.main.skipDomains.indexOf(domain) >= 0;
     },
 
     /**

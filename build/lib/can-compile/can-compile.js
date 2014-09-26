@@ -13,7 +13,7 @@ var visit = function(version, callback) {
     if (!window[version]) {
         // TODO jQuery version mapping
         jsdom.env('<h1>can-compile</h1>',
-            [ __dirname + "/../../../bower_components/jquery/jquery.min.js",
+            [ __dirname + "/../../../bower_components/jquery-new/dist/jquery.min.js",
                     __dirname + "/../../../bower_components/canjs/can.jquery.js",
                     __dirname + "/../../../bower_components/canjs/can.ejs.js" ],
             function(error, win) {

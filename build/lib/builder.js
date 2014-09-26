@@ -57,7 +57,7 @@ var builder = {
                         }
                     }, function (err, results) {
                         if (err) {
-                            throw new Error(error);
+                            throw new Error(err);
                         } else {
                             data.build.dependencies = results;
                             callback(null, data);

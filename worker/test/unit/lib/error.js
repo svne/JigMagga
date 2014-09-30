@@ -10,7 +10,7 @@ var error = require('../../../lib/error');
 var WorkerError = error.WorkerError;
 
 describe('error', function () {
-    describe('#getErrorHandler', function () {
+    describe.skip('#getErrorHandler', function () {
         var _kill;
         before(function () {
             _kill = process.kill;

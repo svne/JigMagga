@@ -67,7 +67,7 @@
     "dependencies": {
         "MD5": "~1.2.1",
         "amqplib": "~0.2.1",
-        "archiver": "~0.10.1",
+        "archiver": "~0.11.0",
         "async": "~0.9.0",
         "cheerio": "~0.17.0",
         "commander": "~2.3.0",

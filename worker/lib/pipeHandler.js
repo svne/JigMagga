@@ -2,6 +2,7 @@
 var archiver = require('./archiver');
 
 var helper = require('./helper'),
+    messageStorage = require('./message').storage,
     stream = require('./streamHelper'),
     parseArguments = require('../parseArguments');
 
@@ -61,16 +62,14 @@ module.exports = function (uploaderRouter, queuePool, errorHandler) {
         log('message from pipe generator, key %s', key,  getMeta(message));
 
         //send message to done queue
-        if (program.queue) {
-            queuePool.amqpDoneQueue.publish(message.origMessage);
-        }
+        messageStorage.done(key);
 
         if (program.write) {
             return helper.saveFiles(data.uploadList, log, function (err) {
                 if (err) {
                     return log('error', err);
                 }
-                helper.executeAck(key);
+                messageStorage.upload(key);
                 log('all files saved successfully');
             });
         }

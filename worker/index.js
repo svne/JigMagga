@@ -32,6 +32,7 @@ var amqp = require('./lib/amqp'),
     helper = require('./lib/helper'),
     error = require('./lib/error'),
     messageSource = require('./lib/messageSource'),
+    messageStorage = require('./lib/message').storage,
     TimeDiff = require('./lib/timeDiff');
 
 var timeDiff = new TimeDiff(log);
@@ -61,7 +62,7 @@ if (program.queue) {
 /**
  * handle non fatal error regarding with message parsing
  *
- * @param  {{origMessage: object, message: string, stack: string}} err
+ * @param  {{origMessage: object, message: string, stack: string, messageKey: string}} err
  */
 var workerErrorHandler = function (err) {
     log('error', 'Error while processing message: %j',  err, err.originalMessage, {});
@@ -70,7 +71,7 @@ var workerErrorHandler = function (err) {
     }
 
     //if there is shift function for this message in the storage shift message from main queue
-    helper.executeAck(err.messageKey);
+    messageStorage.upload(err.messageKey);
 
     var originalMessage = err.originalMessage || {};
     originalMessage.error = err.message;
@@ -78,8 +79,8 @@ var workerErrorHandler = function (err) {
     if (program.queue) {
         queuePool.amqpErrorQueue.publish(originalMessage);
 
-        if (!program.live && !originalMessage.upload) {
-            queuePool.amqpDoneQueue.publish(originalMessage);
+        if (!originalMessage.upload) {
+            messageStorage.done(err.messageKey);
         }
     }
 };
@@ -111,7 +112,8 @@ var generatorRoutes = {
 
 var uploaderRoutes = {
     'message:uploaded': function (key) {
-        helper.executeAck(key);
+
+        messageStorage.upload(key);
         generatorRouter.send('message:uploaded', key);
 
         log('message uploaded %s', key);

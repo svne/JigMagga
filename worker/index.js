@@ -20,7 +20,6 @@
 
 var _ = require('lodash'),
     path = require('path'),
-    getRedisClient = require('./lib/redisClient'),
     parseArguments = require('./parseArguments');
 
 var config = require('./config');
@@ -40,10 +39,6 @@ var startTimeDiff = timeDiff.create('start');
 
 var createPipeHandler = require('./lib/pipeHandler');
 
-if (config.main.nodetime) {
-    log('connect to nodetime for profiling');
-    require('nodetime').profile(config.main.nodetime);
-}
 
 log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
 
@@ -54,15 +49,6 @@ var basePath = (program.namespace) ? path.join(process.cwd(), program.namespace)
 log('base project path is %s', basePath);
 
 if (program.queue) {
-    if (!config.redis.disabled) {
-        // get redis Client
-        var redisClient = getRedisClient(config.redis, function error(err) {
-            log('redis Error %j', err, {redis: true});
-        }, function success() {
-            log('redis client is ready', {redis: true});
-        });
-    }
-
     //if queue argument exists connect to amqp queues
     var connection = amqp.getConnection(config.amqp);
     log('worker connected to AMQP server on %s', config.amqp.credentials.host);
@@ -151,7 +137,7 @@ helper.createChildProcesses(args, function (err, result) {
 
     // add pipe handler a function that should be executed on pipe
     // event from the generator
-    generatorRoutes.pipe = createPipeHandler(uploaderRouter, queuePool, redisClient, workerErrorHandler);
+    generatorRoutes.pipe = createPipeHandler(uploaderRouter, queuePool, workerErrorHandler);
 
     generatorRouter.addRoutes(generatorRoutes);
     uploaderRouter.addRoutes(uploaderRoutes);
@@ -189,6 +175,12 @@ helper.createChildProcesses(args, function (err, result) {
 });
 
 process.on('uncaughtException', error.getErrorHandler(log, workerErrorHandler));
+
+
+if (config.main.nodetime) {
+    log('connect to nodetime for profiling');
+    require('nodetime').profile(config.main.nodetime);
+}
 
 if (config.main.memwatch) {
     var memwatch = require('memwatch');

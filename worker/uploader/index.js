@@ -2,7 +2,7 @@
 
 /**
  * represent a module that listen for new message
- * from pipe ipc and reddis and upload them using
+ * from pipe or ipc and upload them using
  * upload content or upload file method
  *
  * @module uploader
@@ -11,18 +11,14 @@
 var _ = require('lodash'),
     async = require('async'),
     Uploader = require('jmUtil').ydUploader,
-    getRedisClient = require('../lib/redisClient'),
     es = require('event-stream');
 
 var log = require('../lib/logger')('uploader', {component: 'uploader', processId: String(process.pid)}),
     ProcessRouter  = require('../lib/router'),
-    helper = require('../lib/helper'),
     stream = require('../lib/streamHelper'),
     error = require('../lib/error'),
-    TimeDiff = require('../lib/timeDiff'),
-    parseArguments = require('../parseArguments');
+    TimeDiff = require('../lib/timeDiff');
 
-var program = parseArguments(process.argv);
 var timeDiff = new TimeDiff(log);
 
 var WorkerError = error.WorkerError;
@@ -30,18 +26,9 @@ var WorkerError = error.WorkerError;
 var config = require('../config');
 log('started, pid', process.pid);
 
-
 var router = new ProcessRouter(process);
 
 var messageStream = stream.duplex();
-
-var REDIS_CHECK_TIMEOUT = 100;
-
-if (program.queue && !config.redis.disabled) {
-    var redisClient = getRedisClient(config.redis, function error(err) {
-        log('redis Error %j', err, {redis: true});
-    });
-}
 
 var handleError = function (text, data) {
     log('error', text, {error: true});
@@ -64,62 +51,12 @@ var getUploader = function (bucketName) {
     return uploaderStorage[bucketName];
 };
 
-
-/**
- * create a stream that read a messages from redis if there is no
- * new messages in redis to upload it increase the timeout between reads
- * if the timeout is more then 5 sec it pauses stream
- * Method tries to find a messages in the redis list and take 50 first of them
- * by range. After obtaining some amount of messages it removes them from the list
- *
- * @param  {object} client
- * @param  {string} listKey [description]
- * @return {Redable}
- */
-var createRedisListStream = function (client, listKey) {
-
-    return es.readable(function (count, callback) {
-        var that = this;
-
-        async.waterfall([
-            function (next) {
-                setTimeout(function () {
-                    client.lrange(listKey, 0, 50, next);
-                }, REDIS_CHECK_TIMEOUT);
-            },
-            function (result, next) {
-                if (!result.length) {
-                    REDIS_CHECK_TIMEOUT *= 2;
-                    if (REDIS_CHECK_TIMEOUT > 5000) {
-                        REDIS_CHECK_TIMEOUT = 5000;
-                        that.pause();
-                    }
-                    return callback();
-                }
-                that.pause();
-                log('[createRedisListStream] obtained records length: %d', result.length);
-                that.emit('data', result);
-                client.ltrim(listKey, result.length, -1, next);
-            }
-        ], function (err) {
-            callback(err);
-        });
-   });
-};
-
-var redisListStream = createRedisListStream(redisClient, helper.getRedisKey(config.redis.keys.list, process.pid));
-redisListStream.pause();
-
 router.addRoutes({
     pipe: function (data) {
         messageStream.write(data);
     },
     'new:zip': function (data) {
         messageStream.write(data);
-    },
-    'reduce:timeout': function () {
-        REDIS_CHECK_TIMEOUT = 100;
-        redisListStream.resume();
     }
 });
 
@@ -189,17 +126,8 @@ var uploadStream = function (source) {
     });
 };
 
-if (program.queue && !config.redis.disabled) {
-    redisClient.once('ready', function () {
-        log('redis client is ready', {redis: true});
 
-        redisListStream.pipe(uploadStream(redisListStream));
-
-        process.send({ready: true});
-    });
-} else {
-    process.send({ready: true});
-}
+process.send({ready: true});
 
 messageStream.pipe(uploadStream());
 

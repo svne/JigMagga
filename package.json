@@ -29,6 +29,21 @@
       "url": "https://github.com/SiLeNcoRRR"
     }
   ],
+  "licenses": [
+    {
+      "type": "LPGL",
+      "url": "http://www.gnu.org/licenses/lgpl.html"
+    }
+  ],
+  "main": "home",
+  "scripts": {
+    "integration": "NODE_ENV=test mocha --recursive -t 2000000 -R spec ./worker/test/integration",
+    "unit": "NODE_ENV=test mocha --recursive -R spec ./worker/test/unit",
+    "coverage": " istanbul cover _mocha -- -R spec --recursive ./worker/test/unit",
+    "test": "npm run unit && npm run integration",
+    "install": "node node_modules/bower/bin/bower install --config.cwd=bower_components --config.directory=.",
+    "prepublish": "node node_modules/bower/bin/bower install steal=git://github.com/bitovi/legacy-steal.git --config.directory=."
+  },
   "devDependencies": {
     "tmp": "0.0.23",
     "bower": "1.3.9",
@@ -44,21 +59,6 @@
     "rewire": "~2.1.0",
     "sinon": "~1.10.3",
     "grunt-lib-phantomjs": "~0.6.0"
-  },
-  "licenses": [
-    {
-      "type": "LPGL",
-      "url": "http://www.gnu.org/licenses/lgpl.html"
-    }
-  ],
-  "main": "home",
-  "scripts": {
-    "integration": "NODE_ENV=test mocha --recursive -t 2000000 -R spec ./worker/test/integration",
-    "unit": "NODE_ENV=test mocha --recursive -R spec ./worker/test/unit",
-    "coverage": " istanbul cover _mocha -- -R spec --recursive ./worker/test/unit",
-    "test": "npm run unit && npm run integration",
-    "install": "node node_modules/bower/bin/bower install --config.cwd=bower_components --config.directory=.",
-    "prepublish": "node node_modules/bower/bin/bower install steal=git://github.com/bitovi/legacy-steal.git --config.directory=."
   },
   "repository": {
     "type": "git",

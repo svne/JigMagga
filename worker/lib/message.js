@@ -131,7 +131,7 @@ module.exports = {
     },
 
 
-    getMessageParser: function (queuePool, isLive) {
+    getMessageParser: function (queuePool) {
         var that = this;
         /**
          * returns stream that parses each message from rabbit
@@ -165,9 +165,7 @@ module.exports = {
                 result.key = that.createMessageKey(message);
                 result.queueShift = data.queueShift;
                 result.onDone = function () {
-                    if (!isLive) {
-                        queuePool.amqpDoneQueue.publish(message);
-                    }
+                    queuePool.amqpDoneQueue.publish(message);
                 };
                 this.emit('data', result);
             }

@@ -16,7 +16,7 @@ var channel = null;
  * @param  {Function}  callback
  */
 var getChannel = function (connection, queue, callback) {
-    if (queue.channelPromise) {
+    if (queue.channelPromise && !queue.channelCanceled) {
         return queue.channelPromise.done(function (ch) {
             queue.channel = queue.channel || ch;
             callback(null, ch);
@@ -26,6 +26,7 @@ var getChannel = function (connection, queue, callback) {
     connection
         .then(function (connected) {
             queue.channelPromise = connected.createChannel().then();
+            queue.channelCanceled = false;
             return queue.channelPromise.then(function (ch) {
                 queue.channel = ch;
                 return callback(null, ch);
@@ -79,9 +80,8 @@ var getStream = exports.getStream = function (options) {
                 console.log('CHANNEL IS CLOASING');
             });
 
-            channel.on('error', function () {
-                console.log('ERROR IN CHANNEL');
-                console.log(arguments);
+            channel.on('error', function (err) {
+                throw new Error(err);
             });
 
             channel.consume(queue, function (message) {
@@ -115,6 +115,7 @@ var cancelStream = function (callback) {
     this.channel.cancel(this.consumerTag)
         .then(function (ok) {
             that.channel = null;
+            that.channelCanceled = true;
 
             callback(null, ok);
         }, callback);
@@ -141,7 +142,6 @@ var publish = exports.publish = function (message, options, callback) {
 
     getChannel(this.connection, this, function (err, channel) {
         var ok = channel.assertQueue(queue, {durable: true});
-
         return ok.then(function () {
            message = new Buffer(message);
            channel.sendToQueue(queue, message, options);

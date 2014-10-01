@@ -62,13 +62,14 @@ var handleError = function (text, data) {
  * @param  {Function} next
  * @return {stream}
  */
-var configStream = es.map(function (data, next) {
+var configStream = es.through(function (data) {
+    var that = this;
     var callback = function (err, res) {
         if (err) {
             handleError(err.stack || err, data);
-            return next();
+            return;
         }
-        next(null, res);
+        that.emit('data', res);
     };
     generateConfig(data, config, callback);
 });
@@ -116,23 +117,25 @@ var apiStream = es.through(function (data) {
     });
 });
 
-var lastLocale = '';
+var lastLocale = {};
 /**
  * loads locale file for each message if the file for that locale was not
  * loaded before
  *
  * @param  {object}   data
- * @param  {Function} callback
  */
-var loadLocale = es.map(function (data, callback) {
-    var domain = data.message.domain,
+var loadLocale = es.through(function (data) {
+    var that = this,
+        domain = data.message.domain,
         locale = data.message.locale;
-    if (lastLocale === domain + locale) {
-        return callback(null, data);
+    if (lastLocale[domain + locale]) {
+        log('got from cache', {loadLocale: true, source: 'cache'});
+        return that.emit('data', data);
     }
     ydGetText.locale(data.basePath, domain, locale, function () {
-        lastLocale = domain + locale;
-        callback(null, data);
+        log('loaded locale', {loadLocale: true, source: 'load'});
+        lastLocale[domain + locale] = true;
+        that.emit('data', data);
     });
 
 });
@@ -166,9 +169,8 @@ messageStream
     .pipe(configStream)
     .pipe(apiStream)
     .pipe(loadLocale)
-    .pipe(es.through(function (data) {
-        var that = this,
-            saveDiskPath = path.join(data.basePath, '..'),
+    .on('data', function (data) {
+        var saveDiskPath = path.join(data.basePath, '..'),
             knox = config.main.knox,
             json,
             uploadPages;
@@ -190,7 +192,6 @@ messageStream
             return handleError(err.stack || err, data);
         }
 
-
         var result = {
                 bucketName: data.bucketName,
                 message: data.message,
@@ -211,7 +212,6 @@ messageStream
         generatePageTimeDiff.stop();
         //if html files amount is less then 200 send them to the worker
         if (htmlLength < 200) {
-            that.emit('data', '');
             result.uploadList = uploadPages;
             router.send('pipe', result);
             return;
@@ -222,7 +222,7 @@ messageStream
 
             saveZipToDisck(uploadPages, data);
         }
-    }));
+    });
 
 process.on('uncaughtException', error.getErrorHandler(log, function (err) {
     router.send('error', err);

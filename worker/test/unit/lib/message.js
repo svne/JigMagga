@@ -2,6 +2,8 @@
 
 'use strict';
 var expect = require('chai').expect;
+var sinon = require('sinon');
+var rewire = require('rewire');
 var es = require('event-stream');
 var _ = require('lodash');
 var messageHelper = require('../../../lib/message');
@@ -183,5 +185,78 @@ describe('message', function () {
                 }));
         });
 
+    });
+
+    describe('#storage', function () {
+        var message = rewire('../../../lib/message');
+        afterEach(function () {
+            message.__set__('messageStorage', {});
+        });
+
+        describe('#add', function () {
+            it('should increase count of done and upload if it has the same key in storage', function () {
+                var data = {
+                    key: 'foo'
+                };
+
+                message.storage.add(data.key);
+                message.storage.add(data.key);
+                var messageStorage = message.__get__('messageStorage');
+                expect(messageStorage[data.key]).to.be.an('object');
+
+                expect(messageStorage[data.key].doneCount).to.eql(2);
+                expect(messageStorage[data.key].uploadCount).to.eql(2);
+            });
+        });
+
+        describe('#done #upload', function () {
+            it('should reduce the count and do not execute onDone function if done count more then 0', function () {
+                var data = {
+                    key: 'foo'
+                };
+                var onDone = sinon.spy();
+                var onUpload = sinon.spy();
+
+                message.storage.add(data.key, onDone, onUpload);
+                message.storage.add(data.key, onDone, onUpload);
+                message.storage.add(data.key, onDone, onUpload);
+
+                message.storage.done(data.key);
+                message.storage.upload(data.key);
+                message.storage.upload(data.key);
+
+                var messageStorage = message.__get__('messageStorage');
+                expect(messageStorage[data.key]).to.be.an('object');
+
+                expect(messageStorage[data.key].doneCount).to.eql(2);
+                expect(messageStorage[data.key].uploadCount).to.eql(1);
+                expect(onDone.called).to.not.eql(true);
+                expect(onUpload.called).to.not.eql(true);
+            });
+
+            it('should reduce the count and execute function if it count  eql 0', function () {
+                var data = {
+                    key: 'foo'
+                };
+
+                var onDone = sinon.spy();
+                var onUpload = sinon.spy();
+
+                message.storage.add(data.key, onDone, onUpload);
+                message.storage.add(data.key, onDone, onUpload);
+
+                message.storage.done(data.key);
+                message.storage.done(data.key);
+                message.storage.upload(data.key);
+                message.storage.upload(data.key);
+
+                var messageStorage = message.__get__('messageStorage');
+
+                expect(messageStorage[data.key]).to.eql(null);
+
+                expect(onDone.calledOnce).to.eql(true);
+                expect(onUpload.calledOnce).to.eql(true);
+            });
+        });
     });
 });

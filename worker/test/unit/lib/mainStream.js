@@ -40,10 +40,13 @@ describe('mainStream', function () {
         isUrlCorrect: hlp.isUrlCorrect
     };
 
+    var messageStorage = {};
+
     beforeEach(function () {
-        helper.setAckToStorage = sinon.spy();
+
+        messageStorage.add = sinon.spy();
         helper.isMessageFormatCorrect = sinon.stub();
-        mainStream.__set__({configMerge: configMerge, helper: helper});
+        mainStream.__set__({configMerge: configMerge, helper: helper, messageStorage: messageStorage});
     });
 
     it('should forward the message through filter config and spliter stream and send to generator', function (done) {
@@ -53,7 +56,7 @@ describe('mainStream', function () {
 
         main.on('send:message', function (data) {
             expect(data).to.be.an('object');
-            expect(helper.setAckToStorage.called).to.eql(true);
+            expect(messageStorage.add.called).to.eql(true);
             expect(generator.send.called).to.eql(true);
             var sentData = generator.send.getCall(0).args[1];
             expect(sentData).to.include.keys('config', 'basePath', 'message');

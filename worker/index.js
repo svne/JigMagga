@@ -20,7 +20,6 @@
 
 var _ = require('lodash'),
     path = require('path'),
-    getRedisClient = require('./lib/redisClient'),
     parseArguments = require('./parseArguments');
 
 var config = require('./config');
@@ -33,6 +32,7 @@ var amqp = require('./lib/amqp'),
     helper = require('./lib/helper'),
     error = require('./lib/error'),
     messageSource = require('./lib/messageSource'),
+    messageStorage = require('./lib/message').storage,
     TimeDiff = require('./lib/timeDiff');
 
 var timeDiff = new TimeDiff(log);
@@ -40,10 +40,6 @@ var startTimeDiff = timeDiff.create('start');
 
 var createPipeHandler = require('./lib/pipeHandler');
 
-if (config.main.nodetime) {
-    log('connect to nodetime for profiling');
-    require('nodetime').profile(config.main.nodetime);
-}
 
 log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
 
@@ -54,15 +50,6 @@ var basePath = (program.namespace) ? path.join(process.cwd(), program.namespace)
 log('base project path is %s', basePath);
 
 if (program.queue) {
-    if (!config.redis.disabled) {
-        // get redis Client
-        var redisClient = getRedisClient(config.redis, function error(err) {
-            log('redis Error %j', err, {redis: true});
-        }, function success() {
-            log('redis client is ready', {redis: true});
-        });
-    }
-
     //if queue argument exists connect to amqp queues
     var connection = amqp.getConnection(config.amqp);
     log('worker connected to AMQP server on %s', config.amqp.credentials.host);
@@ -75,7 +62,7 @@ if (program.queue) {
 /**
  * handle non fatal error regarding with message parsing
  *
- * @param  {{origMessage: object, message: string, stack: string}} err
+ * @param  {{origMessage: object, message: string, stack: string, messageKey: string}} err
  */
 var workerErrorHandler = function (err) {
     log('error', 'Error while processing message: %j',  err, err.originalMessage, {});
@@ -84,7 +71,7 @@ var workerErrorHandler = function (err) {
     }
 
     //if there is shift function for this message in the storage shift message from main queue
-    helper.executeAck(err.messageKey);
+    messageStorage.upload(err.messageKey);
 
     var originalMessage = err.originalMessage || {};
     originalMessage.error = err.message;
@@ -92,8 +79,8 @@ var workerErrorHandler = function (err) {
     if (program.queue) {
         queuePool.amqpErrorQueue.publish(originalMessage);
 
-        if (!program.live && !originalMessage.upload) {
-            queuePool.amqpDoneQueue.publish(originalMessage);
+        if (!originalMessage.upload) {
+            messageStorage.done(err.messageKey);
         }
     }
 };
@@ -125,7 +112,8 @@ var generatorRoutes = {
 
 var uploaderRoutes = {
     'message:uploaded': function (key) {
-        helper.executeAck(key);
+
+        messageStorage.upload(key);
         generatorRouter.send('message:uploaded', key);
 
         log('message uploaded %s', key);
@@ -151,7 +139,7 @@ helper.createChildProcesses(args, function (err, result) {
 
     // add pipe handler a function that should be executed on pipe
     // event from the generator
-    generatorRoutes.pipe = createPipeHandler(uploaderRouter, queuePool, redisClient, workerErrorHandler);
+    generatorRoutes.pipe = createPipeHandler(uploaderRouter, queuePool, workerErrorHandler);
 
     generatorRouter.addRoutes(generatorRoutes);
     uploaderRouter.addRoutes(uploaderRoutes);
@@ -189,6 +177,12 @@ helper.createChildProcesses(args, function (err, result) {
 });
 
 process.on('uncaughtException', error.getErrorHandler(log, workerErrorHandler));
+
+
+if (config.main.nodetime) {
+    log('connect to nodetime for profiling');
+    require('nodetime').profile(config.main.nodetime);
+}
 
 if (config.main.memwatch) {
     var memwatch = require('memwatch');

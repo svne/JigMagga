@@ -11,6 +11,47 @@ var isPageInConfig = function (config, page) {
     return config.pages && config.pages[page];
 };
 
+/**
+ * creates object that represent message in the store
+ * each has two methods onDone and onUpload that will be invoked
+ * after doneCount or uploadCount equal 0
+ * @param {function} onDone
+ * @param {function} onUpload
+ * @constructor
+ */
+var StoredMessage = function (onDone, onUpload) {
+    this.doneCount = 1;
+    this.uploadCount = 1;
+    this.onDone = onDone || function () {};
+    this.onUpload = onUpload || function () {};
+};
+
+StoredMessage.prototype.add = function () {
+    this.doneCount += 1;
+    this.uploadCount += 1;
+};
+
+StoredMessage.prototype.done = function () {
+    this.doneCount -= 1;
+    if (!this.doneCount) {
+        this.onDone();
+    }
+};
+
+StoredMessage.prototype.upload = function () {
+    this.uploadCount -= 1;
+    if (!this.uploadCount) {
+        this.onUpload();
+    }
+};
+
+StoredMessage.prototype.isReady = function () {
+    return this.uploadCount === 0 && this.doneCount === 0;
+};
+
+
+// @type {Object.<string, StoredMessage>}
+var messageStorage = {};
 
 module.exports = {
 
@@ -90,7 +131,7 @@ module.exports = {
     },
 
 
-    getMessageParser: function () {
+    getMessageParser: function (queuePool, isLive) {
         var that = this;
         /**
          * returns stream that parses each message from rabbit
@@ -122,9 +163,12 @@ module.exports = {
             if (message) {
                 result.message = message;
                 result.key = that.createMessageKey(message);
-                if (data.queueShift) {
-                    result.queueShift = data.queueShift;
-                }
+                result.queueShift = data.queueShift;
+                result.onDone = function () {
+                    if (!isLive) {
+                        queuePool.amqpDoneQueue.publish(message);
+                    }
+                };
                 this.emit('data', result);
             }
         });
@@ -211,5 +255,60 @@ module.exports = {
                 that.emit('data', item);
             });
         });
+    },
+
+    /**
+     * object that represent store for messages
+     * if you add message with key that already exists it will increment
+     * the message counters when done or upload method invokes it decrements
+     * counters first and execute callbacks only if the counter value is 0
+     * Thus "on api call done" event or upload event will be invoked only after all
+     * messages with such key will be uploaded or  api call will be finished
+     */
+    storage: {
+
+        /**
+         * add to storage
+         * @param {string} key
+         * @param {function} onDone
+         * @param {function} onUpload
+         */
+        add: function (key, onDone, onUpload) {
+            if (messageStorage[key]) {
+                return messageStorage[key].add();
+            }
+            messageStorage[key] = new StoredMessage(onDone, onUpload);
+        },
+
+        /**
+         * reduce done counter or execute oDone function
+         *
+         * @param {string} key
+         */
+        done: function (key) {
+            if (!messageStorage[key]) {
+                return;
+            }
+            messageStorage[key].done();
+            if (messageStorage[key].isReady()) {
+                messageStorage[key] = null;
+            }
+        },
+
+        /**
+         * reduce upload counter or execute oUpload function
+         *
+         * @param {string} key
+         */
+        upload: function (key) {
+            if (!messageStorage[key]) {
+                return;
+            }
+            messageStorage[key].upload();
+            if (messageStorage[key].isReady()) {
+                messageStorage[key] = null;
+            }
+        }
+
     }
 };

@@ -8,9 +8,6 @@ var _ = require('lodash'),
     spawn = require('child_process').spawn;
 
 
-// @type {Object.<string, {count: number, queueShift: function}>} - storage of message acknowledge functions
-var messageAckStorage = {};
-
 module.exports = {
     /**
      * check correctness of URL
@@ -22,48 +19,6 @@ module.exports = {
         var regexp = new RegExp('[^a-zA-Z0-9-_//]+', 'i');
 
         return !regexp.test(url);
-    },
-
-    /**
-     * save queueShift function for some message to message
-     * acknowledge functions storage
-     *
-     * @param {{queueShift: ?function, key: ?string}} data
-     */
-    setAckToStorage: function (data) {
-
-        if(!_.isFunction(data.queueShift) || !data.key) {
-            return;
-        }
-        if (!messageAckStorage[data.key]) {
-            messageAckStorage[data.key] = {
-                count: 1,
-                queueShift: data.queueShift
-            };
-        } else {
-            messageAckStorage[data.key].count += 1;
-        }
-
-    },
-
-    /**
-     * execute queue acknowledge function and shift message from the queue
-     * by message key
-     *
-     * @param  {string} messageKey
-     */
-    executeAck: function (messageKey) {
-        if (!messageKey || !_.isPlainObject(messageAckStorage[messageKey])) {
-            return;
-        }
-
-        if (messageAckStorage[messageKey].count !== 1) {
-            messageAckStorage[messageKey].count -= 1;
-            return;
-        }
-
-        messageAckStorage[messageKey].queueShift();
-        messageAckStorage[messageKey] = null;
     },
 
     /**

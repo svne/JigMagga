@@ -2,25 +2,18 @@
 var archiver = require('./archiver');
 
 var helper = require('./helper'),
+    messageStorage = require('./message').storage,
     stream = require('./streamHelper'),
-    parseArguments = require('../parseArguments'),
-    WorkerError = require('./error').WorkerError;
+    parseArguments = require('../parseArguments');
 
 var log = require('./logger')('worker', {component: 'worker', processId: String(process.pid)});
-var config = require('../config');
 var program = parseArguments(process.argv);
 
 var getMeta = helper.getMeta;
 
 
-var createUploaderStream = function (message, key, bucketName, uploaderRouter, redisClient) {
+var createUploaderStream = function (message, key, bucketName, uploaderRouter) {
     return stream.accumulate(function(err, data, next) {
-        var that = this;
-        var cb =  function () {
-            result = null;
-            data = null;
-            next();
-        };
         var result = {
             bucketName: bucketName,
             url: message.url,
@@ -28,26 +21,16 @@ var createUploaderStream = function (message, key, bucketName, uploaderRouter, r
             data: data,
             messageKey: key
         };
-        if (!program.queue || config.redis.disabled) {
-            log('[WORKER] send message to upload', getMeta(message));
-            uploaderRouter.send('pipe', result);
-            return cb();
-        }
 
-        uploaderRouter.send('reduce:timeout');
-        var redisKey = helper.getRedisKey(config.redis.keys.list, uploaderRouter.processInstance.pid);
-
-        return redisClient.rpush(redisKey, JSON.stringify(result), function (err) {
-            if (err) {
-                return that.emit('error', new WorkerError(err.message || err), data.message.origMessage);
-            }
-            log('generated message sent to redis', getMeta(message));
-            cb();
-        });
+        log('[WORKER] send message to upload', getMeta(message));
+        uploaderRouter.send('pipe', result);
+        result = null;
+        data = null;
+        next();
     });
 };
 
-module.exports = function (uploaderRouter, queuePool, redisClient, errorHandler) {
+module.exports = function (uploaderRouter, queuePool, errorHandler) {
 
 
     /**
@@ -70,7 +53,6 @@ module.exports = function (uploaderRouter, queuePool, redisClient, errorHandler)
         try {
             data = JSON.parse(data);
         } catch (e) {
-            log('error', e);
             errorHandler(e);
         }
 
@@ -80,16 +62,14 @@ module.exports = function (uploaderRouter, queuePool, redisClient, errorHandler)
         log('message from pipe generator, key %s', key,  getMeta(message));
 
         //send message to done queue
-        if (program.queue) {
-            queuePool.amqpDoneQueue.publish(message.origMessage);
-        }
+        messageStorage.done(key);
 
         if (program.write) {
-            return helper.saveFiles(data.uploadList, log, function (err, res) {
+            return helper.saveFiles(data.uploadList, log, function (err) {
                 if (err) {
                     return log('error', err);
                 }
-                helper.executeAck(key);
+                messageStorage.upload(key);
                 log('all files saved successfully');
             });
         }
@@ -97,7 +77,7 @@ module.exports = function (uploaderRouter, queuePool, redisClient, errorHandler)
         archiverStream = archiver.bulkArchive(data.uploadList);
 
         data = null;
-        destination = createUploaderStream(message, key, bucketName, uploaderRouter, redisClient);
+        destination = createUploaderStream(message, key, bucketName, uploaderRouter);
 
         var tc = stream.tryCatch();
 

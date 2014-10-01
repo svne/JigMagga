@@ -173,69 +173,6 @@ describe('helper', function () {
         });
     });
 
-    describe('messageAckStorage', function () {
-        var helper = rewire('../../../lib/helper');
-        before(function () {
-            helper.__set__('log', sinon.spy());
-        });
-        afterEach(function () {
-            helper.__set__('messageAckStorage', {});
-        });
-
-        describe('#setAckToStorage', function () {
-            it('should increase count if it has the same key in storage', function () {
-                var data = {
-                    queueShift: function () {},
-                    message: {page: 'menu'},
-                    key: 'foo'
-                };
-                helper.setAckToStorage(data);
-                helper.setAckToStorage(data);
-                var messageAckStorage = helper.__get__('messageAckStorage');
-                expect(messageAckStorage[data.key]).to.be.an('object');
-
-                expect(messageAckStorage[data.key].count).to.eql(2);
-            });            
-        });
-
-        describe('#executeAck', function () {
-            it('should reduce the count and do not execute queueShift (ack) function if it more then 1', function () {
-                var data = {
-                    queueShift: sinon.spy(),
-                    message: {page: 'menu'},
-                    key: 'foo'
-                };
-                helper.setAckToStorage(data);
-                helper.setAckToStorage(data);
-                helper.setAckToStorage(data);
-                helper.executeAck(data.key);
-
-                var messageAckStorage = helper.__get__('messageAckStorage');
-                expect(messageAckStorage[data.key]).to.be.an('object');
-
-                expect(messageAckStorage[data.key].count).to.eql(2);
-                expect(messageAckStorage[data.key].queueShift.called).to.not.eql(true);
-            });
-
-            it('should reduce the count and execute function if it count  eql 1', function () {
-                var data = {
-                    queueShift: sinon.spy(),
-                    message: {page: 'menu'},
-                    key: 'foo'
-                };
-                helper.setAckToStorage(data);
-                helper.setAckToStorage(data);
-                helper.executeAck(data.key);
-                helper.executeAck(data.key);
-
-                var messageAckStorage = helper.__get__('messageAckStorage');
-                expect(messageAckStorage[data.key]).to.eql(null);
-
-                expect(data.queueShift.calledOnce).to.eql(true);
-            });
-        });
-    });
-    
     var message = require('../../../testData/message.json'); 
 
     describe('#getZipName', function () {
@@ -255,14 +192,23 @@ describe('helper', function () {
     });
 
     describe('#generateBucketName', function () {
+        var buckets = {
+            live: {
+                'lieferando.de': 'www.lieferando.de'
+            },
+            stage: {
+                'lieferando.de': 'stage.lieferando.de'
+            }
+        };
+
         it('should produce correct bucket name if the basedomain is in config', function () {
             var data = {
                 message: message
             };
-            var name = helper.generateBucketName(data, {live: true});
+            var name = helper.generateBucketName(data, {live: true}, buckets);
             expect(name).to.eql('www.lieferservice.de');
 
-            name = helper.generateBucketName(data, {});
+            name = helper.generateBucketName(data, {}, buckets);
             expect(name).to.eql('stage.lieferservice.de');
         });
 
@@ -271,33 +217,42 @@ describe('helper', function () {
             var data = {
                 message: {basedomain: 'google.com'}
             };
-            var name = helper.generateBucketName(data, {live: true});
+            var name = helper.generateBucketName(data, {live: true}, buckets);
             expect(name).to.eql('www.google.com');
 
-            name = helper.generateBucketName(data, {});
+            name = helper.generateBucketName(data, {}, buckets);
             expect(name).to.eql('stage.google.com');
         });
     });
     describe('#isMessageFormatCorrect', function () {
+        var config = {
+            main: {
+                skipDomains: [
+                    'lieferando.at',
+                    'lieferando.ch',
+                    'taxiresto.fr'
+                ]
+            }
+        };
         it('should return false if there is no basedomain in message or it is in the skip list', function () {
-            var result = helper.isMessageFormatCorrect({page:'foo', url:'foo'});
+            var result = helper.isMessageFormatCorrect({page:'foo', url:'foo'}, config);
             expect(result).to.eql(false);
 
-            result = helper.isMessageFormatCorrect({page:'foo', url:'foo', basedomain: 'lieferando.at'});
+            result = helper.isMessageFormatCorrect({page:'foo', url:'foo', basedomain: 'lieferando.at'}, config);
             expect(result).to.eql(false);
         });
         it('should return false if there is only url or only page in the message', function () {
-            var result = helper.isMessageFormatCorrect({page:'foo', basedomain:'foo'});
+            var result = helper.isMessageFormatCorrect({page:'foo', basedomain:'foo'}, config);
             expect(result).to.eql(false);
 
-            result = helper.isMessageFormatCorrect({url:'foo', basedomain: 'foo'});
+            result = helper.isMessageFormatCorrect({url:'foo', basedomain: 'foo'}, config);
             expect(result).to.eql(false);
         });
         it('should return true if there is niether url nor page in the message or there are both of them', function () {
-            var result = helper.isMessageFormatCorrect({basedomain:'foo'});
+            var result = helper.isMessageFormatCorrect({basedomain:'foo'}, config);
             expect(result).to.eql(true);
 
-            result = helper.isMessageFormatCorrect({url:'foo', page:'foo', basedomain: 'foo'});
+            result = helper.isMessageFormatCorrect({url:'foo', page:'foo', basedomain: 'foo'}, config);
             expect(result).to.eql(true);
         });
     });

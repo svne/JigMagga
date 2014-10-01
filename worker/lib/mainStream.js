@@ -16,6 +16,8 @@ var log = require('./logger')('worker', {component: 'worker', processId: process
 var timeDiff = new TimeDiff(log);
 var config = require('../config');
 
+var messageStorage = messageHelper.storage;
+
 
 /**
  * Pipes message from source stream to filter stream then to configuration
@@ -55,7 +57,7 @@ module.exports = function (source, generator, basePath, program) {
         .pipe(tc(configMerge.getConfigStream()))
         .pipe(tc(messageHelper.pageLocaleSplitter()))
         .pipe(es.through(function (data) {
-            helper.setAckToStorage(data);
+            messageStorage.add(data.key, data.onDone, data.queueShift);
             this.emit('data', data);
         }))
         //add page configs for those messages that did not have page key before splitting

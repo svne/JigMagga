@@ -41,7 +41,7 @@ module.exports = {
 
 
         return queueStream
-            .pipe(messageHelper.getMessageParser());
+            .pipe(messageHelper.getMessageParser(queuePool, program.live));
     },
 
     /**

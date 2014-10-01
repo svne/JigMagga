@@ -54,7 +54,10 @@ if(args.static){
 
 var queueName = args.queue || 'pages.generate.high';
 
-fixtures = fixtures.concat(require(path.join(process.cwd(), args.fixture)));
+if(args.fixture){
+    fixtures = fixtures.concat(require(path.join(process.cwd(), args.fixture)));
+}
+
 var amqpPublishOptions = {
     contentType: 'text/plain',
     deliveryMode: 1

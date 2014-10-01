@@ -55,7 +55,7 @@
     "scripts": {
         "integration": "NODE_ENV=test mocha --recursive -t 2000000 -R spec ./worker/test/integration",
         "unit": "NODE_ENV=test mocha --recursive -R spec ./worker/test/unit",
-        "coverage": " istanbul cover _mocha -- -R spec --recursive ./worker/test/unit",
+        "coverage": "NODE_ENV=test istanbul cover _mocha -- --recursive -R spec ./worker/test/unit",
         "test": "npm run unit && npm run integration",
         "install": "node node_modules/bower/bin/bower install --config.cwd=bower_components --config.directory=.",
         "prepublish": "node node_modules/bower/bin/bower install steal=git://github.com/bitovi/legacy-steal.git --config.directory=."

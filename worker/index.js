@@ -26,7 +26,7 @@ var config = require('./config');
 
 
 var amqp = require('./lib/amqp'),
-    log = require('./lib/logger')('worker', {component: 'worker', processId: String(process.pid)}),
+    log = require('./lib/logger')('worker', {component: 'worker', processId: process.pid}),
     ProcessRouter = require('./lib/router'),
     mainStream = require('./lib/mainStream'),
     helper = require('./lib/helper'),
@@ -79,7 +79,7 @@ var workerErrorHandler = function (err) {
     if (program.queue) {
         queuePool.amqpErrorQueue.publish(originalMessage);
 
-        if (!originalMessage.upload) {
+        if (!program.live && !originalMessage.upload) {
             messageStorage.done(err.messageKey);
         }
     }
@@ -99,6 +99,10 @@ var generatorRoutes = {
      */
     'new:zip': function (data) {
         log('new zip saved by generator', helper.getMeta(data.message));
+        if (!program.live) {
+            messageStorage.done(data.key);
+        }
+
         uploaderRouter.send('new:zip', {
             url: data.message.url,
             page: data.message.page,

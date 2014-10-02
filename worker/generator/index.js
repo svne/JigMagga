@@ -112,7 +112,7 @@ var apiStream = es.through(function (data) {
     generator.apiCalls([data.config], emitter, function (err, res) {
 
         if (err) {
-            var errorText = format('error in apiCall %j %j ', err, res);
+            var errorText = format('error in apiCall %j', err);
             return handleError(errorText, data);
         }
         data.apiCallResult = res;

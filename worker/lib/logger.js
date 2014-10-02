@@ -22,15 +22,16 @@ var colors = _.assign(winston.config.cli.colors, config.main.logger.colors);
 module.exports = function (component, metadata) {
     metadata = metadata || {};
 
-    var filename = path.join(__dirname, '../..',  config.main.logger.folder, component + '_' + process.pid + '.log');
+    var filename = path.join(__dirname, '../..',  config.main.logger.folder, 'error_' + process.pid + '.log');
     var options = config.main.logger.file;
     options.filename = filename;
+    options.level = 'error';
 
     var logger = new (winston.Logger)({
         levels: logLevels,
         transports: [
-            new (winston.transports.Console)(config.main.logger.console)
-            // new (winston.transports.File)(options)
+            new (winston.transports.Console)(config.main.logger.console),
+            new (winston.transports.File)(options)
         ]
     });
 

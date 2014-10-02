@@ -19,6 +19,11 @@ var log = require('../lib/logger')('uploader', {component: 'uploader', processId
     error = require('../lib/error'),
     TimeDiff = require('../lib/timeDiff');
 
+if (process.env.NODE_ENV === 'live') {
+    require('longjohn');
+}
+
+
 var timeDiff = new TimeDiff(log);
 
 var WorkerError = error.WorkerError;

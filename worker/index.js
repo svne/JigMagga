@@ -24,6 +24,9 @@ var _ = require('lodash'),
 
 var config = require('./config');
 
+if (process.env.NODE_ENV === 'live') {
+    require('longjohn');
+}
 
 var amqp = require('./lib/amqp'),
     log = require('./lib/logger')('worker', {component: 'worker', processId: process.pid}),

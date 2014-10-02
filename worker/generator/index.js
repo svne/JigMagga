@@ -26,6 +26,10 @@ var log = require('../lib/logger')('generator', {component: 'generator', process
 
 var timeDiff = new TimeDiff(log);
 
+if (process.env.NODE_ENV === 'live') {
+    require('longjohn');
+}
+
 var WorkerError = error.WorkerError;
 
 //init process router

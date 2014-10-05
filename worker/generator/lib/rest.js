@@ -5,7 +5,6 @@ var _ = require('lodash');
 var fs = require('fs');
 var placeholderHelper = require("./placeholders.js");
 var Q = require('q');
-var deepExtend = require("deep-extend");
 var http = require('http-get');
 var querystring = require("querystring");
 
@@ -145,7 +144,7 @@ exports.doCall = function (options, callback) {
                 options.result = JSON.parse(result.buffer.toString());
                 options.time = diffToTime(process.hrtime(diff));
                 options.success = true;
-                cachedCalls[messageKey][requestId].resolve(deepExtend({},options));
+                cachedCalls[messageKey][requestId].resolve(options);
             }
             catch (err) {
                 if (useFixtures()) {
@@ -164,7 +163,7 @@ exports.doCall = function (options, callback) {
     });
     cachedCalls[messageKey][requestId].promise.done(function(result) {
         result.requestId = result.requestId || requestId;
-        callback(null, result);
+        callback(null, _.cloneDeep(result));
     });
 
 

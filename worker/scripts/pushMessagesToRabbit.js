@@ -1,6 +1,7 @@
 #! /usr/local/bin/node
 'use strict';
 var args = require('commander'),
+    _ = require('lodash'),
     async = require('async'),
     fs = require('fs'),
     path = require('path');
@@ -12,6 +13,7 @@ args
     .option('-s, --static', 'will generate all statuc pages without dynamic params / domain is required')
     .option('-d, --basedomain <n>', 'only required when --static flag is active')
     .option('-e, --env <n>', 'set the node environment')
+    .option('-t, --times <n>', 'amount times that script should push message to queue default 1', 1)
     .option('-q, --queue <n>', 'define a queue to put a messages in it. default is pages.generate.high')
     .option('-n, --namespace <n>', 'set the namespace of project')
     .parse(process.argv);
@@ -75,10 +77,12 @@ var pool = new amqp.QueuePool({queue: queueName}, amqpConnection);
  * @param callback
  */
 var publishMessages = function (queue, callback) {
-    console.log('amount of records is ', fixtures.length);
+    console.log('amount of records is ', fixtures.length * args.times);
 
-    async.eachSeries(fixtures, function (message, next) {
-        queue.publish(message, amqpPublishOptions, next);
+    async.eachSeries(_.range(args.times), function (time, cb) {
+        async.eachSeries(fixtures, function (message, next) {
+            queue.publish(message, amqpPublishOptions, next);
+        }, cb);
     }, callback);
 };
 console.log('start');

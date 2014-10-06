@@ -6,7 +6,6 @@ var stream = require('./streamHelper');
 
 var amqplib = require('amqplib');
 
-var channel = null;
 
 /**
  * returns amqp channel from global variable if it was created before
@@ -141,6 +140,9 @@ var publish = exports.publish = function (message, options, callback) {
     delete options.queue;
 
     getChannel(this.connection, this, function (err, channel) {
+        if (err) {
+            return callback(err);
+        }
         var ok = channel.assertQueue(queue, {durable: true});
         return ok.then(function () {
            message = new Buffer(message);

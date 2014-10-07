@@ -30,8 +30,8 @@ module.exports = function (component, metadata) {
     var logger = new (winston.Logger)({
         levels: logLevels,
         transports: [
-            new (winston.transports.Console)(config.main.logger.console),
-            new (winston.transports.File)(options)
+            new (winston.transports.Console)(config.main.logger.console)
+            //new (winston.transports.File)(options)
         ]
     });
 

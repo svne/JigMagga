@@ -380,17 +380,23 @@ module.exports = function(grunt) {
 
 
     /**
-     * This is the grunt task for open a grunt connect an test all funcunit suites against this server
+     * This is the grunt task for open a grunt connect and test all/single funcunit suite(s) against this server
+     * To run: "grunt test" to run all the tests or "grunt test:Ab.Jig.Additions" to run a test for a single jig
+     * called "additions" on the namespace "ab"
      *
      * --tap will ouput the result in tap format as a file ./tap.log
      *
      */
-    grunt.registerTask('test', "test all funcunit.html suites with phantomjs", function() {
-         grunt.config("connect.server.options.keepalive", false);
-         grunt.config("connect.server.options.open", false);
-         grunt.task.run(["connect", "qunit:all"]);
+    grunt.registerTask('test', "test all funcunit.html suites with phantomjs", function(teststring, namespace) {
+        grunt.config("connect.server.options.keepalive", false);
+        grunt.config("connect.server.options.open", false);
+        if (teststring) {
+            // run a test for single jig / model
+            var x = teststring.replace(/\./g, "/");
+            grunt.config("qunit.all", [x.toLowerCase() + '/funcunit.html', '!bower_components/**', '!steal/**']);
+	}
+	grunt.task.run(["connect", "qunit:all"]);
     });
-
 
     grunt.registerTask("generator", "Project structure generator", function() {
         var generate = require(__dirname + "/generate/generate"),

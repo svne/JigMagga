@@ -22,6 +22,7 @@
                     key,
                     version = $browser ? $browser.version : null,
                     browserconf = jig.browser;
+
                 //noinspection JSLint
                 for (k in browserconf) {
                     //noinspection JSLint
@@ -33,7 +34,7 @@
                                 if (browserconf[k].controller && jig.path) {
                                     jig.path = controllerToPath(browserconf[k].controller)
                                 } else {
-                                    jig.disable = true;
+                                    jig.disabled = true;
                                 }
                                 break;
                             }
@@ -187,24 +188,27 @@
                 }
                 browserSupport(jig, config);
                 renderJig(jig, jigKey, config);
+
                 /**
                  * check if jig has includes that are config special
                  */
-                if (jig && jig.includes) {
-                    if (typeof jig.includes === "string") {
-                        config.includes.push(jig.includes);
-                    } else if (jig.includes.length) {
-                        config.includes = config.includes.concat(jig.includes);
+                if (!jig.disabled) {
+                    if (jig && jig.includes) {
+                        if (typeof jig.includes === "string") {
+                            config.includes.push(jig.includes);
+                        } else if (jig.includes.length) {
+                            config.includes = config.includes.concat(jig.includes);
+                        }
                     }
-                }
-                // include css
-                if (jig && jig.css) {
-                    config.includes.push(jig.css);
-                }
+                    // include css
+                    if (jig && jig.css) {
+                        config.includes.push(jig.css);
+                    }
 
-                // include controller
-                if (jig && jig.render && jig.path) {
-                    config.includes.push({id: jig.path});
+                    // include controller
+                    if (jig && jig.render && jig.path) {
+                        config.includes.push({id: jig.path});
+                    }
                 }
             }
         },

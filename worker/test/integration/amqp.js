@@ -42,7 +42,9 @@ describe('QueuePool', function () {
                 done();
             });
 
-            queuePool.amqpQueue.publish(message);
+            amqpQueueStream.once('ready', function () {
+                queuePool.amqpQueue.publish(message);
+            });
         });
 
         it('should get possibility to receive message with queueShift method and do not shift it automatically', function (done) {
@@ -58,7 +60,9 @@ describe('QueuePool', function () {
                 done();
             });
 
-            queuePool.amqpQueue.publish(message);
+            amqpQueueStream.once('ready', function () {
+                queuePool.amqpQueue.publish(message);
+            });
         });
     });
 });

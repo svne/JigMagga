@@ -22,23 +22,17 @@ describe('QueuePool', function () {
         expect(queuePool.amqpQueue).to.have.property('publish');
     });
 
-    describe('publish subscribe', function () {
-
-        afterEach(function (done) {
-            queuePool.amqpQueue.cancelStream(function (err) {
-                done(err);
-            });
-        });
+    describe.only('publish subscribe', function () {
 
         it('should get possibility to publish message to some queue and obtain it in stream', function (done) {
             var amqpQueueStream = queuePool.amqpQueue.getStream({shiftAfterReceive: true});
             var message = 'foo bar';
 
             amqpQueueStream.once('data', function (msg) {
-                var content = msg.content.toString();
+                var content = msg.data.toString();
 
                 expect(content).to.eql(message);
-                expect(msg.properties.contentType).to.eql('text/plain');
+                expect(msg.contentType).to.eql('text/plain');
                 done();
             });
 
@@ -48,20 +42,20 @@ describe('QueuePool', function () {
         });
 
         it('should get possibility to receive message with queueShift method and do not shift it automatically', function (done) {
-            var amqpQueueStream = queuePool.amqpQueue.getStream();
+            var amqpQueueStream = queuePool.amqpDoneQueue.getStream();
             var message = 'foo bar';
 
             amqpQueueStream.once('data', function (msg) {
-                var content = msg.content.toString();
+                var content = msg.data.toString();
                 expect(msg.queueShift).to.be.a('function');
                 expect(content).to.eql(message);
-                expect(msg.properties.contentType).to.eql('text/plain');
+                expect(msg.contentType).to.eql('text/plain');
                 msg.queueShift();
                 done();
             });
 
             amqpQueueStream.once('ready', function () {
-                queuePool.amqpQueue.publish(message);
+                queuePool.amqpDoneQueue.publish(message);
             });
         });
     });

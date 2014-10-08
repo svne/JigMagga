@@ -74,6 +74,12 @@ var getStream = exports.getStream = function (options) {
                 if (!message) {
                     return;
                 }
+                if (_.isPlainObject(message) && !message.data) {
+                    message = {
+                        data: message,
+                        contentType: 'text/json'
+                    };
+                }
 
                 if (options.shiftAfterReceive) {
                     duplex.write(message);
@@ -147,13 +153,20 @@ var publish = exports.publish = function (message, options, callback) {
 exports.getConnection = function (config) {
     var credentials = config.credentials;
 
-    return amqp.createConnection({
+    var connection = amqp.createConnection({
         host: credentials.host,
         login: credentials.login,
         password: credentials.password,
         vhost: credentials.vhost,
         heartbeat: config.options.heartbeat
-    }, {reconnect: false, defaultExchange: 'amq.direct'});
+    }, {reconnect: true, defaultExchange: 'amq.direct'});
+
+    connection.on('error', function (err) {
+        console.log('CONNECTION ERROR');
+        throw new Error(err);
+    });
+
+    return connection;
 };
 
 var QueuePool = function (queues, connection, options) {

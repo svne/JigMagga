@@ -66,9 +66,6 @@ var amqpPublishOptions = {
 };
 
 console.log('amqp server', config.amqp.credentials);
-var amqpConnection = amqp.getConnection(config.amqp);
-
-var pool = new amqp.QueuePool({queue: queueName}, amqpConnection);
 
 
 /**
@@ -81,7 +78,11 @@ var publishMessages = function (queue, callback) {
 
     async.eachSeries(_.range(args.times), function (time, cb) {
         async.eachSeries(fixtures, function (message, next) {
-            queue.publish(message, amqpPublishOptions, next);
+            setTimeout(function () {
+                queue.publish(message, amqpPublishOptions);
+                next();
+            }, 100);
+
         }, cb);
     }, callback);
 };
@@ -91,12 +92,21 @@ console.log('queue obtained');
 /**
  * Main Task
  */
-publishMessages(pool.queue, function(err) {
-    if (err) {
-        return console.log('amqp err', err);
-    }
-    console.log('finish... exiting');
-    setTimeout(function () {
-        process.exit();
-    }, 200);
+var amqpConnection = amqp.getConnection(config.amqp);
+
+
+amqpConnection.on('ready', function () {
+    var pool = new amqp.QueuePool({queue: queueName}, amqpConnection);
+
+    publishMessages(pool.queue, function(err) {
+        if (err) {
+            return console.log('amqp err', err);
+        }
+        console.log('finish... exiting');
+        setTimeout(function () {
+            process.exit();
+        }, 200);
+    });
 });
+
+

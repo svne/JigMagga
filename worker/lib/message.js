@@ -142,7 +142,7 @@ module.exports = {
         return es.through(function (data) {
             var message,
                 result = {},
-                contentType = data.properties.contentType;
+                contentType = data.contentType;
 
             if (_.isArray(data) && data.length === 1) {
                 data = data[0];
@@ -150,8 +150,8 @@ module.exports = {
 
             if (contentType === 'text/plain' || contentType === 'text/json') {
                 try {
-                    message = _.isPlainObject(data.content) ?
-                        data.content : JSON.parse(data.content.toString('utf-8'));
+                    message = _.isPlainObject(data.data) ?
+                        data.data : JSON.parse(data.data.toString('utf-8'));
                 } catch (e) {
                     if (_.isFunction(data.queueShift)) {
                         data.queueShift();

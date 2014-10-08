@@ -19,7 +19,7 @@
 <script type='text/javascript'>
     if (window.name !== "funcunit") {
         steal.config("domain", "default");
-        steal("<%= namespace %>/jig/<%= name %>/test/<%= name %>.conf")
+        steal("steal/instrument").then("<%= namespace %>/jig/<%= name %>/test/<%= name %>.conf")
     }
 </script>
 </body>

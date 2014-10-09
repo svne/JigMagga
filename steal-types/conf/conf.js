@@ -153,7 +153,6 @@
                     config.includes.push(jig.options.template);
                 }
             } else {
-                jig.options.template = "//" + controllerToPath(jig.controller) + "/views/init.ejs";
                 console.warn("Missing template for Controller: ", jig.controller, " ", "//" + controllerToPath(jig.controller) + "/views/init.ejs");
             }
         },

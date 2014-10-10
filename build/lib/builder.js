@@ -44,8 +44,8 @@ var builder = {
 
                                     } else {
                                         internalCache[item.id.path] = {
-                                            notcompiled : item.text,
-                                            compiled : output
+                                            notcompiled: item.text,
+                                            compiled: output
                                         };
                                         item.text = output;
                                         cb(null, item);
@@ -77,7 +77,7 @@ var builder = {
                 if (data.build.minify && data.build.cssgenerate) {
                     async.mapSeries(data.build.dependencies, function (item, cb) {
                         if (item.buildType === "css") {
-                            if (internalCache[item.id.path] &&  item.text === internalCache[item.id.path].notminify) {
+                            if (internalCache[item.id.path] && item.text === internalCache[item.id.path].notminify) {
                                 item.text = internalCache[item.id.path].minify;
                             } else {
                                 internalCache[item.id.path] = {
@@ -189,7 +189,7 @@ var builder = {
                     var browser = data.build.stealConfig.browser;
                     async.mapSeries(data.build.dependencies, function (item, cb) {
                         if (item.buildType === "js") {
-                            if (internalCache[item.id.path] &&  item.text === internalCache[item.id.path].notminify) {
+                            if (internalCache[item.id.path] && item.text === internalCache[item.id.path].notminify) {
                                 item.text = internalCache[item.id.path].minify;
                             } else {
                                 internalCache[item.id.path] = {
@@ -461,7 +461,7 @@ function makeStealPackage(moduleOptions, dependencies, cssPackage, buildOptions)
     var stealConfig = fs.readFileSync(__dirname + '/../../stealconfig.js', 'utf8');
 
 
-    var stealConfigProduction = '\nsteal.config({env: "production", ext: {scss: null, conf: null} });';
+    var stealConfigProduction = '\nsteal.config({env: "production", jmENV: "' + (buildOptions.live ? "production" : "stage") + '", ext: {scss: null, conf: null} });';
 
     var minifyStealConfigCode = UglifyJS.minify(stealConfig + stealConfigProduction, {fromString: true}).code;
 

@@ -174,7 +174,8 @@ exports.generatePage = function (origConfig, callback) {
             config["child-page-path"] = _.map(config["child-page-path"], function (page) {
                 return {
                     url: page.url,
-                    name:  gt._(namespace + "-core-page", page.url)
+                    name: page.name ? gt._(namespace + "-core-page", page.name)
+                                    : gt._(namespace + "-core-page", page.url)
                 };
             });
             config.predefined["child-page-path"] = config["child-page-path"];
@@ -596,7 +597,7 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
                             nextConfig["pagination-number"] = i;
                             nextConfig["predefined"].pageNum = i;
                             nextConfig["child-page-path"] = nextConfig["child-page-path"] || [];
-//                            nextConfig["child-page-path"].push({name: gt._("yd-core-page", i), url: i});
+                            //nextConfig["child-page-path"].push({name: gt._("yd-core-page", i), url: i});
                             nextConfig["child-page-path"].push({url: i});
                             nextConfig["pagination-dependency"] = false;
                             configs.unshift(nextConfig);

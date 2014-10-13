@@ -163,7 +163,7 @@ exports.getConnection = function (config) {
 
     connection.on('error', function (err) {
         console.log('CONNECTION ERROR');
-        throw new Error(err);
+        console.log(err);
     });
 
     return connection;

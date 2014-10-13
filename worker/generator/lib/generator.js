@@ -545,11 +545,12 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
         try {
             for (var key in results) {
                 if (results.hasOwnProperty(key)) {
-                    if (results[key].success == false) {
-                        failedCalls.push("Error in rest call: " + results[key].path + " " + JSON.stringify(results[key].query));
+                    var item = results[key];
+                    if (item.success == false) {
+                        failedCalls.push("Error in rest call: " + item.path + " " + JSON.stringify(item.query) + " status code: " + item.resultCode);
                     } else {
-                        config["predefined"][results[key].viewParam] = results[key].result;
-                        emitter.emit('call:success', results[key].requestId, results[key].time, results[key].fromCache);
+                        config["predefined"][item.viewParam] = item.result;
+                        emitter.emit('call:success', item.requestId, item.time, item.fromCache);
                     }
                 }
             }

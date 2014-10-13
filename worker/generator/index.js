@@ -8,6 +8,7 @@
 var EventEmitter = require('events').EventEmitter,
     format = require('util').format,
     fsExtra = require('fs-extra'),
+    util = require('util'),
     fs = require('fs'),
     _ = require('lodash'),
     path = require('path'),
@@ -112,7 +113,7 @@ var apiStream = es.through(function (data) {
     generator.apiCalls([data.config], emitter, function (err, res) {
 
         if (err) {
-            var errorText = format('error in apiCall %j', err);
+            var errorText = format('error in apiCall %s', util.inspect(err));
             return handleError(errorText, data);
         }
         data.apiCallResult = res;

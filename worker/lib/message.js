@@ -198,14 +198,16 @@ module.exports = {
                 };
             }
             try {
-                if (message.url && message.page) {
+                var page = (message.staticOld) ? 'static-old' : message.page;
+
+                if (message.url && page) {
 
                     if (message.locale) {
                         result.push(data);
-                    } else if (isPageInConfig(config, message.page)) {
+                    } else if (isPageInConfig(config, page)) {
                         result = config.locales
                             .filter(function (locale) {
-                                return config.pages[message.page][locale];
+                                return config.pages[page][locale];
                             })
                             .map(function (locale) {
                                 var res = _.cloneDeep(data);
@@ -213,7 +215,7 @@ module.exports = {
                                 return res;
                             });
                     }
-                } else if (!message.page && config.pages) {
+                } else if (!page && config.pages) {
 
                     if (message.locale) {
                         result = Object.keys(config.pages)

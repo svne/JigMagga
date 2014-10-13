@@ -483,14 +483,17 @@
 
                 options.text += "\nvar contentLoaded =" + contentLoaded.toString() + ";\n";
                 //load PO file before js includes only for development ENV
-                if (!steal.config("isBuild")) {
-                    steal(config.includes[0], function () {
+                if (!steal.config("isBuild") && config.includes[0]) {
+                    steal(config.includes[1], function () {
                         steal.apply(steal, config.includes);
-                    });
+                   });
                 } else {
                     steal.apply(steal, config.includes);
                 }
+
                 options.text += 'steal.config("namespace", "' + upperSizeFirstLetter(config.namespace) + '");';
+
+
 
                 if ((config.jigs && !isEmptyObject(config.jigs))) {
                     options.text += "steal('can/route', 'can/view/modifiers', ";

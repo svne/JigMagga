@@ -14,7 +14,7 @@ if (!steal.config("isBuild")) {
             config = steal.config(steal.config("namespace")),
             sassSteal = config.sass;
 
-        steal(config["sass-transform-fn-path"], function(sassTransform) {
+        steal(config["sass-transform-fn-path"] || "jquery", function(sassTransform) {
 
             steal.type("scss css", function(options, success, error) {
 

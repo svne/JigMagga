@@ -83,7 +83,6 @@ module.exports = function (grunt) {
 
             browser.init({browserName: options.browser}, function () {
                 // Process each filepath in-order.
-                urls.reverse();
                 grunt.util.async.forEachLimit(urls, 1, function (url, next) {
 
 
@@ -92,11 +91,11 @@ module.exports = function (grunt) {
                                 if (err) {
                                     grunt.fail.warn(err);
                                 }
-                                browser.eval("QUnit.jigMagga.eventQueue", function (err, result) {
+                                browser.eval("JSON.stringify(QUnit.jigMagga.eventQueue)", function (err, result) {
                                     if (err) {
                                         grunt.fail.warn(err);
                                     }
-                                    result = JSON.parse(JSON.stringify(result));
+                                    result = JSON.parse(result);
                                     var tapResult = helper.getTapLogFromQunitResult(result);
                                     tapLog = tapLog.concat(tapResult);
                                     var doneResult = result[result.length - 2][1];

@@ -109,6 +109,7 @@ var generatorRoutes = {
         uploaderRouter.send('new:zip', {
             url: data.message.url,
             page: data.message.page,
+            locale: data.message.locale,
             zipPath: data.zipPath,
             bucketName: data.bucketName,
             messageKey: data.key

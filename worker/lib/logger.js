@@ -26,12 +26,14 @@ module.exports = function (component, metadata) {
     var options = config.main.logger.file;
     options.filename = filename;
     options.level = 'error';
+    if (_.contains(process.argv, '-v') || _.contains(process.argv, '--verbose')) {
+        config.main.logger.console.level = 'info';
+    }
 
     var logger = new (winston.Logger)({
         levels: logLevels,
         transports: [
             new (winston.transports.Console)(config.main.logger.console)
-            //new (winston.transports.File)(options)
         ]
     });
 

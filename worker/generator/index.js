@@ -105,6 +105,7 @@ emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
 var apiStream = es.through(function (data) {
     var that = this;
     log('[*] send api request', helper.getMeta(data.message));
+    log('help', 'generating new message time %d', Date.now(), helper.getMeta(data.message));
     // Take first snapshot
     // var apiMessageKey = generator.createApiMessageKey(data.key);
     var apiCallTimeDiff = timeDiff.create('apiCall:message:' + data.message.page);

@@ -62,9 +62,7 @@ module.exports = function (uploaderRouter, queuePool, errorHandler) {
         log('message from pipe generator, key %s', key,  getMeta(message));
 
         //send message to done queue
-        if (!program.live) {
-            messageStorage.done(key);
-        }
+        messageStorage.done(key);
 
         if (program.write) {
             return helper.saveFiles(data.uploadList, log, function (err) {

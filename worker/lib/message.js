@@ -166,6 +166,10 @@ module.exports = {
                 result.queueShift = data.queueShift;
                 result.onDone = function () {
                     queuePool.amqpDoneQueue.publish(message);
+
+                    if (queuePool.amqpDeployQueue) {
+                        queuePool.amqpDeployQueue.publish(message);
+                    }
                 };
                 this.emit('data', result);
             }

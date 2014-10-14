@@ -21,6 +21,7 @@ module.exports = function (processArgs) {
         .option('-k, --childpage [value]', 'define a child page that should overwrite the parent element')
         .option('-x, --live', 'use live db and queue - normally staging is used')
         .option('-X, --liveuncached', 'use live db and uncache queue')
+        .option('-D, --deployuncached', 'send uncache messages to the deploy queue')
         .option('-u, --url [value]', 'define the url to be generated')
         .option('-H, --highprio', 'use the high priority queue')
         .option('-M, --mediumprio', 'use the high priority queue')

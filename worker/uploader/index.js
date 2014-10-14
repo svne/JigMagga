@@ -50,7 +50,7 @@ var getUploader = function (bucketName) {
     }
 
     var knoxOptions = _.cloneDeep(config.main.knox);
-    knoxOptions.S3_BUCKET = knoxOptions.S3_BUCKET || bucketName;
+    knoxOptions.S3_BUCKET = bucketName;
 
     uploaderStorage[bucketName] = new Uploader(knoxOptions);
     return uploaderStorage[bucketName];
@@ -71,7 +71,7 @@ var uploadsAmount = 0;
  * upload item using uploadFile method if there is a zipPath field
  * and uploadContent if there is a data field
  *
- * @param  {data}   data
+ * @param  {{url: string, page: string, messageKey: string, bucketName: string}}   data
  * @param  {Function} callback [description]
  */
 var uploadItem = function (data, callback) {
@@ -110,24 +110,17 @@ var uploadItem = function (data, callback) {
 /**
  * returns stream that upload each message or array of messages
  *
- * @param  {object} source
  */
-var uploadStream = function (source) {
+var uploadStream = function () {
     return es.map(function (data, callback) {
-        var next = function (err, res) {
-            if (source) {
-                source.resume();
-            }
-            callback(err, res);
-        };
 
         if (_.isArray(data)) {
             log('new data to upload type: array length:', data.length);
-            return async.each(data, uploadItem, next);
+            return async.each(data, uploadItem, callback);
         }
 
         log('new data to upload type: string');
-        uploadItem(data, next);
+        uploadItem(data, callback);
     });
 };
 

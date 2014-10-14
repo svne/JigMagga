@@ -64,7 +64,7 @@ module.exports = function (source, generator, basePath, program) {
         .pipe(tc(configMerge.getConfigStream()))
         .on('data', function (data) {
             data.message = messageHelper.createMessage(data.message, program, data.config);
-            data.bucketName = helper.generateBucketName(data, program, config.main.knox.buckets);
+            data.bucketName = helper.generateBucketName(data, program, config.main.knox);
 
             generator.send('new:message', data);
             emitter.emit('send:message', helper.getMeta(data.message));

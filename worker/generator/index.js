@@ -182,7 +182,7 @@ messageStream
 
         var generatePageTimeDiff = timeDiff.create('generate:page:' + data.message.page);
 
-        knox.S3_BUCKET = knox.S3_BUCKET || data.bucketName;
+        knox.S3_BUCKET = data.bucketName;
         try {
 
             ydGetText.setLocale(data.message.locale);

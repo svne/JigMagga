@@ -30,7 +30,9 @@ if (!namespace) {
 
 process.on('exit', function () {
     processes.forEach(function (pr) {
-        pr.kill();
+        if (pr && _.isFunction(pr.kill)) {
+            pr.kill();
+        }
         pr = null;
     });
 });
@@ -126,17 +128,13 @@ describe('worker', function () {
         var connection = amqp.getConnection(config.amqp);
         var queuePool = new amqp.QueuePool(queues, connection);
 
+        var uploadedMessageRegExp = new RegExp('^message uploaded', 'ig');
         var workerProcess;
 
         before(function () {
             workerProcess = spawn(command, args);
             processes.push(workerProcess);
         });
-
-        // afterEach(function () {
-        //     workerProcess.stdout.removeAllListeners('data');
-        //     workerProcess.stderr.removeAllListeners('data');
-        // });
 
         it('should upload message', function (done) {
             var startedMessageRegExp = new RegExp('pages.generate.lieferando.de.high .* ready$', 'i');
@@ -239,9 +237,6 @@ describe('worker', function () {
                 url = msg.url;
             }
 
-            var uploadedMessageRegExp = new RegExp('^message uploaded', 'ig');
-
-
             var timeout = setTimeout(function () {
                 callback('process did not upload the message in time');
             }, 30000);
@@ -298,6 +293,33 @@ describe('worker', function () {
 
         it('should upload correct html for index page', function (done) {
             uploadAndValidate(workerProcess, index, done);
+        });
+
+        it('should upload page and check additions', function (done) {
+            var args = ['-n', 'yd', '-d', 'lieferando.de', '-p', 'menu', '-u', 'burger-dream-berlin', '-r', '12291'];
+            var workerProcess = spawn(command, args);
+            processes.push(workerProcess);
+
+            var timeout = setTimeout(function () {
+                done('process did not upload the message in time');
+            }, 30000);
+
+            workerProcess.stdout.on('data', function (data) {
+                console.log(data.toString());
+
+                try {
+                    data = JSON.parse(data.toString());
+                } catch (e) {}
+                if (data.component === 'worker' && uploadedMessageRegExp.test(data.message)) {
+                    clearTimeout(timeout);
+                    done(null);
+                }
+            });
+
+            workerProcess.stdout.on('error', function (data) {
+                clearTimeout(timeout);
+                done(data);
+            });
         });
     });
 });

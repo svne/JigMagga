@@ -483,8 +483,8 @@
 
                 options.text += "\nvar contentLoaded =" + contentLoaded.toString() + ";\n";
                 //load PO file before js includes only for development ENV
-                if (!steal.config("isBuild") && config.includes[0]) {
-                    steal(config.includes[1], function () {
+                if (!steal.config("isBuild") && steal.config("domain") !== "default") {
+                    steal(config.localePath, function () {
                         steal.apply(steal, config.includes);
                    });
                 } else {
@@ -868,6 +868,7 @@
             if (steal.config("domain") !== "default") {
                 mergedConfig.includes.unshift(messagePOFile);
             }
+
 
             mergedConfig = setSassVariables(mergedConfig);
 

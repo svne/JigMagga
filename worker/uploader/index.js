@@ -8,7 +8,8 @@
  * @module uploader
  */
 
-var _ = require('lodash'),
+var fs = require('fs'),
+    _ = require('lodash'),
     async = require('async'),
     Uploader = require('jmUtil').ydUploader,
     es = require('event-stream');
@@ -17,6 +18,7 @@ var log = require('../lib/logger')('uploader', {component: 'uploader', processId
     ProcessRouter  = require('../lib/router'),
     stream = require('../lib/streamHelper'),
     error = require('../lib/error'),
+    helper = require('../lib/helper'),
     TimeDiff = require('../lib/timeDiff');
 
 if (process.env.NODE_ENV === 'live') {
@@ -38,7 +40,7 @@ var messageStream = stream.duplex();
 var handleError = function (text, data) {
     log('error', text, {error: true});
 
-    return router.send('error', new WorkerError(text, data.message.origMessage, data.key));
+    return router.send('error', new WorkerError(text, data, data.key));
 };
 
 
@@ -58,7 +60,12 @@ var getUploader = function (bucketName) {
 
 router.addRoutes({
     pipe: function (data) {
-        messageStream.write(data);
+        data = helper.parsePipeMessage(data);
+
+        data.metadata.data = data.archive;
+        return router.send('message:uploaded', data.metadata.messageKey);
+
+        messageStream.write(data.metadata);
     },
     'new:zip': function (data) {
         messageStream.write(data);
@@ -101,6 +108,8 @@ var uploadItem = function (data, callback) {
     if (data.zipPath) {
         return uploader.uploadFile(data.zipPath, url, {deleteAfter: true}, next);
     }
+
+
 
     uploader.uploadContent(new Buffer(data.data), url, {
         headers: {'X-Myra-Unzip': 1},

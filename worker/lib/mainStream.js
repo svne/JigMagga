@@ -10,6 +10,8 @@ var stream = require('./streamHelper'),
     error = require('./error'),
     helper = require('./helper');
 
+var generatorStream = require('../generator/index');
+
 var log = require('./logger')('worker', {component: 'worker', processId: process.pid}),
     TimeDiff = require('./timeDiff');
 
@@ -18,7 +20,7 @@ var config = require('../config');
 
 var messageStorage = messageHelper.storage;
 
-
+var count = 0;
 /**
  * Pipes message from source stream to filter stream then to configuration
  * then split them by locale or pages and then send a messages to generator process
@@ -52,6 +54,8 @@ module.exports = function (source, generator, basePath, program) {
             data.basePath = basePath;
             emitter.emit('new:message', helper.getMeta(data.message));
 
+
+
             this.emit('data', data);
         })))
         .pipe(tc(configMerge.getConfigStream()))
@@ -63,10 +67,23 @@ module.exports = function (source, generator, basePath, program) {
         //add page configs for those messages that did not have page key before splitting
         .pipe(tc(configMerge.getConfigStream()))
         .on('data', function (data) {
+            //count += 100;
+            //
+            //if (count > 5000) {
+            //    count = 100;
+            //}
+            //return setTimeout(function () {
+            //    console.log('THE END');
+            //    data.queueShift();
+            //}, 2000 + count);
+
+
             data.message = messageHelper.createMessage(data.message, program, data.config);
             data.bucketName = helper.generateBucketName(data, program, config.main.knox.buckets);
+            //generator.send('new:message', data);
 
-            generator.send('new:message', data);
+            generatorStream.write(data);
+
             emitter.emit('send:message', helper.getMeta(data.message));
             generateMessageTimeDiff.stop();
         });

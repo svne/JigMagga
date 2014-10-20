@@ -8,6 +8,8 @@ var _ = require('lodash'),
     spawn = require('child_process').spawn;
 
 
+var METADATA_CHUNK_IDENTIFIER = '!!:::!!';
+
 module.exports = {
     /**
      * check correctness of URL
@@ -87,11 +89,14 @@ module.exports = {
         var options = {stdio: [0, 1, 2, 'pipe', 'ipc']},
             child,
             waitTime;
-        if (args[0] !== 'debug') {
+        if (args[0] !== 'debug' && args[0] !== 'prof') {
             args.unshift(modulePath);
-        } else {
+        } else if (args[0] === 'debug') {
             args[0] = modulePath;
             args.unshift('--debug-brk');
+        } else if (args[0] === 'prof') {
+            args[0] = modulePath;
+            args.unshift('--prof');
         }
 
         child = spawn(process.execPath, args, options);
@@ -169,9 +174,9 @@ module.exports = {
         }
         var that = this;
         async.parallel({
-            generator: function (next) {
-                that.createSubProcess(__dirname + '/../generator/index.js', _.cloneDeep(args), next);
-            },
+            //generator: function (next) {
+            //    that.createSubProcess(__dirname + '/../generator/index.js', _.cloneDeep(args), next);
+            //},
             uploader: function (next) {
                 that.createSubProcess(__dirname + '/../uploader/index.js', _.cloneDeep(args), next);
             }
@@ -270,5 +275,30 @@ module.exports = {
      */
     getRedisKey: function (name, pid) {
         return name + ':' + pid;
+    },
+
+    /**
+     *
+     * @param {Object} metadata
+     * @param {Buffer} archive
+     */
+    stringifyPipeMessage: function (metadata, archive) {
+        metadata = JSON.stringify(metadata) + METADATA_CHUNK_IDENTIFIER;
+        return Buffer.concat([new Buffer(metadata), archive]);
+    },
+
+    /**
+     *
+     * @param {Buffer} message
+     * @return {{metadata: Object, archive: String}}
+     */
+    parsePipeMessage: function (message) {
+        message = Buffer.isBuffer(message) ? message.toString() : message;
+
+        message = message.split(METADATA_CHUNK_IDENTIFIER);
+        return {
+            metadata: JSON.parse(message[0]),
+            archive: new Buffer(message[1])
+        };
     }
 };

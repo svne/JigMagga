@@ -122,7 +122,7 @@ exports.doCall = function (options, callback) {
     if (cachedCalls[messageKey][requestId]) {
         return cachedCalls[messageKey][requestId].promise.done(function(result) {
             result.requestId = result.requestId || requestId;
-            var res = _.cloneDeep(result);
+            var res = result;
             res.fromCache = true;
             callback(null, res);
         });
@@ -163,7 +163,7 @@ exports.doCall = function (options, callback) {
     });
     cachedCalls[messageKey][requestId].promise.done(function(result) {
         result.requestId = result.requestId || requestId;
-        callback(null, _.cloneDeep(result));
+        callback(null, result);
     });
 
 

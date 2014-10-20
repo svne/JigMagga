@@ -32,7 +32,8 @@ var viewHelper = require("./view");
  * @return {object}
  */
 var initViewContainer = function (message, projectName, config) {
-    var viewContainer = _.cloneDeep(viewHelper.getHelper(projectName, config));
+    var viewContainer = viewHelper.getHelper(projectName, config);
+
 
     viewContainer.shtml = false;
     viewContainer.IS_WORKER = true;
@@ -168,24 +169,7 @@ var generatePredefined = function (data) {
     return predefined;
 };
 
-/**
- * extend config with domain-pages if them exist in the config
- *
- * @param  {object} config
- * @param  {string} basedomain
- * @return {object}
- */
-var extendWithDomainPage = function (config, basedomain) {
-    var result = {};
 
-    if (!config['domain-pages'] || !config['domain-pages'][basedomain]) {
-        return config;
-    }
-
-    result = deepExtend(result, config, config['domain-pages'][basedomain]);
-    delete result['domain-pages'][basedomain];
-    return result;
-};
 
 /**
  * extend config with child-pages if them exists
@@ -203,7 +187,8 @@ var extendWithChildPage = function (config, childpage) {
         throw new Error('Unknown child page: ' +  childpage);
     }
 
-    return deepExtend({}, config, config['child-pages'][childpage]);
+    console.log('[EXTEND WITH CHILD]');
+    return _.merge(config, config['child-pages'][childpage]);
 };
 
 /**
@@ -263,7 +248,7 @@ module.exports = function (data, workerConfig, callback) {
                 locale: data.locale,
                 jsonUrlPostfix: data.isMainLocale ? "" : "/" + data.locale
             });
-            localConfig = extendWithDomainPage(localConfig, message.basedomain);
+            //localConfig = extendWithDomainPage(localConfig, message.basedomain);
 
             localConfig.predefined = generatePredefined(data);
 

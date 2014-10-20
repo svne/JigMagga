@@ -50,7 +50,7 @@ module.exports = {
                     return callback(new WorkerError(err.message || err, data.message, data.key));
                 }
 
-                var result = _.cloneDeep(data);
+                var result = data;
                 result.config = config;
                 result.isPageConfigLoaded = (message.page) ? true : false;
                 callback(null, result);

@@ -11,28 +11,40 @@ var path = require('path');
  * @param container
  * @return {*}
  */
-exports.deployAttr = function deployAttr(container) {
-    if (container && !container.attr) {
-        if (typeof container === "object" && container.constructor != Array) {
-            container.attr = function (item) {
-                return this[item];
-            };
-            for (var key in container) {
-                if (container.hasOwnProperty(key)) {
-                    if (typeof container[key] == "object" && container[key] != null) {
-                        container[key] = deployAttr(container[key]);
-                    }
-                }
-            }
-        }
-        else if (container.constructor === Array) {
-            for (var i = 0; i < container.length; i++) {
-                container[i] = deployAttr(container[i]);
-            }
-        }
+exports.deployAttr = function deployAttr() {
+    //if (container && !container.attr) {
+    //    if (typeof container === "object" && container.constructor != Array) {
+    //        container.attr = function (item) {
+    //            return this[item];
+    //        };
+    //        for (var key in container) {
+    //            if (container.hasOwnProperty(key)) {
+    //                if (typeof container[key] == "object" && container[key] != null) {
+    //                    container[key] = deployAttr(container[key]);
+    //                }
+    //            }
+    //        }
+    //    }
+    //    else if (container.constructor === Array) {
+    //        for (var i = 0; i < container.length; i++) {
+    //            container[i] = deployAttr(container[i]);
+    //        }
+    //    }
+    //}
+    //return container;
+    if (_.isFunction(Object.prototype.attr)) {
+        return;
     }
-    return container;
-}
+
+    Object.defineProperty(Object.prototype, 'attr', {
+        enumerable: false,
+        configurable: false,
+        writable: false,
+        value: function (key) {
+            return this[key];
+        }
+    });
+};
 
 exports.utf8_decode = function (str_data) {
     // http://kevin.vanzonneveld.net
@@ -104,16 +116,29 @@ var list =  function (coll, fn) {
     }
 
 };
+var globalHelper =  require('../../../lib/view-helpers/view-helper-object.js');
 
+var projectHelper = {};
+
+var getProjectHelper = function (namespace) {
+    if (projectHelper[namespace]) {
+        return projectHelper[namespace];
+    }
+
+    var pathToProjectModule = path.join('../../..', namespace, 'library/view-helper-object');
+
+    projectHelper[namespace] = require(pathToProjectModule);
+
+    return projectHelper[namespace];
+};
 
 exports.getHelper = function (namespace, config) {
-    var helper = {list: list},
-        pathToProjectModule = path.join('../../..', namespace, 'library/view-helper-object'),
-        pathToGlobalModule = '../../../lib/view-helpers/view-helper-object.js';
+    var helper = {list: list};
 
-    helper = _.assign(helper, require(pathToGlobalModule)(config));
+    console.log('[getHelper] REQUIRE IN CODE');
+    helper = _.assign(helper, globalHelper(config));
     try {
-        helper = _.assign(helper, require(pathToProjectModule));
+        helper = _.assign(helper, getProjectHelper(namespace));
     } catch (e) {} finally {
         return helper;
     }

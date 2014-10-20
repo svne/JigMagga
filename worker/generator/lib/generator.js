@@ -15,7 +15,6 @@ var util = require('util');
 var path = require('path');
 var ejs = require("ejs");
 var mustache = require('mustache');
-var deepExtend = require("deep-extend");
 var viewHelper = require("./view.js");
 var restHelper = require("./rest.js");
 var placeholderHelper = require("./placeholders.js");
@@ -158,13 +157,13 @@ exports.clearApiCache = function () {
 exports.generatePage = function (origConfig, callback) {
     origConfig = childPageUploadUrl(origConfig);
 
-    var config = deepExtend({}, origConfig),
+    var config = _.cloneDeep(origConfig),
         namespace = config.namespace,
         namespaceCapital = capitaliseFirstLetter(config.namespace),
 
         filename,
-        viewContainer = config["viewContainer"],
-        url = config["uploadUrl"],
+        viewContainer = config.viewContainer,
+        url = config.uploadUrl,
         html = "",
         predefinedVarString;
 
@@ -180,25 +179,24 @@ exports.generatePage = function (origConfig, callback) {
         });
         config.predefined["child-page-path"] = config["child-page-path"];
     }
-    if (viewContainer["shtml"]) {
-        viewContainer.filename = fs.realpathSync(config["pagePath"].replace(/\/$/, "") + ".shtml");
-        config["pagePath"] = config["pagePath"].replace(/\/[^\/]*$/, "");
-    }
+
     // TODO: Needed for pages?
 
     config["template"] = ejs.render(config["template"], viewContainer);
     viewContainer[namespaceCapital] = {config: config, predefined: config["predefined"]};
     viewContainer._ = global._ = gt._;
     viewContainer._n = gt._n;
-    for (var key in config) {
-        if (key === "predefined") continue;
-        if (viewContainer[key]) continue;
-        viewContainer[key] = viewHelper.deployAttr(config[key]);
-    }
-    for (var key in config["predefined"]) {
-        viewContainer[key] = viewHelper.deployAttr(config["predefined"][key]);
-    }
+    //for (var key in config) {
+    //    if (key === "predefined") continue;
+    //    if (viewContainer[key]) continue;
+    //    viewContainer[key] = viewHelper.deployAttr(config[key]);
+    //}
+    //for (var key in config["predefined"]) {
+    //    viewContainer[key] = viewHelper.deployAttr(config["predefined"][key]);
+    //}
 
+    viewContainer = _.assign(viewContainer, config.predefined);
+    viewHelper.deployAttr();
     config["template"] = slots.executeJigSlotLogic(config.jigs, config["template"]);
 
     for (var jigClass in config.jigs) {
@@ -250,11 +248,12 @@ exports.generatePage = function (origConfig, callback) {
         ' window.' + namespaceCapital + '.predefined = window.' + namespaceCapital + '.predefined || {};' + "\n";
     var excludedPredefinedVar = getExcludedPredefinedVariables(config.jigs);
 
-    for (var predefinedVar in config["predefined"]) {
-        if (config["predefined"].hasOwnProperty(predefinedVar)) {
+
+    for (var predefinedVar in config.predefined) {
+        if (config.predefined.hasOwnProperty(predefinedVar) && config.predefined[predefinedVar] !== undefined) {
             if (predefinedVar == "attr" || _.contains(excludedPredefinedVar, predefinedVar)) continue;
-            if (typeof config["predefined"][predefinedVar] == 'function') continue;
-            predefinedVarString = JSON.stringify(config["predefined"][predefinedVar]);
+            if (typeof config.predefined[predefinedVar] == 'function') continue;
+            predefinedVarString = JSON.stringify(config.predefined[predefinedVar]);
             predefinedVarString = predefinedVarString.replace(/\$&/g, '');
             predefinedVarString = predefinedVarString.replace(/<script.*?>/ig, '');
             predefinedVarString = predefinedVarString.replace(/<style.*?>/ig, '');
@@ -276,6 +275,7 @@ exports.generatePage = function (origConfig, callback) {
                     }
                 }
                 var modulePath = path.join('../../..', config.namespace, 'library', config.predefinedModules[predefinedModule].module);
+                console.log('REQUIRE IN CODE');
                 var predefinedHelper = new (require(modulePath))();
                 script += namespaceCapital + ".predefined." + predefinedModule + ' = ' + JSON.stringify(
                     predefinedHelper.init(neededData)
@@ -316,15 +316,15 @@ exports.generateJsonPage = function (config) {
     var recursive = function (results, options) {
         _.each(_.isArray(results) ? results : [results], function (result, index) {
             var toUrl, copy = {},
-                copyResult = JSON.parse(JSON.stringify(result));
-            if (options.remove) {
-                _.each(options.remove, function (key) {
-                    if (key in result) delete result[key];
-                });
-            }
+                copyResult = result;
+            //if (options.remove) {
+            //    _.each(options.remove, function (key) {
+            //        if (result[key]) delete result[key];
+            //    });
+            //}
             if (options.pick) {
                 _.each(options.pick, function (key) {
-                    if (key in result) copy[key] = result[key];
+                    if (result[key]) copy[key] = result[key];
                 });
                 result = copy;
             }
@@ -341,7 +341,7 @@ exports.generateJsonPage = function (config) {
                     var extResult,
                         childUrl;
                     if (extract.key && extract.options) {
-                        if (extract.key in result && result[extract.key] !== null) {
+                        if (result[extract.key]) {
                             recursive(result[extract.key], extract.options);
                         }
                     }
@@ -349,14 +349,14 @@ exports.generateJsonPage = function (config) {
                         extResult = undefined;
                         childUrl = placeholderHelper.simpleReplace(extract.to.replace("{url}", mainUrl), copyResult);
                         _.each(extract.keys, function (key) {
-                            if (key in result) {
+                            if (result[key]) {
                                 if (!_.isEmpty(result[key])) {
                                     extResult = extResult || {};
                                     extResult[key] = result[key];
                                     result[key] = "http://" + knoxConfig.S3_BUCKET + "/" + childUrl;
-                                    if (extract.remove) {
-                                        delete result[key];
-                                    }
+                                    //if (extract.remove) {
+                                    //    delete result[key];
+                                    //}
                                 } else if (extract.nullIfEmpty) {
                                     result[key] = null;
                                 }
@@ -374,9 +374,9 @@ exports.generateJsonPage = function (config) {
                             if (!_.isEmpty(result[extract.key])) {
                                 extResult = result[extract.key];
                                 result[extract.key] = "http://" + knoxConfig.S3_BUCKET + "/" + childUrl;
-                                if (extract.remove) {
-                                    delete result[extract.key];
-                                }
+                                //if (extract.remove) {
+                                //    delete result[extract.key];
+                                //}
                             } else if (extract.nullIfEmpty) {
                                 result[extract.key] = null;
                             }
@@ -389,7 +389,7 @@ exports.generateJsonPage = function (config) {
                 });
             }
         });
-    }
+    };
     _.each(config.jigs, function (jig, jigClass) {
         _.each(jig.apicalls, function (apiCall, apiCallName) {
             if (!apiCall.cache) {
@@ -398,7 +398,7 @@ exports.generateJsonPage = function (config) {
             _.each(apiCall.cache, function (cache) {
                 var apiResult = cache.modify
                         ? config.predefined[apiCallName]
-                        : JSON.parse(JSON.stringify(config.predefined[apiCallName])),
+                        : _.clone(config.predefined[apiCallName]),
                     childUrl;
                 if (cache.options) {
                     recursive(apiResult, cache.options);
@@ -566,7 +566,7 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
                     for (var childPage in config["child-pages"]) {
                         // automated child pages
                         if (config["child-pages"][childPage]["child-page-path"]) {
-                            nextConfig = deepExtend({}, config, config["child-pages"][childPage]);
+                            nextConfig = _.merge(config, config["child-pages"][childPage]);
                             // For now child-child-pages are not possible
                             delete nextConfig["child-pages"];
                             if (nextConfig.triggerGt) {
@@ -586,7 +586,7 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
                     var dataLength = placeholderHelper.getParamByString(config["pagination-dependency"].replace(/[{}]/g, ""), config["predefined"]);
                     if (dataLength) {
                         for (var i = 2; i < dataLength / config["predefined"].pageLimit + 1; i++) {
-                            nextConfig = deepExtend({}, config);
+                            nextConfig = _.cloneDeep(config);
                             nextConfig.jigs = placeholderHelper.deepReplace(nextConfig.jigs, "{pageNum}", i);
                             nextConfig["pagination-number"] = i;
                             nextConfig["predefined"].pageNum = i;

@@ -14,6 +14,8 @@ var EventEmitter = require('events').EventEmitter,
     path = require('path'),
     es = require('event-stream');
 
+var messageStorage = require('../lib/message').storage;
+
 var log = require('../lib/logger')('generator', {component: 'generator', processId: process.pid}),
     archiver = require('../lib/archiver'),
     helper = require('../lib/helper'),
@@ -26,40 +28,50 @@ var log = require('../lib/logger')('generator', {component: 'generator', process
     TimeDiff = require('../lib/timeDiff');
 
 var timeDiff = new TimeDiff(log);
+var config = require('../config');
 
-if (process.env.NODE_ENV === 'live') {
+
+var runningAsAScript = require.main === module;
+
+if (config.main.longjohn) {
     require('longjohn');
 }
 
 var WorkerError = error.WorkerError;
 
 //init process router
-var router = new ProcessRouter(process);
+//var router = new ProcessRouter(process);
 log('started, pid', process.pid);
 
 var config = require('../config');
 
 var messageStream = stream.duplex();
 
-router.addRoutes({
-    /**
-     * write to message stream the message that comes from generator
-     * @param  {Object} data
-     */
-    'new:message': function (data) {
-        messageStream.write(data);
-    },
-
-    'message:uploaded': function (key) {
-        log('deleting api cache for message with key %s', key);
-        generator.deleteCachedCall(key);
-    }
-});
+//router.addRoutes({
+//    /**
+//     * write to message stream the message that comes from generator
+//     * @param  {Object} data
+//     */
+//    'new:message': function (data) {
+//
+//        console.log('THAT IS END', data);
+//
+//        return router.send('message:uploaded', data.key);
+//
+//
+//        //messageStream.write(data);
+//    },
+//
+//    'message:uploaded': function (key) {
+//        log('deleting api cache for message with key %s', key);
+//        generator.deleteCachedCall(key);
+//    }
+//});
 
 var handleError = function (text, data) {
     log('error', text, {error: true});
 
-    return router.send('error', new WorkerError(text, data.message.origMessage, data.key));
+    //return router.send('error', new WorkerError(text, data.message.origMessage, data.key));
 };
 /**
  * merge all configs and create viewContainer
@@ -69,14 +81,14 @@ var handleError = function (text, data) {
  */
 var configStream = es.through(function (data) {
     var that = this;
-    var callback = function (err, res) {
+
+    generateConfig(data, config, function (err, res) {
         if (err) {
             handleError(err.stack || err, data);
             return;
         }
         that.emit('data', res);
-    };
-    generateConfig(data, config, callback);
+    });
 });
 
 var emitter = new EventEmitter();
@@ -111,6 +123,7 @@ var apiStream = es.through(function (data) {
     var apiCallTimeDiff = timeDiff.create('apiCall:message:' + data.message.page);
 
     data.config.apiMessageKey = data.key;
+
     generator.apiCalls([data.config], emitter, function (err, res) {
 
         if (err) {
@@ -146,7 +159,23 @@ var loadLocale = es.through(function (data) {
 
 });
 
-var saveZipToDisck = function (uploadList, data) {
+var sendToWorker = function (message, key, bucketName) {
+    return stream.accumulate(function(err, data, next) {
+        var metaData = {
+            bucketName: bucketName,
+            url: message.url,
+            page: message.page,
+            locale: message.locale,
+            messageKey: key
+        };
+
+
+        //router.send('pipe', helper.stringifyPipeMessage(metaData, data));
+        next();
+    });
+};
+
+var saveZipToDisk = function (uploadList, data) {
     var archiveStream = archiver.bulkArchive(uploadList);
     var result = {
         message: data.message,
@@ -168,7 +197,7 @@ var saveZipToDisck = function (uploadList, data) {
             });
     });
 };
-process.send({ready: true});
+//process.send({ready: true});
 
 
 messageStream
@@ -181,29 +210,36 @@ messageStream
             json,
             uploadPages;
 
+
         var generatePageTimeDiff = timeDiff.create('generate:page:' + data.message.page);
 
-        knox.S3_BUCKET = knox.S3_BUCKET || data.bucketName;
-        try {
+        knox.S3_BUCKET = data.bucketName;
 
-            ydGetText.setLocale(data.message.locale);
-            generator.init(knox, ydGetText, saveDiskPath);
-            // generate json and html files
-            json = _.map(data.apiCallResult, generator.generateJsonPage);
-            uploadPages = _.map(data.apiCallResult, function (config) {
-                log('Processing page url: %s pagePath: %s', config.uploadUrl, config.pagePath);
-                return generator.generatePage(config);
-            });
-        } catch (err) {
-            return handleError(err.stack || err, data);
-        }
 
-        var result = {
-                bucketName: data.bucketName,
-                message: data.message,
-                key: data.key || undefined
-            },
-            jsonLength = json.length,
+
+        ydGetText.setLocale(data.message.locale);
+        generator.init(knox, ydGetText, saveDiskPath);
+        // generate json and html files
+
+        json = _.map(data.apiCallResult, generator.generateJsonPage);
+
+
+
+        uploadPages = _.map(data.apiCallResult, function (config) {
+            log('Processing page url: %s pagePath: %s', config.uploadUrl, config.pagePath);
+            return generator.generatePage(config);
+        });
+
+
+        console.log('!!!!!IT WORKS!!!!!!!');
+        return messageStorage.upload(data.key);
+
+
+        //} catch (err) {
+        //    return handleError(err.stack || err, data);
+        //}
+
+        var jsonLength = json.length,
             htmlLength = uploadPages.length;
 
 
@@ -216,28 +252,33 @@ messageStream
 
         log('upload list length %d', uploadPages.length);
         generatePageTimeDiff.stop();
-        //if html files amount is less then 200 send them to the worker
-        if (htmlLength < 200) {
-            result.uploadList = uploadPages;
-            router.send('pipe', result);
-            return;
-        } else {
-            //if the amount is more then 200 create an archive write it to disk and
-            //send to the worker the archive link
+        //if the amount is more then 200 create an archive write it to disk and
+        //send to the worker the archive link
 
-
-            saveZipToDisck(uploadPages, data);
+        if (htmlLength > 250) {
+            return saveZipToDisk(uploadPages, data);
         }
+        //if html files amount is less then 200 send them to the worker
+
+        archiver.bulkArchive(uploadPages)
+            .pipe(sendToWorker(data.message, data.key, data.bucketName));
+
     });
 
-process.on('uncaughtException', error.getErrorHandler(log, function (err) {
-    router.send('error', err);
-}));
-
-if (config.main.memwatch) {
-    var memwatch = require('memwatch');
-
-    memwatch.on('leak', function (info) {
-        log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
-    });
+if (!runningAsAScript) {
+    module.exports = messageStream;
 }
+
+
+//process.on('uncaughtException', error.getErrorHandler(log, function (err) {
+//    router.send('error', err);
+//}));
+//
+//if (config.main.memwatch) {
+//    var memwatch = require('memwatch');
+//
+//    memwatch.on('leak', function (info) {
+//        log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
+//    });
+//}
+

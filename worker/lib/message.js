@@ -66,7 +66,7 @@ module.exports = {
     createMessage: function (message, program, domainConfig) {
         domainConfig = domainConfig || {};
 
-        var params = program.values || {
+        var params = program.values || message.params || {
                 cityId: message.cityId || undefined,
                 regionId: message.regionId || undefined,
                 districtId: message.districtId || undefined,
@@ -84,7 +84,7 @@ module.exports = {
             version: program.versionnumber,
             url: program.url || message.url,
             params: params,
-            origMessage: message,
+            origMessage: message.origMessage || message,
             locale: locale,
             noMessageAlternatives: program.noMessageAlternatives || undefined
         };
@@ -210,7 +210,7 @@ module.exports = {
                                 return config.pages[page][locale];
                             })
                             .map(function (locale) {
-                                var res = _.cloneDeep(data);
+                                var res = data;
                                 res.message.locale = locale;
                                 return res;
                             });
@@ -221,7 +221,7 @@ module.exports = {
                         result = Object.keys(config.pages)
                             .filter(filterLinks(message.locale))
                             .map(function (page) {
-                                var res = _.cloneDeep(data);
+                                var res = data;
                                 res.message.page = page;
                                 res.message.url = page;
                                 return res;
@@ -231,7 +231,7 @@ module.exports = {
                             var localePages = Object.keys(config.pages)
                                 .filter(filterLinks(locale))
                                 .map(function (page) {
-                                    var res = _.cloneDeep(data);
+                                    var res = data;
 
                                     res.message.page = page;
                                     res.message.url = page;

@@ -115,6 +115,18 @@ var generatorRoutes = {
             messageKey: data.key
         });
     },
+    pipe: function (data) {
+        data = helper.parsePipeMessage(data);
+        uploaderRouter.send('pipe', helper.stringifyPipeMessage(data.metadata, data.archive));
+    },
+
+    'message:uploaded': function (key) {
+
+        messageStorage.upload(key);
+        generatorRouter.send('message:uploaded', key);
+
+        log('message uploaded %s', key);
+    },
     error: workerErrorHandler
 };
 
@@ -140,16 +152,16 @@ helper.createChildProcesses(args, function (err, result) {
     }
 
     uploader = result.uploader,
-    generator = result.generator;
+    //generator = result.generator;
 
-    generatorRouter = new ProcessRouter(generator);
+    //generatorRouter = new ProcessRouter(generator);
     uploaderRouter = new ProcessRouter(uploader);
 
     // add pipe handler a function that should be executed on pipe
     // event from the generator
-    generatorRoutes.pipe = createPipeHandler(uploaderRouter, queuePool, workerErrorHandler);
+    //generatorRoutes.pipe = createPipeHandler(uploaderRouter, queuePool, workerErrorHandler);
 
-    generatorRouter.addRoutes(generatorRoutes);
+    //generatorRouter.addRoutes(generatorRoutes);
     uploaderRouter.addRoutes(uploaderRoutes);
 
     var source;
@@ -181,7 +193,7 @@ helper.createChildProcesses(args, function (err, result) {
     process.on('SIGTERM', exitHandler);
     process.on('SIGHUP', exitHandler);
     uploader.on('exit', exitHandler);
-    generator.on('exit', exitHandler);
+    //generator.on('exit', exitHandler);
 });
 
 process.on('uncaughtException', error.getErrorHandler(log, workerErrorHandler));

@@ -118,8 +118,12 @@ ProcessRouter.prototype.addRoutes = function (routes) {
  */
 ProcessRouter.prototype.send = function (command, data) {
     if (command === 'pipe') {
-        data = _.isString(data) ? data : JSON.stringify(data);
-        data = Buffer.concat([new Buffer(data), LAST_CHUNK_IDENTIFIER_BUFFER]);
+        if (!Buffer.isBuffer(data)) {
+            data = _.isString(data) ? data : JSON.stringify(data);
+            data = new Buffer(data);
+        }
+
+        data = Buffer.concat([data, LAST_CHUNK_IDENTIFIER_BUFFER]);
         return this.pipe.write(data);
     }
     var message = {

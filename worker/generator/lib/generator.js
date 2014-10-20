@@ -92,8 +92,8 @@ var getExcludedPredefinedVariables = function (jigs) {
  */
 var generateProductionScriptTags = function (namespace, browsers, scriptName) {
     var result = '',
-        nonIE = '<!--[if !IE]> --><script id="%s-application-script" type="text/javascript" src="/%s"></script><!-- <![endif]-->',
-        IE = '<!--[if IE %d]><script id="%s-application-script-ie%d" type="text/javascript" src="/%s"></script><![endif]-->';
+        nonIE = '<!--[if !IE]> --><script id="%s-application-script" async type="text/javascript" src="/%s"></script><!-- <![endif]-->',
+        IE = '<!--[if IE %d]><script id="%s-application-script-ie%d" async type="text/javascript" src="/%s"></script><![endif]-->';
 
     result = util.format(nonIE, namespace, scriptName);
     if (!browsers) {

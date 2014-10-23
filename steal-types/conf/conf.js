@@ -653,7 +653,7 @@
                     }
                 }
             };
-            setConfigs(path.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/"));
+            setConfigs(path.replace(/\/[^\/]*\.[a-z]{2,3}\/(?:[^\/]*\.[a-z]{2,3}\/)*/, "/default/"));
             setConfigs(path);
             setConfigs("/" + namespace.toLowerCase() + "/page/" + getDomain());
             return configs;

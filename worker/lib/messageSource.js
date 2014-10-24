@@ -36,7 +36,7 @@ module.exports = {
 
         var queueStream = queuePool.amqpQueue.getStream();
         queueStream.on('ready', function (queue) {
-            log('%s queue stream is ready', queue);
+            log('help', '%s queue stream is ready', queue);
         });
 
 

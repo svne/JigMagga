@@ -18,6 +18,7 @@ var createUploaderStream = function (message, key, bucketName, uploaderRouter) {
             bucketName: bucketName,
             url: message.url,
             page: message.page,
+            locale: message.locale,
             data: data,
             messageKey: key
         };

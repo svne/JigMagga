@@ -66,8 +66,8 @@ module.exports = {
         };
 
         if (program.deployuncached) {
-            var defaultName = config.queueBaseName + '.' + program.basedomain + '.' + prefixes['default'];
-            queues.amqpDeployQueue = program.deployuncached || defaultName;
+            var defaultName = config.queueBaseName + '.' + program.basedomain + prefixes['default'];
+            queues.amqpDeployQueue = (_.isString(program.deployuncached)) ? program.deployuncached :  defaultName;
         }
 
         return queues;

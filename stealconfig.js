@@ -51,6 +51,7 @@ steal.config({
         less: "steal-types/less/less.js",
         ejs: "can/view/ejs/ejs.js",
         mustache: "can/view/mustache/mustache.js",
+        stache: "can/view/stache/stache.js",
         coffee: "steal/coffee/coffee.js",
         conf: "steal-types/conf/conf.js",
         po: "steal-types/po/po.js",

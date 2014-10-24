@@ -57,9 +57,20 @@ steal({id: './gettext.js', ignore: true}, "./sprintf.js",
 
                 win.replaceGettextUnderscore = function (string) {
                     return string
+                        //stache replace
+                        .replace(/\{\{\s*_\s*\\['"]([^\\]*)\\['"]\s*\}\}/mg, function(_match, msgid){
+                            return win.gettext.gettext(msgid);
+                        })
+                        .replace(/\{\{\s*_(?:\s*\\['"]([^\\]*)\\['"])*(?:\s*([^\s}]*))*\s*\}\}/mg, function(_match){
+                            return _match.replace(/_\s*\\['"]([^\\]*)\\['"]/mg, function(_match, msgid){
+                                return " sprintf '" + win.gettext.gettext(msgid) + "'";
+                            })
+                        })
+                        // mustache replace no sprintf!
                         .replace(/can\.Mustache\.txt\(\n\{scope:scope,options:options\},\nnull,\{get:"_"\},"([^"]+)"\)/mg, function (_match, msgid, quote) {
                             return '"' + win.gettext.gettext(msgid).replace('"', '\\"') + '"';
                         })
+                        // ejs and js replace
                         .replace(/_\(\s*['"]([^'"]+)(['"])\s*\)/gm, function (_match, msgid, quote) {
                             return quote + win.gettext.gettext(msgid).replace(quoteRegex[quote], "\\'") + quote;
                         })

@@ -15,7 +15,8 @@ var visit = function(version, callback) {
         jsdom.env('<h1>can-compile</h1>',
             [ __dirname + "/../../../bower_components/jquery-new/dist/jquery.min.js",
                     __dirname + "/../../../bower_components/canjs/can.jquery.js",
-                    __dirname + "/../../../bower_components/canjs/can.ejs.js" ],
+                    __dirname + "/../../../bower_components/canjs/can.ejs.js",
+                __dirname + "/../../../bower_components/canjs/can.stache.js"],
             function(error, win) {
                 if (error) {
                     return callback(error);
@@ -66,6 +67,8 @@ var compiler = function(options, callback) {
         // TODO throw error if type is not registered
         var script = can.view.types["." + type] ? can.view.types["." + type].script(id, text) : null;
 
+
+
         callback(null, script, {
             id: id,
             text: text,
@@ -97,7 +100,18 @@ module.exports = function(configuration, callback, log) {
             });
         };
     });
-    var renderer = Handlebars.compile(configuration.wrapper || 'steal("can/view/mustache/mustache.js", function(can) {\n {{{content}}} \n});');
+    var renderer = function(options){
+        if(options.content.search(/can\.EJS\(/) !== -1){
+            configuration.wrapper = 'steal("can/view/ejs/ejs.js", function(can) {\n {{{content}}} \n});'
+        }
+        else if(options.content.search(/can\.stache\(/) !== -1){
+            configuration.wrapper = 'steal("can/view/stache/stache.js", function(stache) {\n {{{content}}} \n});'
+        }
+        else if(options.content.search(/can\.Mustache\(/) !== -1){
+            configuration.wrapper = 'steal("can/view/mustache/mustache.js", function(can) {\n {{{content}}} \n});'
+        }
+        return Handlebars.compile(configuration.wrapper)(options);
+    };
 
     async.series(callbacks, function(errors, results) {
         if (errors) {
@@ -111,7 +125,6 @@ module.exports = function(configuration, callback, log) {
             if(output === null) {
                 return "can." + options.type + "('" + options.id + "', " + JSON.stringify(options.text) + ");";
             }
-
             return "can.view." + method + "('" + options.id + "'," + output + ");";
         });
         var output = renderer({

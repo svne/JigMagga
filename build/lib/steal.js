@@ -56,7 +56,12 @@ function setupStealconfig(steal, item, cb) {
                 success();
             },
             "mustache js": function (options, success) {
-                options.text = loadFile(options);
+                if (!options.text) {
+                    options.text = loadFile(options);
+                }
+                success();
+            },
+            "stache js": function (options, success) {
                 success();
             },
             "fn": function (options, success) {

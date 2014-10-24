@@ -29,7 +29,7 @@ var builder = {
             return es.map(function (data, callback) {
                 if (data.build.jsgenerate) {
                     async.mapSeries(data.build.dependencies, function (item, cb) {
-                        if (item.type === "mustache" || item.type === "ejs") {
+                        if (item.type === "mustache" || item.type === "ejs" || item.type === "stache") {
                             if (internalCache[item.id.path] && internalCache[item.id.path].notcompiled === item.text) {
                                 item.text = internalCache[item.id.path].compiled;
                                 cb(null, item);
@@ -168,6 +168,7 @@ var builder = {
                     stealLib.stealAFile(localePath, data, function (err, dataNew, window) {
                         async.mapSeries(data.build.dependencies, function (item, cb) {
                             if (item.buildType === "js") {
+
                                 window.gettext.textdomain(data.build.locale);
                                 item.text = window.replaceGettextUnderscore(item.text);
                             }

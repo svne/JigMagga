@@ -314,10 +314,8 @@ module.exports = {
             if (!messageStorage[key]) {
                 return;
             }
-            console.log('IN STORAGE');
             messageStorage[key].upload();
             if (messageStorage[key].isReady()) {
-                console.log('delete element', messageStorage[key].length);
                 messageStorage[key].clear();
                 delete messageStorage[key];
 

@@ -24,9 +24,6 @@ var log = require('../lib/logger')('uploader', {component: 'uploader', processId
     helper = require('../lib/helper'),
     TimeDiff = require('../lib/timeDiff');
 
-if (process.env.NODE_ENV === 'live') {
-    require('longjohn');
-}
 
 
 var timeDiff = new TimeDiff(log);
@@ -152,16 +149,7 @@ var uploadStream = function (source) {
 
         log('new data to upload type: string');
 
-        var d = domain.create();
-
-        d.on('error', function (err) {
-            console.log('UPLOAD ERROR');
-            console.log(err);
-        });
-
-        d.run(function () {
-            uploadItem(data, next);
-        });
+        uploadItem(data, next);
     });
 };
 

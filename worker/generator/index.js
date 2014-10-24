@@ -72,19 +72,11 @@ var handleError = function (text, data) {
 var configStream = es.through(function (data) {
     var that = this;
 
-    console.log('!!!!!IT WORKS configStream !!!!!!!');
-    messageStorage.done(data.key);
-    messageStorage.upload(data.key);
-    data = null;
-    return;
-
     generateConfig(data, config, function (err, res) {
         if (err) {
             handleError(err.stack || err, data);
             return;
         }
-
-
 
         that.emit('data', res);
     });
@@ -120,8 +112,6 @@ var apiStream = es.through(function (data) {
     // Take first snapshot
     // var apiMessageKey = generator.createApiMessageKey(data.key);
     var apiCallTimeDiff = timeDiff.create('apiCall:message:' + data.message.page);
-
-
 
     data.config.apiMessageKey = data.key;
 
@@ -196,6 +186,7 @@ var sendToWorker = function (message, key, bucketName, uploadPages) {
     //return messageStorage.upload(key);
 
     messageStream.emit('new:uploadList', helper.stringifyPipeMessage(metaData, uploadPages));
+    messageStream.emit('api:done', key);
     uploadPages = null;
 
 };
@@ -219,6 +210,7 @@ var saveZipToDisk = function (uploadList, data) {
                 log('[!] saved to %s', zipPath);
                 result.zipPath = zipPath;
                 messageStream.emit('new:zip', result);
+                messageStream.emit('api:done', data.key);
             });
     });
 };

@@ -80,6 +80,14 @@ module.exports = function (source, uploader, basePath, program) {
         data = null;
     });
 
+
+    generatorStream.on('api:done', function (key) {
+        if (!program.live) {
+            messageStorage.done(key);
+        }
+    });
+
+
     /**
      * if zip is creating in the generator. Generator just send a link to it
      * to the worker and worker proxies this message to uploader
@@ -88,9 +96,6 @@ module.exports = function (source, uploader, basePath, program) {
      */
     generatorStream.on('new:zip', function (data) {
         log('new zip saved by generator', helper.getMeta(data.message));
-        if (!program.live) {
-            messageStorage.done(data.key);
-        }
 
         uploader.send('new:zip', {
             url: data.message.url,

@@ -66,7 +66,8 @@ module.exports = {
         };
 
         if (program.deployuncached) {
-            queues.amqpDeployQueue = config.queueBaseName + '.' + program.basedomain + '.' + prefixes['default'];
+            var defaultName = config.queueBaseName + '.' + program.basedomain + '.' + prefixes['default'];
+            queues.amqpDeployQueue = program.deployuncached || defaultName;
         }
 
         return queues;
@@ -199,9 +200,7 @@ module.exports = {
             return config.S3_BUCKET;
         }
 
-        if (program.live) {
-            return buckets.deploy[baseDomain] || 'deploy.' + baseDomain;
-        } else if (program.liveuncached) {
+        if (program.live || program.liveuncached) {
             return buckets.live[baseDomain] || 'www.' + baseDomain;
         }
 

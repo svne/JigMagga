@@ -111,7 +111,7 @@ var generatorRoutes = {
             page: data.message.page,
             locale: data.message.locale,
             zipPath: data.zipPath,
-            bucketName: data.bucketName,
+            bucketName: program.bucket || data.bucketName,
             messageKey: data.key
         });
     },

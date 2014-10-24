@@ -418,7 +418,7 @@ exports.generateJsonPage = function (config) {
             }
             if (options.to) {
                 toUrl = placeholderHelper.simpleReplace(options.to.replace("{url}", mainUrl), copyResult);
-                results[index] = "http://" + knoxConfig.S3_BUCKET + "/" + toUrl;
+                results[index] = "//" + knoxConfig.S3_BUCKET + "/" + toUrl;
                 if (alreadyInArray.indexOf(toUrl) === -1) {
                     toUpload.push([toUrl, result]);
                     alreadyInArray.push(toUrl);
@@ -441,7 +441,7 @@ exports.generateJsonPage = function (config) {
                                 if (!_.isEmpty(result[key])) {
                                     extResult = extResult || {};
                                     extResult[key] = result[key];
-                                    result[key] = "http://" + knoxConfig.S3_BUCKET + "/" + childUrl;
+                                    result[key] = "//" + knoxConfig.S3_BUCKET + "/" + childUrl;
                                     //if (extract.remove) {
                                     //    delete result[key];
                                     //}
@@ -462,9 +462,9 @@ exports.generateJsonPage = function (config) {
                             if (!_.isEmpty(result[extract.key])) {
                                 extResult = result[extract.key];
                                 result[extract.key] = "http://" + knoxConfig.S3_BUCKET + "/" + childUrl;
-                                //if (extract.remove) {
-                                //    delete result[extract.key];
-                                //}
+                                if (extract.remove) {
+                                    delete result[extract.key];
+                                }
                             } else if (extract.nullIfEmpty) {
                                 //result[extract.key] = null;
                             }

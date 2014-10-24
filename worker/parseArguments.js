@@ -22,6 +22,7 @@ module.exports = function (processArgs) {
         .option('-k, --childpage [value]', 'define a child page that should overwrite the parent element')
         .option('-x, --live', 'use live db and queue - normally staging is used')
         .option('-X, --liveuncached', 'use live db and uncache queue')
+        .option('-D, --deployuncached [value]', 'send uncache messages to the deploy queue')
         .option('-u, --url [value]', 'define the url to be generated')
         .option('-H, --highprio', 'use the high priority queue')
         .option('-M, --mediumprio', 'use the high priority queue')
@@ -31,6 +32,6 @@ module.exports = function (processArgs) {
         .option('-n, --namespace <n>', 'relative path from current dir to target project or just nane of project')
         .option('-f, --fixtures', 'use fixtures from project folder instead of making an api call')
         .option('-w, --write', 'write to disk the archive with generated files instead of upload them, path should be provided')
-
+        .option('-B, --bucket [value]', 'will override the config bucket and upload to this bucket you parse as value')
         .parse(processArgs);
 };

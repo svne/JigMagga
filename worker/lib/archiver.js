@@ -1,18 +1,22 @@
 'use strict';
 
 var archiver = require('archiver');
+var async = require('async');
 var format = require('util').format;
 
 module.exports = {
     /**
      * return a stream with zip archive of file from file list
      *
-     * @param  {Array.<{content: string, url: string, time: timestamp}>} fileList
-     * @return {stream}
+     * @param  {Array.<UploadItem>} fileList
+     * @return {Readable}
      */
     bulkArchive: function (fileList) {
-        var archive = archiver('zip', {zlib: {level: 1}});
         var fileListLength = fileList.length;
+
+        var options = (fileListLength > 200) ? {zlib: {level: 1}} : {store: true};
+
+        var archive = archiver('zip', options);
 
         for (var i = 0; i < fileListLength; i++) {
 

@@ -12,6 +12,7 @@ var EventEmitter = require('events').EventEmitter;
 var fs = require('fs');
 var async = require('async');
 var util = require('util');
+var deepExtend = require('deep-extend');
 var path = require('path');
 var ejs = require("ejs");
 var mustache = require('mustache');
@@ -154,6 +155,101 @@ exports.init = function (knoxConf, gettext, diskSavePath) {
 exports.clearApiCache = function () {
     restHelper.clearCache();
 };
+
+var predefinedModules = {};
+
+var getPredefinedModule = function (namespace, module) {
+    var modulePath = path.join('../../..', namespace, 'library', module);
+
+    if (predefinedModules[modulePath]) {
+         return predefinedModules[modulePath];
+    }
+
+    console.log('REQUIRE IN CODE');
+    predefinedModules[modulePath]= require(modulePath);
+    return predefinedModules[modulePath];
+};
+
+
+var generateJigs = function (config, viewContainer, callback) {
+    async.each(Object.keys(config.jigs), function (jigClass, next) {
+        if (config.jigs[jigClass].disabled || config.jigs[jigClass].prerender === false) {
+            return next();
+        }
+        // get the jig class to be filled with ejs template
+        var jig = config.jigs[jigClass];
+        var jigRegex
+        if (typeof jig === "string") {
+            jig = {"controller": jig};
+        }
+        // this jig needs to be loaded on page call, so we do nothing here
+        if (!jig.controller) {
+            return next();
+        }
+
+        // get optional parameters from config
+        if (jig.options !== undefined) {
+            for (var option in jig.options) {
+                viewContainer[option] = jig.options[option];
+            }
+        }
+        if (jigClass.substr(0, 1) === ".") {
+            jigRegex = new RegExp("<((section)\\s[^>]*class=['\"][^'\"]*\\b" + jigClass.substr(1) + "\\b[^'\"]*['\"][^>]*)>.*?<\\/section>", "im");
+        } else {
+            jigRegex = new RegExp("<(\\b" + jigClass + "\\b[^>]*)>[\\s\\S]*?<\\/(\\b" + jigClass + "\\b)>", "m");
+        }
+        // add ejs template to html template
+        var ejsTemplateFile = jig.template || jig.controller.replace(/\./g, "/").toLowerCase() + "/views/init.ejs";
+        if (typeof ejsTemplateFile === "object") {
+            ejsTemplateFile = ejsTemplateFile[config.locale];
+        }
+        if (!ejsTemplateFile) {
+            return next();
+        }
+        fs.readFile(ejsTemplateFile, function (err, ejsTemplate) {
+            if (err) {
+                return next(err);
+            }
+            ejsTemplate = ejsTemplate.toString().replace(/<%==/g, "<%-").replace(/___v1ew.push\(/g, "buf.push(");
+
+            if (ejsTemplateFile.match("\.mustache$")) {
+                ejsTemplate = mustache.to_html(ejsTemplate, viewContainer);
+            } else if (ejsTemplateFile.match("\.ejs")) {
+                ejsTemplate = ejs.render(ejsTemplate, viewContainer);
+            }
+            config.template = config.template.replace(jigRegex, '<$1>' + ejsTemplate + '</$2>');
+
+            next();
+        });
+    }, function (err) {
+        if (err) {
+            return callback(err);
+        }
+        callback(null, config);
+    });
+
+};
+/**
+ * @name UploadItem
+ * @type {{
+ *     path: String,
+ *     content: String,
+ *     url: String,
+ *     time: Number
+ * }}
+ */
+
+/**
+ * @callback GeneratePageCallback
+ * @param {Error}
+ * @param {UploadItem}
+ */
+
+/**
+ *
+ * @param origConfig
+ * @param {GeneratePageCallback} callback
+ */
 exports.generatePage = function (origConfig, callback) {
     origConfig = childPageUploadUrl(origConfig);
 
@@ -182,8 +278,8 @@ exports.generatePage = function (origConfig, callback) {
 
     // TODO: Needed for pages?
 
-    config["template"] = ejs.render(config["template"], viewContainer);
-    viewContainer[namespaceCapital] = {config: config, predefined: config["predefined"]};
+    config.template = ejs.render(config.template, viewContainer);
+    viewContainer[namespaceCapital] = {config: config, predefined: config.predefined};
     viewContainer._ = global._ = gt._;
     viewContainer._n = gt._n;
     //for (var key in config) {
@@ -197,126 +293,96 @@ exports.generatePage = function (origConfig, callback) {
 
     viewContainer = _.assign(viewContainer, config.predefined);
     viewHelper.deployAttr();
-    config["template"] = slots.executeJigSlotLogic(config.jigs, config["template"]);
+    config.template = slots.executeJigSlotLogic(config.jigs, config.template);
 
-    for (var jigClass in config.jigs) {
-        if (config.jigs.hasOwnProperty(jigClass) && config.jigs[jigClass] && !config.jigs[jigClass].disabled && config.jigs[jigClass].prerender !== false) {
-            // get the jig class to be filled with ejs template
-            var jig = config.jigs[jigClass];
-            var jigRegex
-            if (typeof jig === "string") {
-                jig = {"controller": jig};
-            }
-            if (!jig.controller) {
-                continue;
-            }
-            // this jig needs to be loaded on page call, so we do nothing here
-            if (jig.prerender === false)  continue;
 
-            // get optional parameters from config
-            if (jig.options != undefined) {
-                for (var option in jig.options) {
-                    viewContainer[option] = jig.options[option];
-                }
+    generateJigs(config, viewContainer, function (err, config) {
+
+        var script = '<script id="' + namespace + '-application-data" type="text/javascript">' +
+            ' window.' + namespaceCapital + ' = window.' + namespaceCapital + ' || {};' +
+            ' window.' + namespaceCapital + '.predefined = window.' + namespaceCapital + '.predefined || {};' + "\n";
+        var excludedPredefinedVar = getExcludedPredefinedVariables(config.jigs);
+
+
+        for (var predefinedVar in config.predefined) {
+            if (config.predefined.hasOwnProperty(predefinedVar) && config.predefined[predefinedVar] !== undefined) {
+                if (predefinedVar === "attr" || _.contains(excludedPredefinedVar, predefinedVar)) continue;
+                if (typeof config.predefined[predefinedVar] === 'function') continue;
+                predefinedVarString = JSON.stringify(config.predefined[predefinedVar]);
+                predefinedVarString = predefinedVarString.replace(/\$&/g, '');
+                predefinedVarString = predefinedVarString.replace(/<script.*?>/ig, '');
+                predefinedVarString = predefinedVarString.replace(/<style.*?>/ig, '');
+                script += namespaceCapital + '.predefined["' + predefinedVar + '"] = ' + predefinedVarString + ";\n";
             }
-            if (jigClass.substr(0, 1) === ".") {
-                jigRegex = new RegExp("<((section)\\s[^>]*class=['\"][^'\"]*\\b" + jigClass.substr(1) + "\\b[^'\"]*['\"][^>]*)>.*?<\\/section>", "im");
-            } else {
-                jigRegex = new RegExp("<(\\b" + jigClass + "\\b[^>]*)>[\\s\\S]*?<\\/(\\b" + jigClass + "\\b)>", "m");
-            }
-            // add ejs template to html template
-            var ejsTemplateFile = jig.template || jig.controller.replace(/\./g, "/").toLowerCase() + "/views/init.ejs";
-            if (typeof ejsTemplateFile === "object") {
-                ejsTemplateFile = ejsTemplateFile[config.locale];
-            }
-            if (!ejsTemplateFile) {
-                continue;
-            }
-            var ejsTemplate = fs.readFileSync(ejsTemplateFile, "utf-8");
-            ejsTemplate = ejsTemplate.replace(/<%==/g, "<%-").replace(/___v1ew.push\(/g, "buf.push(");
-            if (ejsTemplateFile.match("\.mustache$")) {
-                ejsTemplate = mustache.to_html(ejsTemplate, viewContainer);
-            } else if (ejsTemplateFile.match("\.ejs")) {
-                ejsTemplate = ejs.render(ejsTemplate, viewContainer);
-            }
-            config["template"] = config["template"].replace(jigRegex, '<$1>' + ejsTemplate + '</$2>');
         }
-    }
 
-    var script = '<script id="' + namespace + '-application-data" type="text/javascript">' +
-        ' window.' + namespaceCapital + ' = window.' + namespaceCapital + ' || {};' +
-        ' window.' + namespaceCapital + '.predefined = window.' + namespaceCapital + '.predefined || {};' + "\n";
-    var excludedPredefinedVar = getExcludedPredefinedVariables(config.jigs);
-
-
-    for (var predefinedVar in config.predefined) {
-        if (config.predefined.hasOwnProperty(predefinedVar) && config.predefined[predefinedVar] !== undefined) {
-            if (predefinedVar == "attr" || _.contains(excludedPredefinedVar, predefinedVar)) continue;
-            if (typeof config.predefined[predefinedVar] == 'function') continue;
-            predefinedVarString = JSON.stringify(config.predefined[predefinedVar]);
-            predefinedVarString = predefinedVarString.replace(/\$&/g, '');
-            predefinedVarString = predefinedVarString.replace(/<script.*?>/ig, '');
-            predefinedVarString = predefinedVarString.replace(/<style.*?>/ig, '');
-            script += namespaceCapital + '.predefined["' + predefinedVar + '"] = ' + predefinedVarString + ";\n";
-        }
-    }
-
-    script += namespaceCapital + '.predefined["child-page-path"] = ' + JSON.stringify(config["child-page-path"]) + ";\n";
-    viewContainer.this = viewContainer;
-    delete viewContainer.this.this;
-    // load all predefined modules like filtervalues
-    var neededData = [];
-    for (var predefinedModule in config.predefinedModules) {
-        if (config.predefinedModules.hasOwnProperty(predefinedModule)) {
-            if (config.predefinedModules[predefinedModule].module) {
-                for (var call in config.predefinedModules[predefinedModule].apicalls) {
-                    if (viewContainer[call] && typeof viewContainer[call] === 'object') {
-                        neededData[call] = viewContainer[call];
+        script += namespaceCapital + '.predefined["child-page-path"] = ' + JSON.stringify(config["child-page-path"]) + ";\n";
+        viewContainer.this = viewContainer;
+        delete viewContainer.this.this;
+        // load all predefined modules like filtervalues
+        var neededData = [];
+        for (var predefinedModule in config.predefinedModules) {
+            if (config.predefinedModules.hasOwnProperty(predefinedModule)) {
+                if (config.predefinedModules[predefinedModule].module) {
+                    for (var call in config.predefinedModules[predefinedModule].apicalls) {
+                        if (viewContainer[call] && typeof viewContainer[call] === 'object') {
+                            neededData[call] = viewContainer[call];
+                        }
                     }
+                    var PredefinedModule = getPredefinedModule(config.namespace, config.predefinedModules[predefinedModule].module);
+
+                    var predefinedHelper = new PredefinedModule();
+                    script += namespaceCapital + ".predefined." + predefinedModule + ' = ' + JSON.stringify(
+                        predefinedHelper.init(neededData)
+                    ) + ";\n";
+                    predefinedHelper = null;
                 }
-                var modulePath = path.join('../../..', config.namespace, 'library', config.predefinedModules[predefinedModule].module);
-                console.log('REQUIRE IN CODE');
-                var predefinedHelper = new (require(modulePath))();
-                script += namespaceCapital + ".predefined." + predefinedModule + ' = ' + JSON.stringify(
-                    predefinedHelper.init(neededData)
-                ) + ";\n";
-                predefinedHelper = null;
             }
         }
-    }
 
-    script += '</script>';
-    script += generateProductionScriptTags(namespace, config.browsers, config.scriptName);
-    var style = generateProductionStyleTags(config.browsers, config.scriptName);
+        script += '</script>';
+        script += generateProductionScriptTags(namespace, config.browsers, config.scriptName);
+        var style = generateProductionStyleTags(config.browsers, config.scriptName);
 
-    var scriptTagRegExp = new RegExp('<script[^>]+id="' + namespace + '-application-script"[^>]*><\\/script>');
-    var styleTagRegExp = new RegExp('<link[^>]+id="' + namespace + '-application-style"[^>]*>');
+        var scriptTagRegExp = new RegExp('<script[^>]+id="' + namespace + '-application-script"[^>]*><\\/script>');
+        var styleTagRegExp = new RegExp('<link[^>]+id="' + namespace + '-application-style"[^>]*>');
 
-    //var finalHtml = config["template"].replace(/<script[^>]+id="yd-application-script"[^>]*><\/script>/, script);
-    var finalHtml = config["template"].replace(scriptTagRegExp, script).replace(styleTagRegExp, style);
-    url += ".html";
-    filename = config["upload-worker"] ?
+        //var finalHtml = config["template"].replace(/<script[^>]+id="yd-application-script"[^>]*><\/script>/, script);
+        var finalHtml = config.template.replace(scriptTagRegExp, script).replace(styleTagRegExp, style);
+        url += ".html";
+        filename = config["upload-worker"] ?
         saveDiskPath + "/production." + url.replace(/\//g, "_") :
-        path.join(config["pagePath"], "production." + url.replace(/\//g, "_"));
+            path.join(config.pagePath, "production." + url.replace(/\//g, "_"));
 
 
-    return {
-        path: filename,
-        content: finalHtml,
-        url: url,
-        time: config.apiCallTime
-    };
+        callback(null, {
+            path: filename,
+            content: finalHtml,
+            url: url,
+            time: config.apiCallTime
+        });
+    });
+
+
 };
+
+
+
+/**
+ *
+ * @param config
+ * @return {Array.<UploadItem>}
+ */
 exports.generateJsonPage = function (config) {
-    var viewContainer = config["viewContainer"],
-        mainUrl = (viewContainer["parentUrl"] || viewContainer["url"]) + config["jsonUrlPostfix"],
+    var viewContainer = config.viewContainer,
+        mainUrl = (viewContainer.parentUrl || viewContainer["url"]) + config.jsonUrlPostfix,
         toUpload = [],
         alreadyInArray = [];
 
     var recursive = function (results, options) {
         _.each(_.isArray(results) ? results : [results], function (result, index) {
             var toUrl, copy = {},
-                copyResult = result;
+                copyResult = _.clone(result);
             //if (options.remove) {
             //    _.each(options.remove, function (key) {
             //        if (result[key]) delete result[key];
@@ -358,7 +424,7 @@ exports.generateJsonPage = function (config) {
                                     //    delete result[key];
                                     //}
                                 } else if (extract.nullIfEmpty) {
-                                    result[key] = null;
+                                    //result[key] = null;
                                 }
                             }
                         });
@@ -378,7 +444,7 @@ exports.generateJsonPage = function (config) {
                                 //    delete result[extract.key];
                                 //}
                             } else if (extract.nullIfEmpty) {
-                                result[extract.key] = null;
+                                //result[extract.key] = null;
                             }
                         }
                         if (typeof extResult !== "undefined" && alreadyInArray.indexOf(childUrl) === -1) {
@@ -398,7 +464,7 @@ exports.generateJsonPage = function (config) {
             _.each(apiCall.cache, function (cache) {
                 var apiResult = cache.modify
                         ? config.predefined[apiCallName]
-                        : _.clone(config.predefined[apiCallName]),
+                        : _.cloneDeep(config.predefined[apiCallName]),
                     childUrl;
                 if (cache.options) {
                     recursive(apiResult, cache.options);
@@ -444,6 +510,73 @@ exports.createApiMessageKey = function (messageKey) {
 exports.deleteCachedCall = function (apiMessageKey) {
     restHelper.deleteCachedCall(apiMessageKey);
 };
+
+var addJigsToApiCall = function (callbackContainer, config, emitter, apiconfig, callback) {
+    var callList = [];
+    for (var jigClass in config.jigs) {
+
+        // get the jig class to be filled with ejs template
+        var jig = config.jigs[jigClass];
+        if (typeof jig === "string") {
+            jig = {"controller": jig};
+        }
+        // this jig needs to be loaded on page call, so we do nothing here
+        if ((jig.prerender === false && !jig.slot) || jig.disabled) {
+            delete config.jigs[jigClass];
+            continue;
+        }
+        // adding all predefined variables to gather from api
+        for (var apicall in jig.apicalls) {
+            emitter.emit('call:parsing', apicall, jig.apicalls[apicall]);
+            if (jig.apicalls.hasOwnProperty(apicall)) {
+                if (jig.apicalls[apicall].predefined) {
+                    callList.push({
+                        apicall: apicall,
+                        jig: jig
+                    });
+
+                }
+            }
+        }
+    }
+
+    async.each(callList, function (call, next) {
+        restHelper.addCallAsync(call.apicall, call.jig, config.predefined, apiconfig, function (err, res) {
+            if (err) {
+                return next(err);
+            }
+            callbackContainer.push(res);
+            next(null);
+        });
+    }, callback);
+};
+
+var addPredefinedModulesToApiCall = function (callbackContainer, config, apiconfig, callback) {
+
+    var callList = [];
+    for (var predefinedModule in config.predefinedModules) {
+        for (var call in predefinedModule.apicalls) {
+            if (predefinedModule.apicalls.hasOwnProperty(call)) {
+                if (predefinedModule.apicalls[call].predefined) {
+                    callList.push(call);
+                    //callbackContainer.push(restHelper.addCall(call, config.predefinedModule, config.predefined, apiconfig));
+                }
+            }
+        }
+    }
+
+    async.each(callList, function (call, next) {
+        restHelper.addCallAsync(call, config.predefinedModule, config.predefined, apiconfig, function (err, res) {
+            if (err) {
+                return next(err);
+            }
+
+            callbackContainer.push(res);
+            next(null);
+        });
+    }, callback);
+};
+
 
 var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlaceholders) {
     var config = configs.shift(),
@@ -537,7 +670,6 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
         }
     }
     // work through all calls and wait for all to finish
-    // console.log("Make all API calls for jigs");
     async.map(callbackContainer, restHelper.doCall, function (err, results) {
 
         var failedCalls = [],
@@ -566,7 +698,7 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
                     for (var childPage in config["child-pages"]) {
                         // automated child pages
                         if (config["child-pages"][childPage]["child-page-path"]) {
-                            nextConfig = _.merge(config, config["child-pages"][childPage]);
+                            nextConfig = deepExtend({}, config, config["child-pages"][childPage]);
                             // For now child-child-pages are not possible
                             delete nextConfig["child-pages"];
                             if (nextConfig.triggerGt) {
@@ -586,8 +718,12 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
                     var dataLength = placeholderHelper.getParamByString(config["pagination-dependency"].replace(/[{}]/g, ""), config["predefined"]);
                     if (dataLength) {
                         for (var i = 2; i < dataLength / config["predefined"].pageLimit + 1; i++) {
-                            nextConfig = _.cloneDeep(config);
-                            nextConfig.jigs = placeholderHelper.deepReplace(nextConfig.jigs, "{pageNum}", i);
+                            nextConfig = deepExtend({}, config);
+
+                            try {
+                                nextConfig.jigs = placeholderHelper.deepReplace(nextConfig.jigs, "{pageNum}", i);
+                            } catch (e) {
+                            }
                             nextConfig["pagination-number"] = i;
                             nextConfig["predefined"].pageNum = i;
                             nextConfig["child-page-path"] = nextConfig["child-page-path"] || [];
@@ -601,7 +737,6 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
             }
             readyConfigs.push(config);
             emitter.emit('config:ready', readyConfigs.length, configs.length, config["viewContainer"]["url"]);
-//            console.log("Config", readyConfigs.length, "von", + 1, config["viewContainer"]["url"]);
             if (configs.length === 0) {
                 callback(null, readyConfigs);
             } else {
@@ -609,7 +744,6 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
             }
         }
         catch (err) {
-            console.log(err, err.stack);
             callback({message: "failed to parse configs: " + err, err: err});
         }
 

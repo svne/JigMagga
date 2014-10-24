@@ -8,7 +8,7 @@ var _ = require('lodash'),
     spawn = require('child_process').spawn;
 
 
-var METADATA_CHUNK_IDENTIFIER = '!!:::!!';
+var METADATA_CHUNK_IDENTIFIER = '@@:::@@';
 
 module.exports = {
     /**
@@ -279,18 +279,21 @@ module.exports = {
 
     /**
      *
-     * @param {Object} metadata
-     * @param {Buffer} archive
+     * @param {Metadata} metadata
+     * @param {Array.<UploadItem>} archive
      */
     stringifyPipeMessage: function (metadata, archive) {
         metadata = JSON.stringify(metadata) + METADATA_CHUNK_IDENTIFIER;
-        return Buffer.concat([new Buffer(metadata), archive]);
+
+        archive = JSON.stringify(archive);
+
+        return Buffer.concat([new Buffer(metadata), new Buffer(archive)]);
     },
 
     /**
      *
      * @param {Buffer} message
-     * @return {{metadata: Object, archive: String}}
+     * @return {{metadata: Metadata, pages: Array.<UploadItem>}}
      */
     parsePipeMessage: function (message) {
         message = Buffer.isBuffer(message) ? message.toString() : message;
@@ -298,7 +301,7 @@ module.exports = {
         message = message.split(METADATA_CHUNK_IDENTIFIER);
         return {
             metadata: JSON.parse(message[0]),
-            archive: new Buffer(message[1])
+            pages: JSON.parse(message[1])
         };
     }
 };

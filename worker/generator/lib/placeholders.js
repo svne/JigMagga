@@ -32,7 +32,7 @@ var getConfigPlaceholders = function (obj, params, matches) {
         for (var key in obj) {
             if (obj.hasOwnProperty(key)) {
                 if (matches) {
-                    matches = _.merge(matches, getConfigPlaceholders(obj[key], params, matches));
+                    matches = _.assign(matches, getConfigPlaceholders(obj[key], params, matches));
                 } else {
                     matches = getConfigPlaceholders(obj[key], params, matches);
                 }
@@ -42,7 +42,7 @@ var getConfigPlaceholders = function (obj, params, matches) {
     else if (obj && obj.constructor === Array) {
         for (var i = 0; i < obj.length; i++) {
             if (matches) {
-                matches = _.merge(matches, getConfigPlaceholders(obj[i], params, matches));
+                matches = _.assign(matches, getConfigPlaceholders(obj[i], params, matches));
             } else {
                 matches = getConfigPlaceholders(obj[i], params, matches);
             }

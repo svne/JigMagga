@@ -127,21 +127,20 @@ var getProjectHelper = function (namespace) {
 
     var pathToProjectModule = path.join('../../..', namespace, 'library/view-helper-object');
 
-    projectHelper[namespace] = require(pathToProjectModule);
+    try {
+        console.log('require ', namespace);
+        projectHelper[namespace] = require(pathToProjectModule);
+    } catch (e) {} finally {
+        return {};
+    }
 
     return projectHelper[namespace];
 };
 
 exports.getHelper = function (namespace, config) {
-    var helper = {list: list};
+    var helper = globalHelper(config);
+    helper.list = helper.list || list;
 
-    console.log('[getHelper] REQUIRE IN CODE');
-    helper = _.assign(helper, globalHelper(config));
-    try {
-        helper = _.assign(helper, getProjectHelper(namespace));
-    } catch (e) {} finally {
-        return helper;
-    }
-
+    return _.assign(helper, getProjectHelper(namespace));
 };
 

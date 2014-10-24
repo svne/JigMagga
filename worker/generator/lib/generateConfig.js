@@ -4,7 +4,6 @@ var path = require('path');
 var _ = require('lodash');
 var async = require('async');
 var format = require('util').format;
-var deepExtend = require('deep-extend');
 
 var viewHelper = require("./view");
 
@@ -187,7 +186,6 @@ var extendWithChildPage = function (config, childpage) {
         throw new Error('Unknown child page: ' +  childpage);
     }
 
-    console.log('[EXTEND WITH CHILD]');
     return _.merge(config, config['child-pages'][childpage]);
 };
 
@@ -219,6 +217,7 @@ module.exports = function (data, workerConfig, callback) {
     data.locale = viewContainer['workerLocale'] = data.message.locale;
 
     data.isMainLocale = data.locale === mainLocale;
+
 
     async.waterfall([
         obtainTemplate.bind(null, message, data.basePath),

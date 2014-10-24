@@ -10,6 +10,7 @@ var EventEmitter = require('events').EventEmitter,
     fsExtra = require('fs-extra'),
     util = require('util'),
     fs = require('fs'),
+    async = require('async'),
     _ = require('lodash'),
     path = require('path'),
     es = require('event-stream');
@@ -23,7 +24,6 @@ var log = require('../lib/logger')('generator', {component: 'generator', process
     ydGetText = require('jmUtil').ydGettext,
     generateConfig = require('./lib/generateConfig'),
     generator = require('./lib/generator'),
-    ProcessRouter = require('../lib/router'),
     error = require('../lib/error'),
     TimeDiff = require('../lib/timeDiff');
 
@@ -31,19 +31,9 @@ var timeDiff = new TimeDiff(log);
 var config = require('../config');
 
 
-var runningAsAScript = require.main === module;
-
-if (config.main.longjohn) {
-    require('longjohn');
-}
-
-var WorkerError = error.WorkerError;
-
 //init process router
 //var router = new ProcessRouter(process);
 log('started, pid', process.pid);
-
-var config = require('../config');
 
 var messageStream = stream.duplex();
 
@@ -82,11 +72,20 @@ var handleError = function (text, data) {
 var configStream = es.through(function (data) {
     var that = this;
 
+    console.log('!!!!!IT WORKS configStream !!!!!!!');
+    messageStorage.done(data.key);
+    messageStorage.upload(data.key);
+    data = null;
+    return;
+
     generateConfig(data, config, function (err, res) {
         if (err) {
             handleError(err.stack || err, data);
             return;
         }
+
+
+
         that.emit('data', res);
     });
 });
@@ -122,11 +121,14 @@ var apiStream = es.through(function (data) {
     // var apiMessageKey = generator.createApiMessageKey(data.key);
     var apiCallTimeDiff = timeDiff.create('apiCall:message:' + data.message.page);
 
+
+
     data.config.apiMessageKey = data.key;
 
     generator.apiCalls([data.config], emitter, function (err, res) {
 
         if (err) {
+
             var errorText = format('error in apiCall %s', util.inspect(err));
             return handleError(errorText, data);
         }
@@ -134,6 +136,7 @@ var apiStream = es.through(function (data) {
         apiCallTimeDiff.stop();
         return that.emit('data', data);
     });
+
 });
 
 var lastLocale = {};
@@ -147,6 +150,7 @@ var loadLocale = es.through(function (data) {
     var that = this,
         domain = data.message.domain,
         locale = data.message.locale;
+
     if (lastLocale[domain + locale]) {
         log('got from cache', {loadLocale: true, source: 'cache'});
         return that.emit('data', data);
@@ -159,20 +163,41 @@ var loadLocale = es.through(function (data) {
 
 });
 
-var sendToWorker = function (message, key, bucketName) {
-    return stream.accumulate(function(err, data, next) {
-        var metaData = {
-            bucketName: bucketName,
-            url: message.url,
-            page: message.page,
-            locale: message.locale,
-            messageKey: key
-        };
+/**
+ * @name Metadata
+ * @type {{
+ *     bucketName: {String},
+ *     url: {String},
+ *     page: {String},
+ *     locale: {String},
+ *     messageKey: {String}
+ * }}
+ */
 
 
-        //router.send('pipe', helper.stringifyPipeMessage(metaData, data));
-        next();
-    });
+/**
+ *
+ * @param {String} message
+ * @param {String} key
+ * @param {String} bucketName
+ * @param {Array.<UploadItem>} uploadPages
+ */
+var sendToWorker = function (message, key, bucketName, uploadPages) {
+
+    var metaData = {
+        bucketName: bucketName,
+        url: message.url,
+        page: message.page,
+        locale: message.locale,
+        messageKey: key
+    };
+
+    //console.log('!!!!!IT WORKS!!!!!!!');
+    //return messageStorage.upload(key);
+
+    messageStream.emit('new:uploadList', helper.stringifyPipeMessage(metaData, uploadPages));
+    uploadPages = null;
+
 };
 
 var saveZipToDisk = function (uploadList, data) {
@@ -193,13 +218,13 @@ var saveZipToDisk = function (uploadList, data) {
             .on('finish', function () {
                 log('[!] saved to %s', zipPath);
                 result.zipPath = zipPath;
-                router.send('new:zip', result);
+                messageStream.emit('new:zip', result);
             });
     });
 };
 //process.send({ready: true});
 
-
+console.log('CREATE PIPE');
 messageStream
     .pipe(configStream)
     .pipe(apiStream)
@@ -207,15 +232,12 @@ messageStream
     .on('data', function (data) {
         var saveDiskPath = path.join(data.basePath, '..'),
             knox = config.main.knox,
-            json,
-            uploadPages;
-
+            json;
 
         var generatePageTimeDiff = timeDiff.create('generate:page:' + data.message.page);
 
+
         knox.S3_BUCKET = data.bucketName;
-
-
 
         ydGetText.setLocale(data.message.locale);
         generator.init(knox, ydGetText, saveDiskPath);
@@ -225,49 +247,55 @@ messageStream
 
 
 
-        uploadPages = _.map(data.apiCallResult, function (config) {
+
+        async.mapLimit(data.apiCallResult, 50, function (config, next) {
             log('Processing page url: %s pagePath: %s', config.uploadUrl, config.pagePath);
-            return generator.generatePage(config);
+            generator.generatePage(config, next);
+        }, function (err, uploadPages) {
+            if (err) {
+                return  handleError(err.stack || err, data);
+            }
+
+            var jsonLength = json.length,
+                htmlLength = uploadPages.length;
+
+
+            //create list of files to upload
+            // result.uploadList = html.concat(_.flatten(json, true));
+            for (var i = 0; i < jsonLength; i++) {
+                uploadPages = uploadPages.concat(json[i]);
+            }
+            json = [];
+
+            log('upload list length %d', uploadPages.length);
+            generatePageTimeDiff.stop();
+            //if the amount is more then 200 create an archive write it to disk and
+            //send to the worker the archive link
+
+            if (htmlLength > 250) {
+                return saveZipToDisk(uploadPages, data);
+            }
+            //if html files amount is less then 200 send them to the worker
+
+            sendToWorker(data.message, data.key, data.bucketName, uploadPages);
+            //
+            //archiver.bulkArchive(uploadPages)
+            //    .pipe(es.through(function () {
+            //    }, function () {
+            //        console.log('!!!!!IT WORKS!!!!!!!');
+            //        return messageStorage.upload(data.key);
+            //    }));
+                //.pipe(sendToWorker(data.message, data.key, data.bucketName));
+
         });
-
-
-        console.log('!!!!!IT WORKS!!!!!!!');
-        return messageStorage.upload(data.key);
-
-
-        //} catch (err) {
-        //    return handleError(err.stack || err, data);
-        //}
-
-        var jsonLength = json.length,
-            htmlLength = uploadPages.length;
-
-
-        //create list of files to upload
-        // result.uploadList = html.concat(_.flatten(json, true));
-        for (var i = 0; i < jsonLength; i++) {
-            uploadPages = uploadPages.concat(json[i]);
-        }
-        json = [];
-
-        log('upload list length %d', uploadPages.length);
-        generatePageTimeDiff.stop();
-        //if the amount is more then 200 create an archive write it to disk and
-        //send to the worker the archive link
-
-        if (htmlLength > 250) {
-            return saveZipToDisk(uploadPages, data);
-        }
-        //if html files amount is less then 200 send them to the worker
-
-        archiver.bulkArchive(uploadPages)
-            .pipe(sendToWorker(data.message, data.key, data.bucketName));
-
     });
 
-if (!runningAsAScript) {
-    module.exports = messageStream;
-}
+messageStream.on('message:uploaded', function (key) {
+    log('deleting api cache for message with key %s', key);
+    generator.deleteCachedCall(key);
+});
+
+module.exports = messageStream;
 
 
 //process.on('uncaughtException', error.getErrorHandler(log, function (err) {

@@ -85,7 +85,7 @@ ProcessRouter.prototype._createPipeHandler = function (handler) {
             return;
         }
         composedBuffer = Buffer.concat(bufferList);
-        var data = removeIdentifier(composedBuffer).toString();
+        var data = removeIdentifier(composedBuffer).toString('utf-8');
         data = data.split(LAST_CHUNK_IDENTIFIER);
         composedBuffer = null;
         bufferList = [];

@@ -37,9 +37,9 @@ module.exports = function (component, metadata) {
         ]
     });
 
-    if (config.main.logger.loggly) {
-        logger.add(winston.transports.Loggly, config.main.logger.loggly);
-    }
+    //if (config.main.logger.loggly) {
+    //    logger.add(winston.transports.Loggly, config.main.logger.loggly);
+    //}
 
     winston.addColors(colors);
 

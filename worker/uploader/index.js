@@ -11,6 +11,7 @@
 var fs = require('fs'),
     _ = require('lodash'),
     async = require('async'),
+    domain = require('domain'),
     Uploader = require('jmUtil').ydUploader,
     es = require('event-stream');
 
@@ -18,6 +19,8 @@ var log = require('../lib/logger')('uploader', {component: 'uploader', processId
     ProcessRouter  = require('../lib/router'),
     stream = require('../lib/streamHelper'),
     error = require('../lib/error'),
+    archiver = require('../lib/archiver'),
+    stream = require('../lib/streamHelper'),
     helper = require('../lib/helper'),
     TimeDiff = require('../lib/timeDiff');
 
@@ -58,14 +61,25 @@ var getUploader = function (bucketName) {
     return uploaderStorage[bucketName];
 };
 
+var writeStream = function (message) {
+    return stream.accumulate(function (err, data, next) {
+        message.metadata.data = data;
+        messageStream.write(message.metadata);
+
+        //console.log('DONE');
+        //router.send('message:uploaded', message.metadata.messageKey);
+
+        return next();
+    });
+};
+
 router.addRoutes({
-    pipe: function (data) {
-        data = helper.parsePipeMessage(data);
+    pipe: function (message) {
+        message = helper.parsePipeMessage(message);
 
-        data.metadata.data = data.archive;
-        return router.send('message:uploaded', data.metadata.messageKey);
+        archiver.bulkArchive(message.pages)
+            .pipe(writeStream(message));
 
-        messageStream.write(data.metadata);
     },
     'new:zip': function (data) {
         messageStream.write(data);
@@ -78,8 +92,8 @@ var uploadsAmount = 0;
  * upload item using uploadFile method if there is a zipPath field
  * and uploadContent if there is a data field
  *
- * @param  {data}   data
- * @param  {Function} callback [description]
+ * @param  {Metadata}   data
+ * @param  {Function} callback
  */
 var uploadItem = function (data, callback) {
     if (_.isString(data)) {
@@ -137,7 +151,17 @@ var uploadStream = function (source) {
         }
 
         log('new data to upload type: string');
-        uploadItem(data, next);
+
+        var d = domain.create();
+
+        d.on('error', function (err) {
+            console.log('UPLOAD ERROR');
+            console.log(err);
+        });
+
+        d.run(function () {
+            uploadItem(data, next);
+        });
     });
 };
 

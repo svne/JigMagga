@@ -31,5 +31,6 @@ module.exports = function (processArgs) {
         .option('-n, --namespace <n>', 'relative path from current dir to target project or just nane of project')
         .option('-f, --fixtures', 'use fixtures from project folder instead of making an api call')
         .option('-w, --write', 'write to disk the archive with generated files instead of upload them, path should be provided')
+
         .parse(processArgs);
 };

@@ -49,9 +49,20 @@ StoredMessage.prototype.isReady = function () {
     return this.uploadCount === 0 && this.doneCount === 0;
 };
 
+StoredMessage.prototype.clear = function () {
+    this.onDone = this.onUpload = null;
+};
+
 
 // @type {Object.<string, StoredMessage>}
 var messageStorage = {};
+
+
+var getIdValues = function (message) {
+    return _.pick(message, function (value, key) {
+        return (new RegExp('.*Id$', 'ig')).test(key);
+    });
+};
 
 module.exports = {
 
@@ -66,15 +77,10 @@ module.exports = {
     createMessage: function (message, program, domainConfig) {
         domainConfig = domainConfig || {};
 
-        var params = program.values || message.params || {
-                cityId: message.cityId || undefined,
-                regionId: message.regionId || undefined,
-                districtId: message.districtId || undefined,
-                restaurantId: message.restaurantId || undefined,
-                linkId: message.linkId || undefined,
-                reset: !program.liveuncached ? true : false
-            },
+        var params = program.values || message.params || getIdValues(message),
             locale = program.locale || message.locale;
+
+        params.reset = !program.liveuncached;
 
         return {
             basedomain: message.basedomain,
@@ -210,7 +216,7 @@ module.exports = {
                                 return config.pages[page][locale];
                             })
                             .map(function (locale) {
-                                var res = data;
+                                var res = _.cloneDeep(data);
                                 res.message.locale = locale;
                                 return res;
                             });
@@ -221,7 +227,7 @@ module.exports = {
                         result = Object.keys(config.pages)
                             .filter(filterLinks(message.locale))
                             .map(function (page) {
-                                var res = data;
+                                var res =  _.cloneDeep(data);
                                 res.message.page = page;
                                 res.message.url = page;
                                 return res;
@@ -231,7 +237,7 @@ module.exports = {
                             var localePages = Object.keys(config.pages)
                                 .filter(filterLinks(locale))
                                 .map(function (page) {
-                                    var res = data;
+                                    var res = _.cloneDeep(data);
 
                                     res.message.page = page;
                                     res.message.url = page;
@@ -291,7 +297,9 @@ module.exports = {
             }
             messageStorage[key].done();
             if (messageStorage[key].isReady()) {
-                messageStorage[key] = null;
+                console.log('delete element', messageStorage[key].length);
+                messageStorage[key].clear();
+                delete messageStorage[key];
             }
         },
 
@@ -301,12 +309,18 @@ module.exports = {
          * @param {string} key
          */
         upload: function (key) {
+            console.log(key);
+
             if (!messageStorage[key]) {
                 return;
             }
+            console.log('IN STORAGE');
             messageStorage[key].upload();
             if (messageStorage[key].isReady()) {
-                messageStorage[key] = null;
+                console.log('delete element', messageStorage[key].length);
+                messageStorage[key].clear();
+                delete messageStorage[key];
+
             }
         }
 

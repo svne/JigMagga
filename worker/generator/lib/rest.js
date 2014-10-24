@@ -35,6 +35,114 @@ exports.deleteCachedCall = function (apiMessageKey) {
     }
 };
 
+var requestSchemas = {};
+
+var getRequestSchema = function (schemaFile, callback) {
+    if (requestSchemas[schemaFile]) {
+        return process.nextTick(function () {
+            callback(null, requestSchemas[schemaFile]);
+        });
+    }
+
+    fs.readFile(schemaFile, "utf-8", function (err, res) {
+        if (err) {
+            return callback(err);
+        }
+
+        requestSchemas[schemaFile] = JSON.parse(res);
+        callback(null, requestSchemas[schemaFile]);
+    });
+};
+
+exports.addCallAsync = function (apicall, config, paramsFromQueue, apiconfig, callback) {
+    var pathObj = config.apicalls[apicall].path,
+        path = "",
+        placeHolders = placeholderHelper.getConfigPlaceholders(pathObj, paramsFromQueue);
+
+    if (placeHolders) {
+        pathObj = placeholderHelper.replaceConfigPlaceholders(pathObj, placeHolders);
+    }
+    if (typeof pathObj === "object") {
+        for (var i = 0; path === "" && i < pathObj.length; i++) {
+            if (!(pathObj[i].indexOf("{") >-1)) {
+                path += pathObj[i];
+            }
+        }
+        if (path === "") {
+            return {
+                success: false,
+                message: "failed to gather needed placeholder in path",
+                path: "[" + pathObj.join(", ") + "]"
+            };
+        }
+    } else {
+        path += pathObj;
+    }
+    var url = util.format('http://%s:%s/%s/%s%s', apiconfig.hostname, apiconfig.port, apiconfig.base, apiconfig.version, path);
+
+    var next = function (err, params, urlParams) {
+        if (err) {
+            return callback(err);
+        }
+        // generate container for api call
+        var result = {
+            db: apiconfig.db,
+            language: params.language,
+            path: url, // path to api call
+            query: urlParams,
+            success: true, // marker, that this call has not been failed
+            result: null, // hold the returned data from api
+            resultCode: 200,
+            viewParam: apicall, // key in viewContainer to hold data
+            apiMessageKey: apiconfig.apiMessageKey, // unique key for message
+            apiCallDescriptor: config.apicalls[apicall]
+        };
+        callback(null, result);
+    };
+
+    if (config.apicalls[apicall].requestSchema === undefined) {
+        return next(null, paramsFromQueue, {});
+    }
+
+    var schemaFile = config.apicalls[apicall].requestSchema.substr(2);
+
+
+    getRequestSchema(schemaFile, function (err, paramsSchema) {
+        if (err) {
+            return next(err);
+        }
+
+        var urlParams = {};
+        _.each(paramsSchema.properties, function (value, param) {
+            if (paramsFromQueue[param] !== undefined) {
+                urlParams[param] = paramsFromQueue[param];
+            } else if (config.apicalls[apicall].defaults &&
+                config.apicalls[apicall].defaults[param] != undefined) {
+
+                if (config.apicalls[apicall].defaults[param] === "{pageNum}" && paramsFromQueue.pageNum) {
+                    urlParams[param] = paramsFromQueue.pageNum;
+                } else {
+                    urlParams[param] = config.apicalls[apicall].defaults[param];
+                }
+            }
+
+            if (!urlParams[param] && paramsSchema.required && paramsSchema.properties[param].required) {
+                callback(null, {
+                    success: false,
+                    message: "failed to gather needed variable " + param,
+                    path: url
+                });
+                return false;
+            }
+        });
+
+        next(null, paramsFromQueue, urlParams);
+    });
+
+
+};
+
+
 exports.addCall = function (apicall, config, paramsFromQueue, apiconfig) {
     var pathObj = config.apicalls[apicall].path,
         path = "",
@@ -75,7 +183,7 @@ exports.addCall = function (apicall, config, paramsFromQueue, apiconfig) {
             if (paramsFromQueue.hasOwnProperty(param) && paramsFromQueue[param] !== undefined) {
                 urlParams[param] = paramsFromQueue[param];
             } else if (config.apicalls[apicall].defaults
-                       && config.apicalls[apicall].defaults[param] != undefined) {
+                && config.apicalls[apicall].defaults[param] != undefined) {
                 if (config.apicalls[apicall].defaults[param] === "{pageNum}" && paramsFromQueue["pageNum"]) {
                     urlParams[param] = paramsFromQueue["pageNum"];
                 } else {
@@ -122,7 +230,7 @@ exports.doCall = function (options, callback) {
     if (cachedCalls[messageKey][requestId]) {
         return cachedCalls[messageKey][requestId].promise.done(function(result) {
             result.requestId = result.requestId || requestId;
-            var res = result;
+            var res = _.cloneDeep(result);
             res.fromCache = true;
             callback(null, res);
         });
@@ -148,7 +256,7 @@ exports.doCall = function (options, callback) {
             }
             catch (err) {
                 if (useFixtures()) {
-                   console.error('Error: fixture not in the JSON format');
+                    console.error('Error: fixture not in the JSON format');
                 }
                 options.success = false;
                 options.error = err;
@@ -163,7 +271,7 @@ exports.doCall = function (options, callback) {
     });
     cachedCalls[messageKey][requestId].promise.done(function(result) {
         result.requestId = result.requestId || requestId;
-        callback(null, result);
+        callback(null, _.cloneDeep(result));
     });
 
 

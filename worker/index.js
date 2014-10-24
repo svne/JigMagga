@@ -24,9 +24,6 @@ var _ = require('lodash'),
 
 var config = require('./config');
 
-if (process.env.NODE_ENV === 'live') {
-    require('longjohn');
-}
 
 var amqp = require('./lib/amqp'),
     log = require('./lib/logger')('worker', {component: 'worker', processId: process.pid}),
@@ -41,8 +38,7 @@ var amqp = require('./lib/amqp'),
 var timeDiff = new TimeDiff(log);
 var startTimeDiff = timeDiff.create('start');
 
-var createPipeHandler = require('./lib/pipeHandler');
-
+var generatorStream = require('./generator/index');
 
 log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
 
@@ -88,53 +84,17 @@ var workerErrorHandler = function (err) {
     }
 };
 
-var generatorRouter,
-    uploaderRouter,
+var uploaderRouter,
     uploader,
     generator;
 
-var generatorRoutes = {
-    /**
-     * if zip is creating in the generator. Generator just send a link to it
-     * to the worker and worker proxies this message to uploader
-     *
-     * @param  {{zipPath: string, message: object}} data
-     */
-    'new:zip': function (data) {
-        log('new zip saved by generator', helper.getMeta(data.message));
-        if (!program.live) {
-            messageStorage.done(data.key);
-        }
-
-        uploaderRouter.send('new:zip', {
-            url: data.message.url,
-            page: data.message.page,
-            locale: data.message.locale,
-            zipPath: data.zipPath,
-            bucketName: data.bucketName,
-            messageKey: data.key
-        });
-    },
-    pipe: function (data) {
-        data = helper.parsePipeMessage(data);
-        uploaderRouter.send('pipe', helper.stringifyPipeMessage(data.metadata, data.archive));
-    },
-
-    'message:uploaded': function (key) {
-
-        messageStorage.upload(key);
-        generatorRouter.send('message:uploaded', key);
-
-        log('message uploaded %s', key);
-    },
-    error: workerErrorHandler
-};
 
 var uploaderRoutes = {
     'message:uploaded': function (key) {
 
         messageStorage.upload(key);
-        generatorRouter.send('message:uploaded', key);
+
+        generatorStream.emit('message:uploaded', key);
 
         log('message uploaded %s', key);
     },
@@ -175,7 +135,7 @@ helper.createChildProcesses(args, function (err, result) {
         source = messageSource.getDefaultSource(program, log);
     }
 
-    var main = mainStream(source, generatorRouter, basePath, program);
+    var main = mainStream(source, uploaderRouter, basePath, program);
 
     startTimeDiff.stop();
 

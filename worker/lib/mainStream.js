@@ -20,7 +20,6 @@ var config = require('../config');
 
 var messageStorage = messageHelper.storage;
 
-var count = 0;
 /**
  * Pipes message from source stream to filter stream then to configuration
  * then split them by locale or pages and then send a messages to generator process
@@ -28,10 +27,9 @@ var count = 0;
  * @param  {Readable} source
  * @param  {object}   generator
  */
-module.exports = function (source, generator, basePath, program) {
+module.exports = function (source, uploader, basePath, program) {
     var tc = stream.tryCatch('err');
     var emitter = new EventEmitter();
-    var generateMessageTimeDiff;
 
     tc(source)
         .pipe(tc(es.through(function (data) {
@@ -49,7 +47,6 @@ module.exports = function (source, generator, basePath, program) {
                 }
                 return this.emit('err', new error.WorkerError('something wrong with message url', data.message));
             }
-            generateMessageTimeDiff = timeDiff.create('generate:message');
 
             data.basePath = basePath;
             emitter.emit('new:message', helper.getMeta(data.message));
@@ -62,21 +59,12 @@ module.exports = function (source, generator, basePath, program) {
         .pipe(tc(messageHelper.pageLocaleSplitter()))
         .pipe(es.through(function (data) {
             messageStorage.add(data.key, data.onDone, data.queueShift);
+            data.onDone = data.queueShift = null;
             this.emit('data', data);
         }))
         //add page configs for those messages that did not have page key before splitting
         .pipe(tc(configMerge.getConfigStream()))
         .on('data', function (data) {
-            //count += 100;
-            //
-            //if (count > 5000) {
-            //    count = 100;
-            //}
-            //return setTimeout(function () {
-            //    console.log('THE END');
-            //    data.queueShift();
-            //}, 2000 + count);
-
 
             data.message = messageHelper.createMessage(data.message, program, data.config);
             data.bucketName = helper.generateBucketName(data, program, config.main.knox.buckets);
@@ -84,9 +72,35 @@ module.exports = function (source, generator, basePath, program) {
 
             generatorStream.write(data);
 
-            emitter.emit('send:message', helper.getMeta(data.message));
-            generateMessageTimeDiff.stop();
+            //emitter.emit('send:message', helper.getMeta(data.message));
         });
+
+    generatorStream.on('new:uploadList', function (data) {
+        uploader.send('pipe', data);
+        data = null;
+    });
+
+    /**
+     * if zip is creating in the generator. Generator just send a link to it
+     * to the worker and worker proxies this message to uploader
+     *
+     * @param  {{zipPath: string, message: object}} data
+     */
+    generatorStream.on('new:zip', function (data) {
+        log('new zip saved by generator', helper.getMeta(data.message));
+        if (!program.live) {
+            messageStorage.done(data.key);
+        }
+
+        uploader.send('new:zip', {
+            url: data.message.url,
+            page: data.message.page,
+            locale: data.message.locale,
+            zipPath: data.zipPath,
+            bucketName: data.bucketName,
+            messageKey: data.key
+        });
+    });
 
     tc.catch(function (error) {
         emitter.emit('error:message', error);

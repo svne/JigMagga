@@ -62,23 +62,23 @@ module.exports = {
      * 
      * @param  {Function} callback
      */
-    accumulate: function (callback) {
-        var buffer = new Buffer(0);
+        accumulate: function (callback) {
+        var buffers = [];
 
         return es.through(function write(data) {
             if (!Buffer.isBuffer(data)) {
                 data = _.isString(data) ? data : JSON.stringify(data);
                 data = new Buffer(data);
             }
-            buffer = Buffer.concat([buffer, data]);
+            buffers.push(data);
         }, function end() {
+            var result = Buffer.concat(buffers);
+            buffers = [];
             var that = this;
-            function next() {
-                that.emit('end');
-                buffer = new Buffer(0);
-            }
 
-            callback.call(that, null, buffer, next);
+            callback.call(that, null, result, function () {
+                that.emit('end');
+            });
         });
     },
     /**

@@ -640,118 +640,135 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
     }
 
 
-    for (var jigClass in config.jigs) {
+    //for (var jigClass in config.jigs) {
+    //
+    //    // get the jig class to be filled with ejs template
+    //    var jig = config.jigs[jigClass];
+    //    if (typeof jig === "string") {
+    //        jig = {"controller": jig};
+    //    }
+    //    // this jig needs to be loaded on page call, so we do nothing here
+    //    if ((jig.prerender === false && !jig.slot) || jig.disabled) {
+    //        delete config.jigs[jigClass];
+    //        continue;
+    //    }
+    //    // adding all predefined variables to gather from api
+    //    for (var apicall in jig.apicalls) {
+    //        emitter.emit('call:parsing', apicall, jig.apicalls[apicall]);
+    //        if (jig.apicalls.hasOwnProperty(apicall)) {
+    //            if (jig.apicalls[apicall].predefined == true) {
+    //                callbackContainer.push(restHelper.addCall(apicall, jig, config.predefined, apiconfig));
+    //            }
+    //        }
+    //    }
+    //}
+    //
+    //
+    //// add all predefined modules
+    //for (var predefinedModule in config.predefinedModules) {
+    //    for (var call in predefinedModule.apicalls) {
+    //        if (predefinedModule.apicalls.hasOwnProperty(call)) {
+    //            if (predefinedModule.apicalls[call].predefined) {
+    //                callbackContainer.push(restHelper.addCall(call, config.predefinedModule, config.predefined, apiconfig));
+    //            }
+    //        }
+    //    }
+    //}
 
-        // get the jig class to be filled with ejs template
-        var jig = config.jigs[jigClass];
-        if (typeof jig === "string") {
-            jig = {"controller": jig};
-        }
-        // this jig needs to be loaded on page call, so we do nothing here
-        if ((jig.prerender === false && !jig.slot) || jig.disabled) {
-            delete config.jigs[jigClass];
-            continue;
-        }
-        // adding all predefined variables to gather from api
-        for (var apicall in jig.apicalls) {
-            emitter.emit('call:parsing', apicall, jig.apicalls[apicall]);
-            if (jig.apicalls.hasOwnProperty(apicall)) {
-                if (jig.apicalls[apicall].predefined == true) {
-                    callbackContainer.push(restHelper.addCall(apicall, jig, config.predefined, apiconfig));
-                }
-            }
-        }
-    }
 
-
-    // add all predefined modules
-    for (var predefinedModule in config.predefinedModules) {
-        for (var call in predefinedModule.apicalls) {
-            if (predefinedModule.apicalls.hasOwnProperty(call)) {
-                if (predefinedModule.apicalls[call].predefined) {
-                    callbackContainer.push(restHelper.addCall(call, config.predefinedModule, config.predefined, apiconfig));
-                }
-            }
+    async.series([
+        function (next) {
+            addJigsToApiCall(callbackContainer, config, emitter, apiconfig, next);
+        },
+        function (next) {
+            addPredefinedModulesToApiCall(callbackContainer, config, apiconfig, next);
         }
-    }
-    // work through all calls and wait for all to finish
-    async.map(callbackContainer, restHelper.doCall, function (err, results) {
+    ], function (err) {
+        if (err) {
+            return callback(err);
+        }
 
-        var failedCalls = [],
-            nextConfig;
-        try {
-            for (var key in results) {
-                if (results.hasOwnProperty(key)) {
-                    var item = results[key];
-                    if (item.success == false) {
-                        failedCalls.push("Error in rest call: " + item.path + " " + JSON.stringify(item.query) + " status code: " + item.resultCode);
-                    } else {
-                        config["predefined"][item.viewParam] = item.result;
-                        emitter.emit('call:success', item.requestId, item.time, item.fromCache);
+        // work through all calls and wait for all to finish
+        async.map(callbackContainer, restHelper.doCall, function (err, results) {
+
+            var failedCalls = [],
+                nextConfig;
+            try {
+                for (var key in results) {
+                    if (results.hasOwnProperty(key)) {
+                        var item = results[key];
+                        if (item.success == false) {
+                            failedCalls.push("Error in rest call: " + item.path + " " + JSON.stringify(item.query) + " status code: " + item.resultCode);
+                        } else {
+                            config["predefined"][item.viewParam] = item.result;
+                            emitter.emit('call:success', item.requestId, item.time, item.fromCache);
+                        }
                     }
                 }
-            }
-            config.apiCallTime = Date.now();
+                config.apiCallTime = Date.now();
 
 
-            if (failedCalls.length) {
-                callback({message: "Doing nothing further for " + config["viewContainer"]["url"] + "\n(" + failedCalls.join(";\n") + ")"});
-                return;
-            }
-            if (!config["predefined"].pageNum || config["predefined"].pageNum === 1) {
-                if (config.hasOwnProperty("child-pages") && config["child-pages"]) {
-                    for (var childPage in config["child-pages"]) {
-                        // automated child pages
-                        if (config["child-pages"][childPage]["child-page-path"]) {
-                            nextConfig = deepExtend({}, config, config["child-pages"][childPage]);
-                            // For now child-child-pages are not possible
-                            delete nextConfig["child-pages"];
-                            if (nextConfig.triggerGt) {
-                                var triggerValue = placeholderHelper.getParamByString(nextConfig.triggerGt.field.replace(/[{}]/g, ""), config["predefined"]);
-                                if (triggerValue !== undefined && triggerValue <= nextConfig.triggerGt.value) {
-                                    nextConfig = undefined;
+                if (failedCalls.length) {
+                    callback({message: "Doing nothing further for " + config["viewContainer"]["url"] + "\n(" + failedCalls.join(";\n") + ")"});
+                    return;
+                }
+                if (!config["predefined"].pageNum || config["predefined"].pageNum === 1) {
+                    if (config.hasOwnProperty("child-pages") && config["child-pages"]) {
+                        for (var childPage in config["child-pages"]) {
+                            // automated child pages
+                            if (config["child-pages"][childPage]["child-page-path"]) {
+                                nextConfig = deepExtend({}, config, config["child-pages"][childPage]);
+                                // For now child-child-pages are not possible
+                                delete nextConfig["child-pages"];
+                                if (nextConfig.triggerGt) {
+                                    var triggerValue = placeholderHelper.getParamByString(nextConfig.triggerGt.field.replace(/[{}]/g, ""), config["predefined"]);
+                                    if (triggerValue !== undefined && triggerValue <= nextConfig.triggerGt.value) {
+                                        nextConfig = undefined;
+                                    } else {
+                                        configs.unshift(nextConfig);
+                                    }
                                 } else {
                                     configs.unshift(nextConfig);
                                 }
-                            } else {
+                            }
+                        }
+                    }
+                    if (config["pagination-dependency"]) {
+                        var dataLength = placeholderHelper.getParamByString(config["pagination-dependency"].replace(/[{}]/g, ""), config["predefined"]);
+                        if (dataLength) {
+                            for (var i = 2; i < dataLength / config["predefined"].pageLimit + 1; i++) {
+                                nextConfig = deepExtend({}, config);
+
+                                try {
+                                    nextConfig.jigs = placeholderHelper.deepReplace(nextConfig.jigs, "{pageNum}", i);
+                                } catch (e) {
+                                }
+                                nextConfig["pagination-number"] = i;
+                                nextConfig["predefined"].pageNum = i;
+                                nextConfig["child-page-path"] = nextConfig["child-page-path"] || [];
+                                //nextConfig["child-page-path"].push({name: gt._("yd-core-page", i), url: i});
+                                nextConfig["child-page-path"].push({url: i});
+                                nextConfig["pagination-dependency"] = false;
                                 configs.unshift(nextConfig);
                             }
                         }
                     }
                 }
-                if (config["pagination-dependency"]) {
-                    var dataLength = placeholderHelper.getParamByString(config["pagination-dependency"].replace(/[{}]/g, ""), config["predefined"]);
-                    if (dataLength) {
-                        for (var i = 2; i < dataLength / config["predefined"].pageLimit + 1; i++) {
-                            nextConfig = deepExtend({}, config);
-
-                            try {
-                                nextConfig.jigs = placeholderHelper.deepReplace(nextConfig.jigs, "{pageNum}", i);
-                            } catch (e) {
-                            }
-                            nextConfig["pagination-number"] = i;
-                            nextConfig["predefined"].pageNum = i;
-                            nextConfig["child-page-path"] = nextConfig["child-page-path"] || [];
-                            //nextConfig["child-page-path"].push({name: gt._("yd-core-page", i), url: i});
-                            nextConfig["child-page-path"].push({url: i});
-                            nextConfig["pagination-dependency"] = false;
-                            configs.unshift(nextConfig);
-                        }
-                    }
+                readyConfigs.push(config);
+                emitter.emit('config:ready', readyConfigs.length, configs.length, config["viewContainer"]["url"]);
+                if (configs.length === 0) {
+                    callback(null, readyConfigs);
+                } else {
+                    apiCalls(configs, emitter, callback, readyConfigs);
                 }
             }
-            readyConfigs.push(config);
-            emitter.emit('config:ready', readyConfigs.length, configs.length, config["viewContainer"]["url"]);
-            if (configs.length === 0) {
-                callback(null, readyConfigs);
-            } else {
-                apiCalls(configs, emitter, callback, readyConfigs);
+            catch (err) {
+                callback({message: "failed to parse configs: " + err, err: err});
             }
-        }
-        catch (err) {
-            callback({message: "failed to parse configs: " + err, err: err});
-        }
+
+        });
 
     });
+
 };
 exports.apiCalls = apiCalls;

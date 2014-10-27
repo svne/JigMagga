@@ -128,19 +128,20 @@ var getProjectHelper = function (namespace) {
     var pathToProjectModule = path.join('../../..', namespace, 'library/view-helper-object');
 
     try {
-        console.log('require ', namespace);
         projectHelper[namespace] = require(pathToProjectModule);
-    } catch (e) {} finally {
+    } catch (e) {
         return {};
     }
 
-    return projectHelper[namespace];
+    var result = projectHelper[namespace];
+    return result;
 };
 
 exports.getHelper = function (namespace, config) {
     var helper = globalHelper(config);
     helper.list = helper.list || list;
 
-    return _.assign(helper, getProjectHelper(namespace));
+    var result = _.assign(helper, getProjectHelper(namespace));
+    return result;
 };
 

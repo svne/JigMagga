@@ -309,8 +309,6 @@ module.exports = {
          * @param {string} key
          */
         upload: function (key) {
-            console.log(key);
-
             if (!messageStorage[key]) {
                 return;
             }

@@ -160,7 +160,7 @@ process.on('uncaughtException', error.getErrorHandler(log, workerErrorHandler));
 
 
 if (config.main.nodetime) {
-    log('connect to nodetime for profiling');
+    console.log('connect to nodetime for profiling');
     require('nodetime').profile(config.main.nodetime);
 }
 

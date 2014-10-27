@@ -165,14 +165,13 @@ var getPredefinedModule = function (namespace, module) {
          return predefinedModules[modulePath];
     }
 
-    console.log('REQUIRE IN CODE');
     predefinedModules[modulePath]= require(modulePath);
     return predefinedModules[modulePath];
 };
 
 
 var generateJigs = function (config, viewContainer, callback) {
-    async.each(Object.keys(config.jigs), function (jigClass, next) {
+    async.eachSeries(Object.keys(config.jigs), function (jigClass, next) {
         if (config.jigs[jigClass].disabled || config.jigs[jigClass].prerender === false) {
             return next();
         }
@@ -212,9 +211,12 @@ var generateJigs = function (config, viewContainer, callback) {
             }
             ejsTemplate = ejsTemplate.toString().replace(/<%==/g, "<%-").replace(/___v1ew.push\(/g, "buf.push(");
 
+            gt.setLocale(viewContainer.locale);
+            viewContainer._ = gt._.bind(gt);
             if (ejsTemplateFile.match("\.mustache$")) {
                 ejsTemplate = mustache.to_html(ejsTemplate, viewContainer);
             } else if (ejsTemplateFile.match("\.ejs")) {
+
                 ejsTemplate = ejs.render(ejsTemplate, viewContainer);
             }
             config.template = config.template.replace(jigRegex, '<$1>' + ejsTemplate + '</$2>');
@@ -355,6 +357,9 @@ exports.generatePage = function (origConfig, callback) {
             path.join(config.pagePath, "production." + url.replace(/\//g, "_"));
 
 
+        //if (/\.html$/i.test(url)) {
+        //    console.log('----[NEW HTML URL]', viewContainer.page, url);
+        //}
         callback(null, {
             path: filename,
             content: finalHtml,

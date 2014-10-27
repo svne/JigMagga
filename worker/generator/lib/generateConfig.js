@@ -28,11 +28,11 @@ var viewHelper = require("./view");
  *
  * @param  {WorkerMessage} message
  * @param  {string} projectName
+ * @param {Object} config
  * @return {object}
  */
 var initViewContainer = function (message, projectName, config) {
-    var viewContainer = viewHelper.getHelper(projectName, config);
-
+    var viewContainer = _.cloneDeep(viewHelper.getHelper(projectName, config));
 
     viewContainer.shtml = false;
     viewContainer.IS_WORKER = true;

@@ -68,11 +68,8 @@ module.exports = function (source, uploader, basePath, program) {
 
             data.message = messageHelper.createMessage(data.message, program, data.config);
             data.bucketName = helper.generateBucketName(data, program, config.main.knox.buckets);
-            //generator.send('new:message', data);
 
             generatorStream.write(data);
-
-            //emitter.emit('send:message', helper.getMeta(data.message));
         });
 
     generatorStream.on('new:uploadList', function (data) {
@@ -86,7 +83,6 @@ module.exports = function (source, uploader, basePath, program) {
             messageStorage.done(key);
         }
     });
-
 
     /**
      * if zip is creating in the generator. Generator just send a link to it
@@ -105,6 +101,10 @@ module.exports = function (source, uploader, basePath, program) {
             bucketName: data.bucketName,
             messageKey: data.key
         });
+    });
+
+    generatorStream.on('err', function (err) {
+        emitter.emit('error:message', err);
     });
 
     tc.catch(function (error) {

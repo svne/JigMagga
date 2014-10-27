@@ -24,7 +24,7 @@ var log = require('../lib/logger')('generator', {component: 'generator', process
     ydGetText = require('jmUtil').ydGettext,
     generateConfig = require('./lib/generateConfig'),
     generator = require('./lib/generator'),
-    error = require('../lib/error'),
+    WorkerError = require('../lib/error').WorkerError,
     TimeDiff = require('../lib/timeDiff');
 
 var timeDiff = new TimeDiff(log);
@@ -32,36 +32,14 @@ var config = require('../config');
 
 
 //init process router
-//var router = new ProcessRouter(process);
 log('started, pid', process.pid);
 
 var messageStream = stream.duplex();
 
-//router.addRoutes({
-//    /**
-//     * write to message stream the message that comes from generator
-//     * @param  {Object} data
-//     */
-//    'new:message': function (data) {
-//
-//        console.log('THAT IS END', data);
-//
-//        return router.send('message:uploaded', data.key);
-//
-//
-//        //messageStream.write(data);
-//    },
-//
-//    'message:uploaded': function (key) {
-//        log('deleting api cache for message with key %s', key);
-//        generator.deleteCachedCall(key);
-//    }
-//});
-
 var handleError = function (text, data) {
     log('error', text, {error: true});
 
-    //return router.send('error', new WorkerError(text, data.message.origMessage, data.key));
+    messageStream.emit('err', new WorkerError(text, data.message.origMessage, data.key));
 };
 /**
  * merge all configs and create viewContainer
@@ -182,9 +160,6 @@ var sendToWorker = function (message, key, bucketName, uploadPages) {
         messageKey: key
     };
 
-    //console.log('!!!!!IT WORKS!!!!!!!');
-    //return messageStorage.upload(key);
-
     messageStream.emit('new:uploadList', helper.stringifyPipeMessage(metaData, uploadPages));
     messageStream.emit('api:done', key);
     uploadPages = null;
@@ -214,9 +189,7 @@ var saveZipToDisk = function (uploadList, data) {
             });
     });
 };
-//process.send({ready: true});
 
-console.log('CREATE PIPE');
 messageStream
     .pipe(configStream)
     .pipe(apiStream)
@@ -237,9 +210,6 @@ messageStream
 
         json = _.map(data.apiCallResult, generator.generateJsonPage);
 
-
-
-
         async.mapLimit(data.apiCallResult, 50, function (config, next) {
             log('Processing page url: %s pagePath: %s', config.uploadUrl, config.pagePath);
             generator.generatePage(config, next);
@@ -253,7 +223,6 @@ messageStream
 
 
             //create list of files to upload
-            // result.uploadList = html.concat(_.flatten(json, true));
             for (var i = 0; i < jsonLength; i++) {
                 uploadPages = uploadPages.concat(json[i]);
             }
@@ -270,15 +239,6 @@ messageStream
             //if html files amount is less then 200 send them to the worker
 
             sendToWorker(data.message, data.key, data.bucketName, uploadPages);
-            //
-            //archiver.bulkArchive(uploadPages)
-            //    .pipe(es.through(function () {
-            //    }, function () {
-            //        console.log('!!!!!IT WORKS!!!!!!!');
-            //        return messageStorage.upload(data.key);
-            //    }));
-                //.pipe(sendToWorker(data.message, data.key, data.bucketName));
-
         });
     });
 
@@ -288,17 +248,3 @@ messageStream.on('message:uploaded', function (key) {
 });
 
 module.exports = messageStream;
-
-
-//process.on('uncaughtException', error.getErrorHandler(log, function (err) {
-//    router.send('error', err);
-//}));
-//
-//if (config.main.memwatch) {
-//    var memwatch = require('memwatch');
-//
-//    memwatch.on('leak', function (info) {
-//        log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
-//    });
-//}
-

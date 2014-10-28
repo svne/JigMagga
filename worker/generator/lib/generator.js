@@ -157,6 +157,7 @@ exports.clearApiCache = function () {
 };
 
 var predefinedModules = {};
+var templates = {};
 
 var getPredefinedModule = function (namespace, module) {
     var modulePath = path.join('../../..', namespace, 'library', module);
@@ -169,6 +170,22 @@ var getPredefinedModule = function (namespace, module) {
     return predefinedModules[modulePath];
 };
 
+
+var getTemplate = function (templatePath, callback) {
+    if (templates[templatePath]) {
+        return process.nextTick(function () {
+            callback(null, templates[templatePath]);
+        });
+    }
+
+    fs.readFile(templatePath, function (err, res) {
+        if (err) {
+            return callback(err);
+        }
+        templates[templatePath] = res.toString();
+        callback(null, templates[templatePath]);
+    });
+};
 
 var generateJigs = function (config, viewContainer, callback) {
     async.eachSeries(Object.keys(config.jigs), function (jigClass, next) {
@@ -205,11 +222,11 @@ var generateJigs = function (config, viewContainer, callback) {
         if (!ejsTemplateFile) {
             return next();
         }
-        fs.readFile(ejsTemplateFile, function (err, ejsTemplate) {
+        getTemplate(ejsTemplateFile, function (err, ejsTemplate) {
             if (err) {
                 return next(err);
             }
-            ejsTemplate = ejsTemplate.toString().replace(/<%==/g, "<%-").replace(/___v1ew.push\(/g, "buf.push(");
+            ejsTemplate = ejsTemplate.replace(/<%==/g, "<%-").replace(/___v1ew.push\(/g, "buf.push(");
 
             gt.setLocale(viewContainer.locale);
             viewContainer._ = gt._.bind(gt);

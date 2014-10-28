@@ -12,10 +12,8 @@ var stream = require('./streamHelper'),
 
 var generatorStream = require('../generator/index');
 
-var log = require('./logger')('worker', {component: 'worker', processId: process.pid}),
-    TimeDiff = require('./timeDiff');
+var log = require('./logger')('worker', {component: 'worker', processId: process.pid});
 
-var timeDiff = new TimeDiff(log);
 var config = require('../config');
 
 var messageStorage = messageHelper.storage;

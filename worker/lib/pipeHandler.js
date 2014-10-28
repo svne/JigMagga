@@ -15,7 +15,7 @@ var getMeta = helper.getMeta;
 var createUploaderStream = function (message, key, bucketName, uploaderRouter) {
     return stream.accumulate(function(err, data, next) {
         var result = {
-            bucketName: bucketName,
+            bucketName: program.bucket || bucketName,
             url: message.url,
             page: message.page,
             locale: message.locale,
@@ -63,9 +63,7 @@ module.exports = function (uploaderRouter, queuePool, errorHandler) {
         log('message from pipe generator, key %s', key,  getMeta(message));
 
         //send message to done queue
-        if (!program.live) {
-            messageStorage.done(key);
-        }
+        messageStorage.done(key);
 
         if (program.write) {
             return helper.saveFiles(data.uploadList, log, function (err) {

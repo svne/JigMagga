@@ -212,12 +212,12 @@ module.exports = {
         return es.map(function (data, callback) {
             ps.pause();
             var config = configMerge.getProjectConfig(data.build.namespace);
-            var uploader = helper.getUploader(config, data.build.domain, data.build.live);
+            var uploader = helper.getUploader(config, data.build, data.build.live);
 
             var onUpload = function (err, res) {
                 if (err) {
                     if (err.code === 'ENOENT' && !data.build.package.mediaSource.required) {
-                        console.log('meida file is absent but it is not required');
+                        console.log('media file is absent but it is not required');
                         ps.resume();
                         return callback();
                     }

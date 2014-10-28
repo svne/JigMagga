@@ -99,8 +99,9 @@ module.exports = {
      * @param {boolean} isLive
      * @return {Uploader}
      */
-    getUploader: function (config, domain, isLive) {
-        var env = isLive ? 'live': 'stage';
+    getUploader: function (config, buildOptions, isLive) {
+        var env = isLive ? 'live': 'stage',
+            domain = buildOptions.domain;
 
         if (uploaderInstance) {
             return uploaderInstance;
@@ -108,13 +109,19 @@ module.exports = {
 
         var knoxOptions = config.main.knox;
 
-        if (!knoxOptions.S3_BUCKET) {
-            var predefinedDomain = knoxOptions.buckets[env][domain];
+        // you can set a --bucket argument
+        if(buildOptions.bucket){
+            knoxOptions.S3_BUCKET = buildOptions.bucket;
+        }
 
-            if (!predefinedDomain) {
+
+        if (!knoxOptions.S3_BUCKET) {
+            var predefinedDomainBucket = knoxOptions.buckets[env][domain];
+
+            if (!predefinedDomainBucket) {
                 knoxOptions.S3_BUCKET = (isLive ? 'www' : 'stage') + '.' + domain;
             } else {
-                knoxOptions.S3_BUCKET = predefinedDomain;
+                knoxOptions.S3_BUCKET = predefinedDomainBucket;
             }
         }
 
@@ -151,6 +158,7 @@ module.exports = {
             options.versionnumber = program.versionnumber;
             options.live = program.live;
             options.upload = program.upload;
+            options.bucket = program.bucket;
             if (!options.domain) {
                 throw new Error("no domain");
             }
@@ -299,7 +307,7 @@ module.exports = {
 
     uploadArchive: function (fileList, buildOptions, callback) {
         var config = configMerger.getProjectConfig(buildOptions.namespace);
-        var uploader = this.getUploader(config, buildOptions.domain, buildOptions.live);
+        var uploader = this.getUploader(config, buildOptions, buildOptions.live);
 
         getArchiveStream(fileList)
             .pipe(uploaderStream(uploader, buildOptions, callback));
@@ -316,7 +324,7 @@ module.exports = {
      */
     uploadContent: function (fileContent, uploadPath, extension, buildOptions, callback) {
         var config = configMerger.getProjectConfig(buildOptions.namespace);
-        var uploader = this.getUploader(config, buildOptions.domain, buildOptions.live);
+        var uploader = this.getUploader(config, buildOptions, buildOptions.live);
 
         var contentType = extension === 'js' ? 'application/javascript' : 'text/css';
 

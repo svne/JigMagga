@@ -25,12 +25,12 @@ var es = require('event-stream'),
 
 
 program
-    .version('1.0.0')
-    .option('-v, --versionnumber [value]', 'specify build version as float', parseFloat)
+    .version('1.0.1')
+    .option('-v, --versionnumber [value]', 'specify build version as float')
     .option('-d, --basedomain [value]', 'specify the domain')
     .option('-p, --page [value]', 'define the template to be generated can be a regex')
     //TODO override locales from config
-    .option('-I, --locale [value]', 'use given locale')
+    //.option('-I, --locale [value]', 'use given locale')
     .option('-c, --cssgenerate [value]', 'generate only css', JSON.parse)
     .option('-j, --jsgenerate [value]', 'generate only js', JSON.parse)
     .option('-n, --namespace [value]', 'the namespace of your project')
@@ -38,6 +38,7 @@ program
     .option('-m, --minify [value]', 'minify css and js Default true', JSON.parse)
     .option('-u, --upload', 'if upload is not enabled it will save files to disk')
     .option('-x, --live [value]', 'will generate for live environment',  JSON.parse)
+    .option('-B, --bucket [value]', 'will override the config bucket and upload to this bucket you parse as value')
     .option('-M, --uploadmedia [value]', 'Upload media files. Should not be used with css or js generate flags')
     .parse(process.argv);
 

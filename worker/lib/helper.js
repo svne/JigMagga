@@ -59,12 +59,18 @@ module.exports = {
         if (program.postfix) {
             amqpQueue += '.' + program.postfix;
         }
-
-        return {
+        var queues = {
             amqpQueue: amqpQueue,
             amqpErrorQueue: amqpErrorQueue,
             amqpDoneQueue: 'pages.generate.done'
         };
+
+        if (program.deployuncached) {
+            var defaultName = config.queueBaseName + '.' + program.basedomain + prefixes['default'];
+            queues.amqpDeployQueue = (_.isString(program.deployuncached)) ? program.deployuncached :  defaultName;
+        }
+
+        return queues;
     },
 
     /**
@@ -182,12 +188,18 @@ module.exports = {
      * generate the name of bucket using message basedomain and
      * knox.buckets list from config
      *
-     * @param  {{message: {basedomain: string}}} data    [description]
-     * @param  {{live: boolean, liveuncached: boolean}} program [description]
+     * @param  {{message: {basedomain: string}}}               data
+     * @param  {{live: boolean, liveuncached: boolean}}        program
+     * @param  {{S3_BUCKET: ?string, buckets: {live: Object, stage: Object, deploy: Object}}} config
      * @return {string}
      */
-    generateBucketName: function (data, program, buckets) {
+    generateBucketName: function (data, program, config) {
         var baseDomain = data.message.basedomain;
+        var buckets = config.buckets;
+        if (config.S3_BUCKET) {
+            return config.S3_BUCKET;
+        }
+
         if (program.live || program.liveuncached) {
             return buckets.live[baseDomain] || 'www.' + baseDomain;
         }

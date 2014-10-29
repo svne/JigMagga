@@ -54,12 +54,13 @@ log('base project path is %s', basePath);
 
 if (program.queue) {
     //if queue argument exists connect to amqp queues
+    var prefetch = program.prefetch || config.amqp.prefetch;
     var connection = amqp.getConnection(config.amqp);
     log('worker connected to AMQP server on %s', config.amqp.credentials.host);
     var queues = helper.getQueNames(program, config.amqp);
 
     log('queues in pool %j', queues, {});
-    var queuePool = new amqp.QueuePool(queues, connection, {prefetch: config.amqp.prefetch});
+    var queuePool = new amqp.QueuePool(queues, connection, {prefetch: prefetch});
 }
 
 /**

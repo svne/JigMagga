@@ -374,9 +374,7 @@ exports.generatePage = function (origConfig, callback) {
             path.join(config.pagePath, "production." + url.replace(/\//g, "_"));
 
 
-        //if (/\.html$/i.test(url)) {
-        //    console.log('----[NEW HTML URL]', viewContainer.page, url);
-        //}
+
         callback(null, {
             path: filename,
             content: finalHtml,
@@ -405,11 +403,6 @@ exports.generateJsonPage = function (config) {
         _.each(_.isArray(results) ? results : [results], function (result, index) {
             var toUrl, copy = {},
                 copyResult = _.clone(result);
-            //if (options.remove) {
-            //    _.each(options.remove, function (key) {
-            //        if (result[key]) delete result[key];
-            //    });
-            //}
             if (options.pick) {
                 _.each(options.pick, function (key) {
                     if (result[key]) copy[key] = result[key];
@@ -442,9 +435,7 @@ exports.generateJsonPage = function (config) {
                                     extResult = extResult || {};
                                     extResult[key] = result[key];
                                     result[key] = "//" + knoxConfig.S3_BUCKET + "/" + childUrl;
-                                    //if (extract.remove) {
-                                    //    delete result[key];
-                                    //}
+
                                 } else if (extract.nullIfEmpty) {
                                     //result[key] = null;
                                 }
@@ -622,7 +613,6 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
 
     readyConfigs = readyConfigs || [];
     if (config["predefined"] && !dontCheckPlaceholders) {
-        // console.log("Getting Placeholders");
         configPlaceholders = placeholderHelper.getConfigPlaceholders(config["jigs"], config["predefined"]);
         if (configPlaceholders) {
             if (configPlaceholders.pageNum) {
@@ -655,42 +645,6 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
         config["predefined"]["child-page-path"] = config["child-page-path"];
         config["viewContainer"]["parentUrl"] = config["viewContainer"]["url"];
     }
-
-
-    //for (var jigClass in config.jigs) {
-    //
-    //    // get the jig class to be filled with ejs template
-    //    var jig = config.jigs[jigClass];
-    //    if (typeof jig === "string") {
-    //        jig = {"controller": jig};
-    //    }
-    //    // this jig needs to be loaded on page call, so we do nothing here
-    //    if ((jig.prerender === false && !jig.slot) || jig.disabled) {
-    //        delete config.jigs[jigClass];
-    //        continue;
-    //    }
-    //    // adding all predefined variables to gather from api
-    //    for (var apicall in jig.apicalls) {
-    //        emitter.emit('call:parsing', apicall, jig.apicalls[apicall]);
-    //        if (jig.apicalls.hasOwnProperty(apicall)) {
-    //            if (jig.apicalls[apicall].predefined == true) {
-    //                callbackContainer.push(restHelper.addCall(apicall, jig, config.predefined, apiconfig));
-    //            }
-    //        }
-    //    }
-    //}
-    //
-    //
-    //// add all predefined modules
-    //for (var predefinedModule in config.predefinedModules) {
-    //    for (var call in predefinedModule.apicalls) {
-    //        if (predefinedModule.apicalls.hasOwnProperty(call)) {
-    //            if (predefinedModule.apicalls[call].predefined) {
-    //                callbackContainer.push(restHelper.addCall(call, config.predefinedModule, config.predefined, apiconfig));
-    //            }
-    //        }
-    //    }
-    //}
 
 
     async.series([
@@ -773,7 +727,6 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
                                 nextConfig["pagination-number"] = i;
                                 nextConfig["predefined"].pageNum = i;
                                 nextConfig["child-page-path"] = nextConfig["child-page-path"] || [];
-                                //nextConfig["child-page-path"].push({name: gt._("yd-core-page", i), url: i});
                                 nextConfig["child-page-path"].push({url: i});
                                 nextConfig["pagination-dependency"] = false;
                                 configs.unshift(nextConfig);

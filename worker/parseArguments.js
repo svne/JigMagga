@@ -33,5 +33,6 @@ module.exports = function (processArgs) {
         .option('-f, --fixtures', 'use fixtures from project folder instead of making an api call')
         .option('-w, --write', 'write to disk the archive with generated files instead of upload them, path should be provided')
         .option('-B, --bucket [value]', 'will override the config bucket and upload to this bucket you parse as value')
+        .option('-P, --prefetch <n>', 'amount of prefetched messages from queue, makes sens only wirh -q', Number)
         .parse(processArgs);
 };

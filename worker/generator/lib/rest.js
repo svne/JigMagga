@@ -36,9 +36,6 @@ exports.deleteCachedCall = function (apiMessageKey) {
         delete cachedCalls[apiMessageKey];
     }
 
-    if (requestSchemas[apiMessageKey]) {
-        delete requestSchemas[apiMessageKey];
-    }
 };
 
 
@@ -49,10 +46,10 @@ exports.deleteCachedCall = function (apiMessageKey) {
  * @param {Function} callback
  * @return {*}
  */
-var getRequestSchema = function (schemaFile, apiMessageKey, callback) {
-    if (requestSchemas[apiMessageKey] && requestSchemas[apiMessageKey][schemaFile]) {
+var getRequestSchema = function (schemaFile, callback) {
+    if (requestSchemas && requestSchemas[schemaFile]) {
         return process.nextTick(function () {
-            callback(null, requestSchemas[apiMessageKey][schemaFile]);
+            callback(null, requestSchemas[schemaFile]);
         });
     }
 
@@ -61,10 +58,10 @@ var getRequestSchema = function (schemaFile, apiMessageKey, callback) {
             return callback(err);
         }
 
-        requestSchemas[apiMessageKey] = requestSchemas[apiMessageKey] || {};
+        requestSchemas = requestSchemas || {};
 
-        requestSchemas[apiMessageKey][schemaFile] = JSON.parse(res);
-        callback(null, requestSchemas[apiMessageKey][schemaFile]);
+        requestSchemas[schemaFile] = JSON.parse(res);
+        callback(null, requestSchemas[schemaFile]);
     });
 };
 
@@ -121,7 +118,7 @@ exports.addCallAsync = function (apicall, config, paramsFromQueue, apiconfig, ca
     var schemaFile = config.apicalls[apicall].requestSchema.substr(2);
 
 
-    getRequestSchema(schemaFile, apiconfig.apiMessageKey, function (err, paramsSchema) {
+    getRequestSchema(schemaFile, function (err, paramsSchema) {
         if (err) {
             return next(err);
         }

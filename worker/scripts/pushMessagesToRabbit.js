@@ -57,7 +57,9 @@ if(args.static){
 var queueName = args.queue || 'pages.generate.high';
 
 if(args.fixture){
-    fixtures = fixtures.concat(require(path.join(process.cwd(), args.fixture)));
+    // check if absolute path
+    var path = args.fixture[0] !== "/" ? path.join(process.cwd(), args.fixture) : args.fixture;
+    fixtures = fixtures.concat(JSON.parse(fs.readFileSync(path)));
 }
 
 var amqpPublishOptions = {

@@ -461,7 +461,7 @@ exports.generateJsonPage = function (config) {
                         if (extract.key in result) {
                             if (!_.isEmpty(result[extract.key])) {
                                 extResult = result[extract.key];
-                                result[extract.key] = "http://" + knoxConfig.S3_BUCKET + "/" + childUrl;
+                                result[extract.key] = "//" + knoxConfig.S3_BUCKET + "/" + childUrl;
                                 if (extract.remove) {
                                     delete result[extract.key];
                                 }

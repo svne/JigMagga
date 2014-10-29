@@ -23,7 +23,9 @@ var messageStorage = messageHelper.storage;
  * then split them by locale or pages and then send a messages to generator process
  *
  * @param  {Readable} source
- * @param  {object}   generator
+ * @param  {{send: function}}   uploader
+ * @param  {String} basePath
+ * @param  {{live: boolean, bucket: ?string}} program
  */
 module.exports = function (source, uploader, basePath, program) {
     var tc = stream.tryCatch('err');
@@ -65,14 +67,16 @@ module.exports = function (source, uploader, basePath, program) {
         .on('data', function (data) {
 
             data.message = messageHelper.createMessage(data.message, program, data.config);
-            data.bucketName = helper.generateBucketName(data, program, config.main.knox.buckets);
+            data.bucketName = helper.generateBucketName(data, program, config.main.knox);
 
             generatorStream.write(data);
         });
 
-    generatorStream.on('new:uploadList', function (data) {
-        uploader.send('pipe', data);
-        data = null;
+    generatorStream.on('new:uploadList', function (metadata, uploadList) {
+        metadata.bucketName = program.bucket || metadata.bucketName;
+
+        uploader.send('pipe', helper.stringifyPipeMessage(metadata, uploadList));
+        uploadList = null;
     });
 
 
@@ -96,7 +100,7 @@ module.exports = function (source, uploader, basePath, program) {
             page: data.message.page,
             locale: data.message.locale,
             zipPath: data.zipPath,
-            bucketName: data.bucketName,
+            bucketName: program.bucket || data.bucketName,
             messageKey: data.key
         });
     });

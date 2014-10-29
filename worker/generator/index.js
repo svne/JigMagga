@@ -160,7 +160,7 @@ var sendToWorker = function (message, key, bucketName, uploadPages) {
         messageKey: key
     };
 
-    messageStream.emit('new:uploadList', helper.stringifyPipeMessage(metaData, uploadPages));
+    messageStream.emit('new:uploadList', metaData, uploadPages);
     messageStream.emit('api:done', key);
     uploadPages = null;
 

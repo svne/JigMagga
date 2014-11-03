@@ -80,11 +80,11 @@ exports.addCallAsync = function (apicall, config, paramsFromQueue, apiconfig, ca
             }
         }
         if (path === "") {
-            return {
+            return callback(null, {
                 success: false,
                 message: "failed to gather needed placeholder in path",
                 path: "[" + pathObj.join(", ") + "]"
-            };
+            });
         }
     } else {
         path += pathObj;

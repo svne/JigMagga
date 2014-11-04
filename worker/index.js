@@ -45,6 +45,11 @@ log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
 // obtain application arguments by parsing command line
 var program = parseArguments(process.argv);
 
+if (program.longjohn) {
+    console.log('long jhon enabled');
+    require('longjohn');
+}
+
 var basePath = (program.namespace) ? path.join(process.cwd(), program.namespace) : process.cwd();
 log('base project path is %s', basePath);
 

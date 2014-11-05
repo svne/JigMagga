@@ -552,8 +552,9 @@ var addJigsToApiCall = function (callbackContainer, config, emitter, apiconfig, 
             }
         }
     }
-
+    console.log('-----0. start proceed call list');
     async.each(callList, function (call, next) {
+        console.log('-----1. start add call async', call.apicall);
         restHelper.addCallAsync(call.apicall, call.jig, config.predefined, apiconfig, function (err, res) {
             if (err) {
                 return next(err);

@@ -3,6 +3,7 @@ var _ = require('lodash');
 var querystring = require('querystring');
 var format = require('util').format;
 var stream = require('./streamHelper');
+var domain = require('domain');
 
 var amqplib = require('amqplib');
 
@@ -22,8 +23,14 @@ var getChannel = function (connection, queue, callback) {
         });
     }
 
+    var dom = domain.create();
+    dom.on('error', function (err) {
+        console.log('CONNECTION ERROR', connection);
+        throw new Error(err);
+    });
     connection
         .then(function (connected) {
+            dom.add(connected);
             queue.channelPromise = connected.createChannel().then();
             queue.channelCanceled = false;
             return queue.channelPromise.then(function (ch) {
@@ -146,7 +153,6 @@ var publish = exports.publish = function (message, options, callback) {
         var ok = channel.assertQueue(queue, {durable: true});
         return ok.then(function () {
             message = new Buffer(message);
-            console.log('SEND TO QUEUE!!!');
             channel.sendToQueue(queue, message, options);
         }).then(function (res) {
             callback(null, res);

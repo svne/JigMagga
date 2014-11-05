@@ -70,6 +70,7 @@ exports.addCallAsync = function (apicall, config, paramsFromQueue, apiconfig, ca
         path = "",
         placeHolders = placeholderHelper.getConfigPlaceholders(pathObj, paramsFromQueue);
 
+    console.log('-----2. get place holders', apicall);
     if (placeHolders) {
         pathObj = placeholderHelper.replaceConfigPlaceholders(pathObj, placeHolders);
     }
@@ -80,6 +81,8 @@ exports.addCallAsync = function (apicall, config, paramsFromQueue, apiconfig, ca
             }
         }
         if (path === "") {
+            console.log('-----!!!. error failed to gather needed placeholder in path', apicall);
+
             return callback(null, {
                 success: false,
                 message: "failed to gather needed placeholder in path",
@@ -89,6 +92,8 @@ exports.addCallAsync = function (apicall, config, paramsFromQueue, apiconfig, ca
     } else {
         path += pathObj;
     }
+
+    console.log('-----3. replace place holders', apicall);
     var url = util.format('http://%s:%s/%s/%s%s', apiconfig.hostname, apiconfig.port, apiconfig.base, apiconfig.version, path);
 
     var next = function (err, params, urlParams) {
@@ -118,10 +123,13 @@ exports.addCallAsync = function (apicall, config, paramsFromQueue, apiconfig, ca
     var schemaFile = config.apicalls[apicall].requestSchema.substr(2);
 
 
+    console.log('-----4. ready for geting schema', apicall);
     getRequestSchema(schemaFile, function (err, paramsSchema) {
         if (err) {
             return next(err);
         }
+
+        console.log('-----5. schema obtained', apicall);
 
         var urlParams = {};
         _.each(paramsSchema.properties, function (value, param) {
@@ -146,6 +154,8 @@ exports.addCallAsync = function (apicall, config, paramsFromQueue, apiconfig, ca
                 return false;
             }
         });
+
+        console.log('-----6. result', apicall);
 
         next(null, paramsFromQueue, urlParams);
     });

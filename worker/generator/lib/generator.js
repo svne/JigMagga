@@ -173,21 +173,28 @@ var getPredefinedModule = function (namespace, module) {
 
 var getTemplate = function (templatePath, callback) {
     if (templates[templatePath]) {
+        console.log('------[start getting template from cache]', templatePath);
         return process.nextTick(function () {
+            console.log('------[template in cache]', templatePath);
             callback(null, templates[templatePath]);
         });
     }
 
+    console.log('------[start reading template from disk]', templatePath);
     fs.readFile(templatePath, function (err, res) {
         if (err) {
+            console.log('------[error while geting tpl]', templatePath);
+
             return callback(err);
         }
+        console.log('------[get template from disk]');
         templates[templatePath] = res.toString();
         callback(null, templates[templatePath]);
     });
 };
 
 var generateJigs = function (config, viewContainer, callback) {
+
     async.eachSeries(Object.keys(config.jigs), function (jigClass, next) {
         if (config.jigs[jigClass].disabled || config.jigs[jigClass].prerender === false) {
             return next();
@@ -222,6 +229,7 @@ var generateJigs = function (config, viewContainer, callback) {
         if (!ejsTemplateFile) {
             return next();
         }
+        console.log('----[start getting template]', ejsTemplateFile);
         getTemplate(ejsTemplateFile, function (err, ejsTemplate) {
             if (err) {
                 return next(err);
@@ -315,8 +323,9 @@ exports.generatePage = function (origConfig, callback) {
     config.template = slots.executeJigSlotLogic(config.jigs, config.template);
 
 
+    console.log('-------0. Start Generate Jigs');
     generateJigs(config, viewContainer, function (err, config) {
-
+        console.log('-------10. generation done');
         var script = '<script id="' + namespace + '-application-data" type="text/javascript">' +
             ' window.' + namespaceCapital + ' = window.' + namespaceCapital + ' || {};' +
             ' window.' + namespaceCapital + '.predefined = window.' + namespaceCapital + '.predefined || {};' + "\n";
@@ -552,9 +561,8 @@ var addJigsToApiCall = function (callbackContainer, config, emitter, apiconfig, 
             }
         }
     }
-    console.log('-----0. start proceed call list');
+
     async.each(callList, function (call, next) {
-        console.log('-----1. start add call async', call.apicall);
         restHelper.addCallAsync(call.apicall, call.jig, config.predefined, apiconfig, function (err, res) {
             if (err) {
                 return next(err);

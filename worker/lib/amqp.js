@@ -190,7 +190,7 @@ var QueuePool = function (queues, connection, options) {
 };
 
 /**
- * parse message from queue to object
+ * parse message from queue to objectg
  * @param {{contentType: string, data: string|object}} data
  * @return {object}
  */

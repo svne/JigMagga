@@ -22,6 +22,7 @@ var placeholderHelper = require("./placeholders.js");
 var slots = require('./slots');
 var http = require('http-get');
 var _ = require('lodash');
+var Q = require('q');
 var Uploader = require('jmUtil').ydUploader;
 var zlib = require('zlib');
 var md5 = require('MD5');
@@ -170,27 +171,30 @@ var getPredefinedModule = function (namespace, module) {
     return predefinedModules[modulePath];
 };
 
+var readFile = Q.denodeify(fs.readFile);
 
 var getTemplate = function (templatePath, callback) {
     if (templates[templatePath]) {
         console.log('------[start getting template from cache]', templatePath);
-        return process.nextTick(function () {
+        return templates[templatePath].done(function (content) {
             console.log('------[template in cache]', templatePath);
-            callback(null, templates[templatePath]);
+            callback(null, content);
         });
     }
 
     console.log('------[start reading template from disk]', templatePath);
-    fs.readFile(templatePath, function (err, res) {
-        if (err) {
-            console.log('------[error while geting tpl]', templatePath);
+    templates[templatePath] = readFile(templatePath, 'utf-8');
 
-            return callback(err);
-        }
-        console.log('------[get template from disk]');
-        templates[templatePath] = res.toString();
-        callback(null, templates[templatePath]);
-    });
+    templates[templatePath].fail(function (err) {
+            console.log('------[error while geting tpl]', templatePath);
+            callback(err);
+        })
+        .done(function (content) {
+            console.log('------[get template from disk]', templatePath);
+
+            callback(null, content);
+        });
+
 };
 
 var generateJigs = function (config, viewContainer, callback) {

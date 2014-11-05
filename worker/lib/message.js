@@ -34,6 +34,7 @@ StoredMessage.prototype.add = function () {
 StoredMessage.prototype.done = function () {
     this.doneCount -= 1;
     if (!this.doneCount) {
+        console.log('----[PUBLISH DONE EVENT]');
         this.onDone();
     }
 };
@@ -41,6 +42,7 @@ StoredMessage.prototype.done = function () {
 StoredMessage.prototype.upload = function () {
     this.uploadCount -= 1;
     if (!this.uploadCount) {
+        console.log('----[PUBLISH ACK EVENT]');
         this.onUpload();
     }
 };
@@ -147,24 +149,22 @@ module.exports = {
          */
         return es.through(function (data) {
             var message,
-                result = {},
-                contentType = data.contentType;
+                result = {};
 
             if (_.isArray(data) && data.length === 1) {
                 data = data[0];
             }
 
-            if (contentType === 'text/plain' || contentType === 'text/json') {
-                try {
-                    message = _.isPlainObject(data.data) ?
-                        data.data : JSON.parse(data.data.toString('utf-8'));
-                } catch (e) {
-                    if (_.isFunction(data.queueShift)) {
-                        data.queueShift();
-                    }
-                    this.emit('err', new WorkerError('Date from queue is not JSON', data.content.toString('utf-8')));
+            try {
+                message = queuePool.constructor.parseMessage(data);
+
+            } catch (e) {
+                if (_.isFunction(data.queueShift)) {
+                    data.queueShift();
                 }
+                this.emit('err', new WorkerError('Date from queue is not JSON', data.content.toString('utf-8')));
             }
+
 
             if (message) {
                 result.message = message;

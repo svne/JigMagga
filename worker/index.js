@@ -25,7 +25,7 @@ var _ = require('lodash'),
 var config = require('./config');
 
 
-var amqp = require('./lib/amqp'),
+var amqpWrapper = require('./lib/amqpWrapper'),
     log = require('./lib/logger')('worker', {component: 'worker', processId: process.pid}),
     ProcessRouter = require('./lib/router'),
     mainStream = require('./lib/mainStream'),
@@ -54,6 +54,7 @@ var basePath = (program.namespace) ? path.join(process.cwd(), program.namespace)
 log('base project path is %s', basePath);
 
 if (program.queue) {
+    var amqp = amqpWrapper(config.amqp);
     //if queue argument exists connect to amqp queues
     var prefetch = program.prefetch || config.amqp.prefetch;
     var connection = amqp.getConnection(config.amqp);

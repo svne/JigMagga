@@ -26,7 +26,7 @@ var es = require('event-stream'),
 
 program
     .version('1.0.0')
-    .option('-v, --versionnumber [value]', 'specify build version as float', parseFloat)
+    .option('-v, --versionnumber [value]', 'specify build version as float')
     .option('-d, --basedomain [value]', 'specify the domain')
     .option('-p, --page [value]', 'define the template to be generated can be a regex')
     //TODO override locales from config

@@ -84,7 +84,7 @@ var generateDestination = function (descriptor, from, buildOptions) {
     }
 
     if (!isPattern.test(descriptor.from)) {
-       return descriptor.to;
+        return descriptor.to;
     }
 
     var fromWithoutPattern = descriptor.from.replace('**', '');
@@ -187,6 +187,7 @@ module.exports = {
                     if (err) {
                         return callback(err);
                     }
+                    console.log(files);
                     if (!files.length) {
                         console.log('there is no media files for mask:', data.build.package.mediaSource);
                         return callback(null);
@@ -237,18 +238,28 @@ module.exports = {
             }
 
             async.map(data.build.package.mediaFiles, function (file, next) {
-                fs.stat(file.from, function (err, stat) {
-                    if (err) {
-                        return next(err);
-                    }
-                    file.size = stat.size;
-                    next(null, file);
-                });
+                if (fs.existsSync(file.from)) {
+                    fs.stat(file.from, function (err, stat) {
+                        if (err) {
+                            return next(err);
+                        }
+                        file.size = stat.size;
+                        next(null, file);
+                    });
+                } else if(file.require){
+                    next(new Error('meida file is absent but it is required'));
+                } else{
+                    console.log('meida file is absent but it is not required');
+                    next(null, null);
+                }
             }, function (err, files) {
                 if (err) {
                     return console.log(err);
                 }
-
+                // filter all files that non exits
+                files = files.filter(function(file){
+                    return file !== null;
+                });
                 var fileGroups = createFileGroupsBySize(files, 9500000);
 
                 async.each(fileGroups, function (fileGroup, cb) {

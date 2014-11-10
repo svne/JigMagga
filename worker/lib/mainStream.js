@@ -75,7 +75,20 @@ module.exports = function (source, uploader, basePath, program) {
     generatorStream.on('new:uploadList', function (metadata, uploadList) {
         metadata.bucketName = program.bucket || metadata.bucketName;
 
-        uploader.send('pipe', helper.stringifyPipeMessage(metadata, uploadList));
+        if (!program.write) {
+            uploader.send('pipe', helper.stringifyPipeMessage(metadata, uploadList));
+            uploadList = null;
+            return;
+        }
+
+        helper.saveFiles(uploadList, log, function (err) {
+            if (err) {
+                return log('error', err);
+            }
+            messageStorage.upload(metadata.messageKey);
+            log('all files saved successfully');
+        });
+
         uploadList = null;
     });
 
@@ -94,6 +107,8 @@ module.exports = function (source, uploader, basePath, program) {
      */
     generatorStream.on('new:zip', function (data) {
         log('new zip saved by generator', helper.getMeta(data.message));
+
+
 
         uploader.send('new:zip', {
             url: data.message.url,

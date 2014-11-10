@@ -34,7 +34,6 @@ StoredMessage.prototype.add = function () {
 StoredMessage.prototype.done = function () {
     this.doneCount -= 1;
     if (!this.doneCount) {
-        console.log('----[PUBLISH DONE EVENT]');
         this.onDone();
     }
 };
@@ -42,7 +41,6 @@ StoredMessage.prototype.done = function () {
 StoredMessage.prototype.upload = function () {
     this.uploadCount -= 1;
     if (!this.uploadCount) {
-        console.log('----[PUBLISH ACK EVENT]');
         this.onUpload();
     }
 };

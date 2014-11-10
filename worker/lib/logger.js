@@ -4,7 +4,7 @@ var _ = require('lodash');
 var winston = require('winston');
 var config = require('../config');
 
-require('winston-rsyslog');
+//require('winston-rsyslog');
 /**
  * capitalize first letter
  * @param {String} word
@@ -32,16 +32,16 @@ var getLogger = function (component, config) {
             new (winston.transports.Console)(config.console)
         ]
     });
-
-    if (config.transports && _.isObject(config.transports)) {
-        _.each(config.transports, function (options, transportName) {
-            var className = capitalFirst(transportName);
-
-            if (winston.transports[className]) {
-                logger.add(winston.transports[className], options);
-            }
-        });
-    }
+    //
+    //if (config.transports && _.isObject(config.transports)) {
+    //    _.each(config.transports, function (options, transportName) {
+    //        var className = capitalFirst(transportName);
+    //
+    //        if (winston.transports[className]) {
+    //            logger.add(winston.transports[className], options);
+    //        }
+    //    });
+    //}
 
     loggers[component] = logger;
 

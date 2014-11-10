@@ -6,6 +6,7 @@ var fs = require('fs');
 var placeholderHelper = require("./placeholders.js");
 var Q = require('q');
 var http = require('http-get');
+var deepExtend = require('deep-extend');
 var querystring = require("querystring");
 
 var diffToTime = require('../../lib/timeDiff').diffToTime;
@@ -267,7 +268,6 @@ exports.doCall = function (options, callback) {
             }
             catch (err) {
                 if (useFixtures()) {
-                    console.error('Error: fixture not in the JSON format');
                 }
                 options.success = false;
                 options.error = err;
@@ -282,7 +282,8 @@ exports.doCall = function (options, callback) {
     });
     cachedCalls[messageKey][requestId].promise.done(function(result) {
         result.requestId = result.requestId || requestId;
-        callback(null, _.cloneDeep(result));
+        var res = deepExtend({}, result);
+        callback(null, res);
     });
 
 

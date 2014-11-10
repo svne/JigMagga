@@ -175,23 +175,17 @@ var readFile = Q.denodeify(fs.readFile);
 
 var getTemplate = function (templatePath, callback) {
     if (templates[templatePath]) {
-        console.log('------[start getting template from cache]', templatePath);
         return templates[templatePath].done(function (content) {
-            console.log('------[template in cache]', templatePath);
             callback(null, content);
         });
     }
 
-    console.log('------[start reading template from disk]', templatePath);
     templates[templatePath] = readFile(templatePath, 'utf-8');
 
     templates[templatePath].fail(function (err) {
-            console.log('------[error while geting tpl]', templatePath);
             callback(err);
         })
         .done(function (content) {
-            console.log('------[get template from disk]', templatePath);
-
             callback(null, content);
         });
 
@@ -233,7 +227,6 @@ var generateJigs = function (config, viewContainer, callback) {
         if (!ejsTemplateFile) {
             return next();
         }
-        console.log('----[start getting template]', ejsTemplateFile);
         getTemplate(ejsTemplateFile, function (err, ejsTemplate) {
             if (err) {
                 return next(err);
@@ -284,7 +277,7 @@ var generateJigs = function (config, viewContainer, callback) {
 exports.generatePage = function (origConfig, callback) {
     origConfig = childPageUploadUrl(origConfig);
 
-    var config = _.cloneDeep(origConfig),
+    var config = deepExtend({}, origConfig),
         namespace = config.namespace,
         namespaceCapital = capitaliseFirstLetter(config.namespace),
 
@@ -327,9 +320,7 @@ exports.generatePage = function (origConfig, callback) {
     config.template = slots.executeJigSlotLogic(config.jigs, config.template);
 
 
-    console.log('-------0. Start Generate Jigs');
     generateJigs(config, viewContainer, function (err, config) {
-        console.log('-------10. generation done');
         var script = '<script id="' + namespace + '-application-data" type="text/javascript">' +
             ' window.' + namespaceCapital + ' = window.' + namespaceCapital + ' || {};' +
             ' window.' + namespaceCapital + '.predefined = window.' + namespaceCapital + '.predefined || {};' + "\n";
@@ -415,7 +406,14 @@ exports.generateJsonPage = function (config) {
     var recursive = function (results, options) {
         _.each(_.isArray(results) ? results : [results], function (result, index) {
             var toUrl, copy = {},
-                copyResult = _.clone(result);
+                copyResult = deepExtend({}, result);
+            if (options.remove) {
+                _.each(options.remove, function (key) {
+                     if (result[key]) {
+                        delete result[key];
+                    }
+                });
+            }
             if (options.pick) {
                 _.each(options.pick, function (key) {
                     if (result[key]) copy[key] = result[key];
@@ -424,7 +422,7 @@ exports.generateJsonPage = function (config) {
             }
             if (options.to) {
                 toUrl = placeholderHelper.simpleReplace(options.to.replace("{url}", mainUrl), copyResult);
-                results[index] = "//" + knoxConfig.S3_BUCKET + "/" + toUrl;
+                results[index] = "http://" + knoxConfig.S3_BUCKET + "/" + toUrl;
                 if (alreadyInArray.indexOf(toUrl) === -1) {
                     toUpload.push([toUrl, result]);
                     alreadyInArray.push(toUrl);
@@ -447,10 +445,13 @@ exports.generateJsonPage = function (config) {
                                 if (!_.isEmpty(result[key])) {
                                     extResult = extResult || {};
                                     extResult[key] = result[key];
-                                    result[key] = "//" + knoxConfig.S3_BUCKET + "/" + childUrl;
+                                    result[key] = "http://" + knoxConfig.S3_BUCKET + "/" + childUrl;
+                                    if (extract.remove) {
+                                        delete result[key];
+                                    }
 
                                 } else if (extract.nullIfEmpty) {
-                                    //result[key] = null;
+                                    result[key] = null;
                                 }
                             }
                         });
@@ -465,12 +466,12 @@ exports.generateJsonPage = function (config) {
                         if (extract.key in result) {
                             if (!_.isEmpty(result[extract.key])) {
                                 extResult = result[extract.key];
-                                result[extract.key] = "//" + knoxConfig.S3_BUCKET + "/" + childUrl;
+                                result[extract.key] = "http://" + knoxConfig.S3_BUCKET + "/" + childUrl;
                                 if (extract.remove) {
                                     delete result[extract.key];
                                 }
                             } else if (extract.nullIfEmpty) {
-                                //result[extract.key] = null;
+                                result[extract.key] = null;
                             }
                         }
                         if (typeof extResult !== "undefined" && alreadyInArray.indexOf(childUrl) === -1) {
@@ -490,7 +491,7 @@ exports.generateJsonPage = function (config) {
             _.each(apiCall.cache, function (cache) {
                 var apiResult = cache.modify
                         ? config.predefined[apiCallName]
-                        : _.cloneDeep(config.predefined[apiCallName]),
+                        : deepExtend({}, config.predefined[apiCallName]),
                     childUrl;
                 if (cache.options) {
                     recursive(apiResult, cache.options);

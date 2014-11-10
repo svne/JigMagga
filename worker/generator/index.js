@@ -210,7 +210,7 @@ messageStream
 
         json = _.map(data.apiCallResult, generator.generateJsonPage);
 
-        async.mapLimit(data.apiCallResult, 50, function (config, next) {
+        async.mapSeries(data.apiCallResult, function (config, next) {
             log('Processing page url: %s pagePath: %s', config.uploadUrl, config.pagePath);
             generator.generatePage(config, next);
         }, function (err, uploadPages) {

@@ -282,8 +282,7 @@ exports.doCall = function (options, callback) {
     });
     cachedCalls[messageKey][requestId].promise.done(function(result) {
         result.requestId = result.requestId || requestId;
-        var res = deepExtend({}, result);
-        callback(null, res);
+        callback(null, _.cloneDeep(result));
     });
 
 

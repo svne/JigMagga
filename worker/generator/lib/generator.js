@@ -398,25 +398,23 @@ exports.generatePage = function (origConfig, callback) {
  * @return {Array.<UploadItem>}
  */
 exports.generateJsonPage = function (config) {
-    var viewContainer = config.viewContainer,
-        mainUrl = (viewContainer.parentUrl || viewContainer["url"]) + config.jsonUrlPostfix,
+    var viewContainer = config["viewContainer"],
+        mainUrl = (viewContainer["parentUrl"] || viewContainer["url"]) + config["jsonUrlPostfix"],
         toUpload = [],
         alreadyInArray = [];
 
     var recursive = function (results, options) {
         _.each(_.isArray(results) ? results : [results], function (result, index) {
             var toUrl, copy = {},
-                copyResult = deepExtend({}, result);
+                copyResult = JSON.parse(JSON.stringify(result));
             if (options.remove) {
                 _.each(options.remove, function (key) {
-                     if (result[key]) {
-                        delete result[key];
-                    }
+                    if (key in result) delete result[key];
                 });
             }
             if (options.pick) {
                 _.each(options.pick, function (key) {
-                    if (result[key]) copy[key] = result[key];
+                    if (key in result) copy[key] = result[key];
                 });
                 result = copy;
             }
@@ -433,7 +431,7 @@ exports.generateJsonPage = function (config) {
                     var extResult,
                         childUrl;
                     if (extract.key && extract.options) {
-                        if (result[extract.key]) {
+                        if (extract.key in result && result[extract.key] !== null) {
                             recursive(result[extract.key], extract.options);
                         }
                     }
@@ -441,7 +439,7 @@ exports.generateJsonPage = function (config) {
                         extResult = undefined;
                         childUrl = placeholderHelper.simpleReplace(extract.to.replace("{url}", mainUrl), copyResult);
                         _.each(extract.keys, function (key) {
-                            if (result[key]) {
+                            if (key in result) {
                                 if (!_.isEmpty(result[key])) {
                                     extResult = extResult || {};
                                     extResult[key] = result[key];
@@ -449,7 +447,6 @@ exports.generateJsonPage = function (config) {
                                     if (extract.remove) {
                                         delete result[key];
                                     }
-
                                 } else if (extract.nullIfEmpty) {
                                     result[key] = null;
                                 }
@@ -482,7 +479,7 @@ exports.generateJsonPage = function (config) {
                 });
             }
         });
-    };
+    }
     _.each(config.jigs, function (jig, jigClass) {
         _.each(jig.apicalls, function (apiCall, apiCallName) {
             if (!apiCall.cache) {
@@ -491,7 +488,7 @@ exports.generateJsonPage = function (config) {
             _.each(apiCall.cache, function (cache) {
                 var apiResult = cache.modify
                         ? config.predefined[apiCallName]
-                        : deepExtend({}, config.predefined[apiCallName]),
+                        : JSON.parse(JSON.stringify(config.predefined[apiCallName])),
                     childUrl;
                 if (cache.options) {
                     recursive(apiResult, cache.options);
@@ -509,8 +506,8 @@ exports.generateJsonPage = function (config) {
 
     return toUpload.map(function (upload) {
         var filename = config["upload-worker"] ?
-            saveDiskPath + "/production." + upload[0].replace(/\//g, "_") :
-            config.pagePath + "production." + upload[0].replace(/\//g, "_");
+        saveDiskPath + "/production." + upload[0].replace(/\//g, "_") :
+        config.pagePath + "production." + upload[0].replace(/\//g, "_");
 
         return {
             path: filename,
@@ -520,6 +517,7 @@ exports.generateJsonPage = function (config) {
         };
     });
 };
+
 
 
 

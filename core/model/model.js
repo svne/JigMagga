@@ -277,6 +277,16 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                 }
             });
         },
+        bindLateLiveBindingNewTriggerChange: function (elements) {
+            var data,
+                self = this;
+            $.each(elements, function (v, i) {
+                data = $(i).data();
+                if (data.bindingattr && self.attr(data.bindingattr)) {
+                    can.trigger(self.attr(data.bindingattr), "change");
+                }
+            });
+        },
         specialSort: function (method, comp, silent) {
             var comparator = comp || this.comparator,
                 args = method ? [method] : [function (a, b) {

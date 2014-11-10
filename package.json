@@ -66,6 +66,7 @@
   },
   "dependencies": {
     "MD5": "~1.2.1",
+    "amqp": "~0.2.0",
     "amqplib": "~0.2.1",
     "archiver": "~0.11.0",
     "async": "~0.9.0",
@@ -87,11 +88,14 @@
     "lodash": "~2.4.1",
     "longjohn": "~0.2.4",
     "mime": "~1.2.11",
-    "mustache": "^0.8.2",
+    "mustache": "~0.8.2",
     "node-sass": "~0.9.3",
+    "phridge": "^1.0.6",
     "q": "~1.0.1",
     "readable-stream": "~1.0.27-1",
     "redis": "~0.11.0",
+    "se-interpreter": "^1.0.6",
+    "selenium-standalone": "^2.43.1-5",
     "sleep": "~1.1.8",
     "ssi": "~0.1.5",
     "steal": "git+https://github.com/bitovi/steal-build.git",
@@ -99,6 +103,7 @@
     "uglify-js": "~2.4.15",
     "walk": "~2.3.3",
     "winston": "~0.7.3",
-    "winston-loggly": "~1.0.1"
+    "winston-loggly": "~1.0.1",
+    "winston-rsyslog": "0.0.2"
   }
 }

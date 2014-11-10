@@ -8,7 +8,8 @@ module.exports = function (processArgs) {
         .option('-s, --regionId <n>', 'define location by regionId', Number)
         .option('-o, --districtId <n>', 'define location by districtId', Number)
         .option('-l, --linkId <n>', 'define internlinkpage by linkId', Number)
-        .option('-v, --values [values]', 'specify values as JSON')
+        .option('-j, --values [values]', 'specify values as JSON')
+        .option('-v, --verbose', 'whether to print to output all log information')
         .option('-r, --restaurantId <n>', 'define restaurant by restaurantId', Number)
         .option('-R, --satelliteId <n>', 'define restaurant by satelliteId', Number)
         .option('-b, --versionnumber [value]', 'specify build version as float')
@@ -30,5 +31,7 @@ module.exports = function (processArgs) {
         .option('-n, --namespace <n>', 'relative path from current dir to target project or just nane of project')
         .option('-f, --fixtures', 'use fixtures from project folder instead of making an api call')
         .option('-w, --write', 'write to disk the archive with generated files instead of upload them, path should be provided')
+        .option('-P, --prefetch <n>', 'amount of prefetched messages from queue, makes sens only wirh -q', Number)
+
         .parse(processArgs);
 };

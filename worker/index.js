@@ -24,10 +24,6 @@ var _ = require('lodash'),
 
 var config = require('./config');
 
-if (process.env.NODE_ENV === 'live') {
-    require('longjohn');
-}
-
 var amqp = require('./lib/amqp'),
     log = require('./lib/logger')('worker', {component: 'worker', processId: process.pid}),
     ProcessRouter = require('./lib/router'),
@@ -54,12 +50,13 @@ log('base project path is %s', basePath);
 
 if (program.queue) {
     //if queue argument exists connect to amqp queues
+    var prefetch = program.prefetch || config.amqp.prefetch;
     var connection = amqp.getConnection(config.amqp);
     log('worker connected to AMQP server on %s', config.amqp.credentials.host);
     var queues = helper.getQueNames(program, config.amqp);
 
     log('queues in pool %j', queues, {});
-    var queuePool = new amqp.QueuePool(queues, connection, {prefetch: config.amqp.prefetch});
+    var queuePool = new amqp.QueuePool(queues, connection, {prefetch: prefetch});
 }
 
 /**
@@ -109,6 +106,7 @@ var generatorRoutes = {
         uploaderRouter.send('new:zip', {
             url: data.message.url,
             page: data.message.page,
+            locale: data.message.locale,
             zipPath: data.zipPath,
             bucketName: data.bucketName,
             messageKey: data.key

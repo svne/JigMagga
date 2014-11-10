@@ -1,16 +1,32 @@
-steal("steal/instrument", "jquery").then("qunit", "qunit-tap", function () {
+steal("jquery", "can/util", "qunit", "qunit-tap", "funcunit", function () {
 
-    QUnit.config.autostart = false;
-    QUnit.config.autorun = false;
+    var QunitLoad = QUnit.load,
+        ready = false;
 
-    QUnit.config.urlConfig.push({
-        id: "coverage",
-        label: "Show code coverage",
-        tooltip: "Execute steal instrument and show the result."
-    });
+    FuncUnit.timeout = 120000;
 
-}).then("funcunit", function () {
 
+    QUnit.load = function () {
+        if (ready) {
+            QunitLoad();
+        }
+    };
+
+
+    if (window.navigator.userAgent.indexOf("PhantomJS") !== -1) {
+        // phantomjs has issues with to many logs
+        can.dev.logLevel = 10;
+        steal.dev.logLevel = 10;
+    }
+
+
+    if (steal.instrument) {
+        QUnit.config.urlConfig.push({
+            id: "coverage",
+            label: "Show code coverage",
+            tooltip: "Execute steal instrument and show the result."
+        });
+    }
 
     function filterInstrumentFiles(stats) {
         var startPath = steal.config("startId").replace(/\/[^\/]*$/, "");
@@ -54,86 +70,87 @@ steal("steal/instrument", "jquery").then("qunit", "qunit-tap", function () {
 
 
     QUnit.done(function (obj) {
-        console.log(obj);
         if ($("#qunit-urlconfig-coverage").prop("checked")) {
             steal.instrument.report(filterInstrumentFiles(steal.instrument.compileStats()));
         }
-
     });
 
 
-    if (window.navigator.userAgent.indexOf("PhantomJS") !== -1) {
-        /*
-         * grunt-contrib-qunit
-         * http://gruntjs.com/
-         *
-         * Copyright (c) 2013 "Cowboy" Ben Alman, contributors
-         * Licensed under the MIT license.
-         */
-        (function () {
-            'use strict';
+    /*
+     * grunt-contrib-qunit
+     * http://gruntjs.com/
+     *
+     * Copyright (c) 2013 "Cowboy" Ben Alman, contributors
+     * Licensed under the MIT license.
+     */
+    (function () {
+        'use strict';
 
-            // Don't re-order tests.
-            QUnit.config.reorder = false;
-            // Run tests serially, not in parallel.
-            QUnit.config.autorun = false;
+        // Don't re-order tests.
+        QUnit.config.reorder = false;
 
-            // Send messages to the parent PhantomJS process via alert! Good times!!
-            function sendMessage() {
-                var args = [].slice.call(arguments);
-                alert(JSON.stringify(args));
+        QUnit.config.autorun = false;
+
+        QUnit.jigMagga = {
+            eventQueue: [],
+            done: false
+        };
+
+        // Send messages to the parent PhantomJS process via alert! Good times!!
+        function sendMessage(event) {
+            var args = [].slice.call(arguments);
+            QUnit.jigMagga.eventQueue.push(args);
+        }
+
+        // These methods connect QUnit to PhantomJS.
+        QUnit.log(function (obj) {
+            // What is this I don’t even
+            if (obj.message === '[object Object], undefined:undefined') {
+                return;
             }
+            // Parse some stuff before sending it.
+            var actual = QUnit.jsDump.parse(obj.actual);
+            var expected = QUnit.jsDump.parse(obj.expected);
+            // Send it.
+            sendMessage('qunit.log', obj, actual, expected);
+        });
 
-            // These methods connect QUnit to PhantomJS.
-            QUnit.log(function (obj) {
-                // What is this I don’t even
-                if (obj.message === '[object Object], undefined:undefined') {
-                    return;
-                }
-                // Parse some stuff before sending it.
-                var actual = QUnit.jsDump.parse(obj.actual);
-                var expected = QUnit.jsDump.parse(obj.expected);
-                // Send it.
-                sendMessage('qunit.log', obj.result, actual, expected, obj.message, obj.source);
-            });
+        QUnit.testStart(function (obj) {
+            sendMessage('qunit.testStart', obj);
+        });
 
-            QUnit.testStart(function (obj) {
-                sendMessage('qunit.testStart', obj.name);
-            });
+        QUnit.testDone(function (obj) {
+            sendMessage('qunit.testDone', obj);
+        });
 
-            QUnit.testDone(function (obj) {
-                sendMessage('qunit.testDone', obj.name, obj.failed, obj.passed, obj.total);
-            });
+        QUnit.moduleStart(function (obj) {
+            sendMessage('qunit.moduleStart', obj);
+        });
 
-            QUnit.moduleStart(function (obj) {
-                sendMessage('qunit.moduleStart', obj.name);
-            });
+        QUnit.moduleDone(function (obj) {
+            sendMessage('qunit.moduleDone', obj);
+        });
 
-            QUnit.moduleDone(function (obj) {
-                sendMessage('qunit.moduleDone', obj.name, obj.failed, obj.passed, obj.total);
-            });
+        QUnit.begin(function () {
+            sendMessage('qunit.begin');
+        });
 
-            QUnit.begin(function () {
-                sendMessage('qunit.begin');
-            });
+        QUnit.done(function (obj) {
+            //sendMessage('qunit.instrument', filterInstrumentFiles(steal.instrument.compileStats()));
+            sendMessage('qunit.done', obj);
+            QUnit.jigMagga.done = true;
+        });
 
-            QUnit.done(function (obj) {
-                sendMessage('qunit.instrument', filterInstrumentFiles(steal.instrument.compileStats()));
-                sendMessage('qunit.done', obj.failed, obj.passed, obj.total, obj.runtime);
-            });
+        qunitTap(QUnit, function (msg) {
+            sendMessage('qunit.tap', msg);
+        });
 
-            qunitTap(QUnit, function (msg) {
-                sendMessage('qunit.tap', msg);
-            });
-
-        }());
-    }
+    }());
 
 
-
-    steal.one("end", function(){
+    steal.one("ready", function () {
+        ready = true;
         QUnit.load();
-        QUnit.start();
     });
 
 });

@@ -36,7 +36,7 @@ module.exports = {
 
         var queueStream = queuePool.amqpQueue.getStream();
         queueStream.on('ready', function (queue) {
-            log('%s queue stream is ready', queue);
+            log('help', '%s queue stream is ready', queue);
         });
 
 
@@ -107,6 +107,16 @@ module.exports = {
                 log('error', 'there is no static-old for this domain');
             }
 
+            var queueShift = function () {
+                process.nextTick(function () {
+                    log('all jobs done. Exiting...');
+                    process.exit();
+                });
+            };
+
+            var key = messageHelper.createMessageKey({page: 'static-old'});
+
+
             files.map(function (file) {
                 var url = file.path.replace(staticOldPath + '/', '').replace(/\.html$/g, '');
                 return {
@@ -116,7 +126,9 @@ module.exports = {
                         url: url,
                         page: 'static-old/' + url,
                         staticOld: true
-                    }
+                    },
+                    key: key,
+                    queueShift: queueShift
                 };
             })
             .forEach(function (file) {

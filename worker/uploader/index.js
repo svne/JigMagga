@@ -19,10 +19,6 @@ var log = require('../lib/logger')('uploader', {component: 'uploader', processId
     error = require('../lib/error'),
     TimeDiff = require('../lib/timeDiff');
 
-if (process.env.NODE_ENV === 'live') {
-    require('longjohn');
-}
-
 
 var timeDiff = new TimeDiff(log);
 
@@ -86,7 +82,8 @@ var uploadItem = function (data, callback) {
             handleError(err, {upload: true, url: data.url});
         } else {
             uploadsAmount += 1;
-            log('success', res, {upload: true, url: data.url, page: data.page, uploadsAmount: uploadsAmount});
+            log('success', res + ' time: ' + Date.now(),
+                {upload: true, url: data.url, locale: data.locale, page: data.page, uploadsAmount: uploadsAmount});
             router.send('message:uploaded', data.messageKey);
         }
         uploadPageTimeDiff.stop();

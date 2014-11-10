@@ -8,6 +8,7 @@
 var EventEmitter = require('events').EventEmitter,
     format = require('util').format,
     fsExtra = require('fs-extra'),
+    util = require('util'),
     fs = require('fs'),
     _ = require('lodash'),
     path = require('path'),
@@ -25,10 +26,6 @@ var log = require('../lib/logger')('generator', {component: 'generator', process
     TimeDiff = require('../lib/timeDiff');
 
 var timeDiff = new TimeDiff(log);
-
-if (process.env.NODE_ENV === 'live') {
-    require('longjohn');
-}
 
 var WorkerError = error.WorkerError;
 
@@ -104,6 +101,7 @@ emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
 var apiStream = es.through(function (data) {
     var that = this;
     log('[*] send api request', helper.getMeta(data.message));
+    log('help', 'generating new message time %d', Date.now(), helper.getMeta(data.message));
     // Take first snapshot
     // var apiMessageKey = generator.createApiMessageKey(data.key);
     var apiCallTimeDiff = timeDiff.create('apiCall:message:' + data.message.page);
@@ -112,7 +110,7 @@ var apiStream = es.through(function (data) {
     generator.apiCalls([data.config], emitter, function (err, res) {
 
         if (err) {
-            var errorText = format('error in apiCall %j', err);
+            var errorText = format('error in apiCall %s', util.inspect(err));
             return handleError(errorText, data);
         }
         data.apiCallResult = res;

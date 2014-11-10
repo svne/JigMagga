@@ -12,7 +12,7 @@ var walker = createWalker('.', {
     filters: config.coreFolders
 });
 
-module.exports = function(grunt) {
+module.exports = function (grunt) {
     var namespace;
 
 
@@ -50,7 +50,7 @@ module.exports = function(grunt) {
                             config: "generator.namespace",
                             type: "list",
                             message: "Please set the namespace of the project:",
-                            choices: function(answer) {
+                            choices: function (answer) {
                                 // step through all folders, searching for a folder with page/page.conf inside.
                                 // this should be a json file and should contain value for "namespace".
                                 // Give all namespaces you find as the list
@@ -77,7 +77,7 @@ module.exports = function(grunt) {
                             filter: function (value) {
                                 return value.toLowerCase();
                             },
-                            validate: function(value) {
+                            validate: function (value) {
                                 if (!value.match(/^[a-z][\/a-z0-9.]*$/i)) {
                                     return "Please only use chars and numbers starting with a character";
                                 } else {
@@ -98,7 +98,7 @@ module.exports = function(grunt) {
                             filter: function (value) {
                                 return value.toLowerCase();
                             },
-                            validate: function(value) {
+                            validate: function (value) {
                                 if (!value.match(/^[\/a-z0-9.]*$/i)) {
                                     return "Please only use chars or numbers";
                                 } else {
@@ -142,7 +142,7 @@ module.exports = function(grunt) {
                         {
                             config: "generator.domain",
                             type: "list",
-                            choices: function(answers) {
+                            choices: function (answers) {
                                 var result = walker.getAllPagesInDomains(answers['generator.namespace']);
                                 // print out all domains and domains/pages in the current namespace/page (all with a conf-file inside)
                                 result.unshift({name: "No page", value: "none"});
@@ -159,7 +159,7 @@ module.exports = function(grunt) {
                         {
                             config: "generator.domain",
                             type: "list",
-                            choices: function(answers) {
+                            choices: function (answers) {
                                 // print out all domains in the current namespace/page
                                 var result = walker.getAllDomains(answers['generator.namespace']);
 
@@ -177,7 +177,7 @@ module.exports = function(grunt) {
                         {
                             config: "generator.domain",
                             type: "list",
-                            choices: function(answers) {
+                            choices: function (answers) {
                                 // print out all domains in the current namespace/page
                                 var result = walker.getAllFirstLevelDomains(answers['generator.namespace']);
 
@@ -194,7 +194,7 @@ module.exports = function(grunt) {
                         {
                             config: "generator.domain",
                             type: "list",
-                            choices: function(answers) {
+                            choices: function (answers) {
                                 // print out the namespace"-domain" in all current namespace"/page/"domain/domain.conf
                                 var result = walker.getAllNamespaceDomain(answers['generator.namespace']);
                                 return result;
@@ -238,7 +238,7 @@ module.exports = function(grunt) {
                         {
                             config: "build.domain",
                             type: "list",
-                            choices: function(answers) {
+                            choices: function (answers) {
                                 // print out all domains in the current namespace/page
                                 var result = walker.getAllDomains(answers['build.namespace']);
 
@@ -264,9 +264,9 @@ module.exports = function(grunt) {
         connect: {
             server: {
                 options: {
-                    keepalive : true,
+                    keepalive: true,
                     open: true,
-                    middleware:  function (connect, options, middlewares) {
+                    middleware: function (connect, options, middlewares) {
 
                         var generateDefaultBase = function (cwd, filename) {
                             var defaultBase = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,5}\//, "/default/"));
@@ -299,10 +299,10 @@ module.exports = function(grunt) {
                             else if (req.url.indexOf("/sass/compile") !== -1) {
                                 sass.render({
                                     data: req.body.scss,
-                                    success: function(css){
+                                    success: function (css) {
                                         res.end(css);
                                     },
-                                     error: function(error) {
+                                    error: function (error) {
                                         console.log(error);
                                         res.end("");
                                     }
@@ -359,10 +359,10 @@ module.exports = function(grunt) {
                 }
             }
         },
-        qunit: {
+        funcunit: {
             options: {
-                timeout: 10000,
-                httpBase : "http://localhost:8000"
+                timeout: 150000,
+                httpBase: "http://localhost:8000"
             },
             all: ['**/funcunit.html', '!bower_components/**', '!steal/**']
         }
@@ -386,19 +386,31 @@ module.exports = function(grunt) {
 
 
     /**
-     * This is the grunt task for open a grunt connect an test all funcunit suites against this server
+     * This is the grunt task for open a grunt connect and test all/single funcunit suite(s) against this server
+     * To run: "grunt test" to run all the tests or "grunt test:Ab.Jig.Additions" to run a test for a single jig
+     * called "additions" on the namespace "ab"
      *
-     * --tap will ouput the result in tap format as a file ./tap.log
+     *
+     * namespace -> eg. Jm.Jig.Seo
+     * --webdriver will start selenium server and test again a real browser, without it test again phantomjs
      *
      */
-    grunt.registerTask('test', "test all funcunit.html suites with phantomjs", function() {
-         grunt.config("connect.server.options.keepalive", false);
-         grunt.config("connect.server.options.open", false);
-         grunt.task.run(["connect", "qunit:all"]);
+    grunt.registerTask('test', "test all funcunit.html suites with phantomjs", function (namespace) {
+        var task = "funcunit";
+        grunt.config("connect.server.options.keepalive", false);
+        grunt.config("connect.server.options.open", false);
+        grunt.config("funcunit-webdriver", grunt.config("funcunit"));
+        if (grunt.option("webdriver")) {
+            task = "funcunit-webdriver"
+        }
+        if (namespace) {
+            // run a test for single jig
+            grunt.config(task + ".all", [namespace.replace(/\./g, "/").toLowerCase() + '/funcunit.html', '!bower_components/**', '!steal/**']);
+        }
+        grunt.task.run(["connect", task]);
     });
 
-
-    grunt.registerTask("generator", "Project structure generator", function() {
+    grunt.registerTask("generator", "Project structure generator", function () {
         var generate = require(__dirname + "/generate/generate"),
             config = {
                 namespace: grunt.config("generator.namespace"),
@@ -412,10 +424,10 @@ module.exports = function(grunt) {
     });
 
     /**
-     *
+     * TODO
      */
 
-    grunt.registerTask("build", "Will build css and js production files", function() {
+    grunt.registerTask("build", "Will build css and js production files", function () {
 
     });
 

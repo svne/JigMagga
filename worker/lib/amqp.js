@@ -1,12 +1,12 @@
 'use strict';
 var _ = require('lodash');
-var querystring = require('querystring');
 var format = require('util').format;
 var stream = require('./streamHelper');
 
-var amqplib = require('amqplib');
+var amqp = require('amqp');
 
 
+var globalExchange = null;
 /**
  * returns amqp channel from global variable if it was created before
  * or creates it and push to the global var
@@ -39,11 +39,6 @@ var getChannel = function (connection, queue, callback) {
 
 
 /**
- * module representing an amqp
- * @module amqp
- */
-
-/**
  * returns a stream from a amqp queue each message from the
  * queue is throed to the stream
  * - shiftAfterReceive means whether the message should be shifted from queue just after receiving
@@ -60,65 +55,62 @@ var getStream = exports.getStream = function (options) {
     var queue = this.name || options.queue;
     var prefetch = this.options.prefetch || options.prefetch;
     var that = this;
-    // options.exchange = options.exchange || 'amq.direct';
 
-    getChannel(connection, this, function (err, channel) {
-        if (err) {
-            throw new Error(err);
-        }
-        var ok = channel.assertQueue(queue, {durable: true});
-        if (prefetch) {
-            ok = ok.then(function () {
-                channel.prefetch(prefetch);
-            });
-        }
+    var queueOptions = {
+        durable: true,
+        autoDelete: false
+    };
 
-        ok = ok.then(function () {
-            duplex.emit('ready', queue);
-            channel.on('close', function () {
-                console.log('CHANNEL IS CLOASING');
+    var consumeQueue = function () {
+        connection.queue(queue, queueOptions, function (q) {
+            q.bind(that.exchangeName, queue);
+            process.nextTick(function () {
+                duplex.emit('ready', queue);
             });
 
-            channel.on('error', function (err) {
-                throw new Error(err);
-            });
-
-            channel.consume(queue, function (message) {
+            // Receive messages
+            q.subscribe({ack: true, prefetchCount: prefetch},
+            function (message, headers, deliveryInfo, ack) {
                 if (!message) {
                     return;
+                }
+                if (_.isPlainObject(message) && !message.data) {
+                    message = {
+                        data: message,
+                        contentType: 'text/json'
+                    };
                 }
 
                 if (options.shiftAfterReceive) {
                     duplex.write(message);
-                    return channel.ack(message);
+                    return q.shift();
                 }
 
-                message.queueShift = channel.ack.bind(channel, message);
+                message.queueShift = ack.acknowledge.bind(ack, false);
                 return duplex.write(message);
-            }).then(function (res) {
-                that.consumerTag = res.consumerTag;
             });
 
         });
-    });
+
+    };
+
+    setTimeout(function () {
+        if (_.isFunction(connection.exchange)) {
+            var exc = globalExchange = connection.exchange(that.exchangeName);
+            exc.on('open', function () {
+                consumeQueue();
+            });
+        }
+    }, 200);
 
     return duplex;
 };
 
-var cancelStream = function (callback) {
-    if (!this.channel || !this.consumerTag) {
-        throw new Error('can not destroy stream before it is ready to consume');
-    }
-    var that = this;
+/**
+ * module representing an amqp
+ * @module amqp
+ */
 
-    this.channel.cancel(this.consumerTag)
-        .then(function (ok) {
-            that.channel = null;
-            that.channelCanceled = true;
-
-            callback(null, ok);
-        }, callback);
-};
 
 /**
  * publish message to queue
@@ -128,31 +120,27 @@ var cancelStream = function (callback) {
  */
 var publish = exports.publish = function (message, options, callback) {
     options = options || {};
+    var that = this;
     callback = callback || function (err) {
         if (err) {
             throw new Error(err);
         }
     };
+
     options.contentType = options.contentType || 'text/plain';
 
     message = _.isString(message) ? message : JSON.stringify(message);
     var queue = options.queue || this.name;
     delete options.queue;
 
-    getChannel(this.connection, this, function (err, channel) {
-        if (err) {
-            return callback(err);
-        }
-        var ok = channel.assertQueue(queue, {durable: true});
-        return ok.then(function () {
-           message = new Buffer(message);
-           channel.sendToQueue(queue, message, options);
-        }).then(function (res) {
-            callback(null, res);
-        }, function (err) {
-            callback(err);
+    //console.log('PUBLISH');
+    if (!globalExchange) {
+        var exc = globalExchange = this.connection.exchange(this.exchangeName);
+        return exc.on('open', function () {
+            that.connection.publish(queue, message, options, callback);
         });
-    });
+    }
+    globalExchange.publish(queue, message, options, callback);
 };
 
 
@@ -165,13 +153,20 @@ var publish = exports.publish = function (message, options, callback) {
 exports.getConnection = function (config) {
     var credentials = config.credentials;
 
-    var amqpUrl = format('amqp://%s:%s@%s/%s',
-        credentials.login, credentials.password, credentials.host, credentials.vhost);
-    if (config.options) {
-        amqpUrl += '?' + querystring.stringify(config.options);
-    }
+    var connection = amqp.createConnection({
+        host: credentials.host,
+        login: credentials.login,
+        password: credentials.password,
+        vhost: credentials.vhost,
+        heartbeat: config.options.heartbeat
+    }, {reconnect: true, defaultExchange: 'amq.direct'});
 
-    return amqplib.connect(amqpUrl);
+    connection.on('error', function (err) {
+        console.log('CONNECTION ERROR', credentials);
+        console.log(err);
+    });
+
+    return connection;
 };
 
 var QueuePool = function (queues, connection, options) {
@@ -183,8 +178,8 @@ var QueuePool = function (queues, connection, options) {
         that[name] = {
             name: queue,
             connection: connection,
+            exchangeName: options.exchangeName || 'amq.direct',
             getStream: getStream,
-            cancelStream: cancelStream,
             publish: publish,
             options: options,
             channel: null,

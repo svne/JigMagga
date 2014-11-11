@@ -373,9 +373,10 @@ exports.generatePage = function (origConfig, callback) {
         //var finalHtml = config["template"].replace(/<script[^>]+id="yd-application-script"[^>]*><\/script>/, script);
         var finalHtml = config.template.replace(scriptTagRegExp, script).replace(styleTagRegExp, style);
         url += ".html";
+        var urlWithoutSlashes = url.replace(/^\//, '').replace(/\//g, "_");
         filename = config["upload-worker"] ?
-        saveDiskPath + "/production." + url.replace(/\//g, "_") :
-            path.join(config.pagePath, "production." + url.replace(/\//g, "_"));
+            saveDiskPath + "/production." + urlWithoutSlashes :
+            path.join(config.pagePath, "production." + urlWithoutSlashes);
 
 
 

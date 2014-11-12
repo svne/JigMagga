@@ -5,7 +5,7 @@ var es = require('event-stream'),
     _ = require('lodash');
 
 var WorkerError = require('./error').WorkerError;
-
+var generator = require('../generator/lib/generator');
 
 var isPageInConfig = function (config, page) {
     return config.pages && config.pages[page];
@@ -170,6 +170,7 @@ module.exports = {
                 result.queueShift = data.queueShift;
                 result.onDone = function () {
                     queuePool.amqpDoneQueue.publish(message);
+                    generator.deleteCachedCall(result.key);
                 };
                 this.emit('data', result);
             }

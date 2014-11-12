@@ -271,6 +271,7 @@ exports.doCall = function (options, callback) {
                 }
                 options.success = false;
                 options.error = err;
+
                 cachedCalls[messageKey][requestId].resolve(options);
             }
         } else {

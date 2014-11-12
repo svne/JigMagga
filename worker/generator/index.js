@@ -244,7 +244,6 @@ messageStream
 
 messageStream.on('message:uploaded', function (key) {
     log('deleting api cache for message with key %s', key);
-    generator.deleteCachedCall(key);
 });
 
 module.exports = messageStream;

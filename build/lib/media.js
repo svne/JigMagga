@@ -213,12 +213,12 @@ module.exports = {
         return es.map(function (data, callback) {
             ps.pause();
             var config = configMerge.getProjectConfig(data.build.namespace);
-            var uploader = helper.getUploader(config, data.build.domain, data.build.live);
+            var uploader = helper.getUploader(config, data.build, data.build.live);
 
             var onUpload = function (err, res) {
                 if (err) {
                     if (err.code === 'ENOENT' && !data.build.package.mediaSource.required) {
-                        console.log('meida file is absent but it is not required');
+                        console.log('media file is absent but it is not required');
                         ps.resume();
                         return callback();
                     }
@@ -246,9 +246,9 @@ module.exports = {
                         file.size = stat.size;
                         next(null, file);
                     });
-                } else if(file.require){
+                } else if (file.require) {
                     next(new Error('meida file is absent but it is required'));
-                } else{
+                } else {
                     console.log('meida file is absent but it is not required');
                     next(null, null);
                 }
@@ -257,21 +257,23 @@ module.exports = {
                     return console.log(err);
                 }
                 // filter all files that non exits
-                files = files.filter(function(file){
+                files = files.filter(function (file) {
                     return file !== null;
                 });
-                var fileGroups = createFileGroupsBySize(files, 9500000);
+                if (files.length) {
+                    var fileGroups = createFileGroupsBySize(files, 9500000);
 
-                async.each(fileGroups, function (fileGroup, cb) {
-                    console.log('starting to upload new fileGroup with size', fileGroup.size);
-                    helper.uploadArchive(fileGroup.files, data.build, function (err, res) {
-                        if (err) {
-                            return cb(err);
-                        }
-                        console.log(res);
-                        cb();
-                    });
-                }, onUpload);
+                    async.each(fileGroups, function (fileGroup, cb) {
+                        console.log('starting to upload new fileGroup with size', fileGroup.size);
+                        helper.uploadArchive(fileGroup.files, data.build, function (err, res) {
+                            if (err) {
+                                return cb(err);
+                            }
+                            console.log(res);
+                            cb();
+                        });
+                    }, onUpload);
+                }
             });
         });
     }

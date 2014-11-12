@@ -102,13 +102,13 @@ module.exports = function(configuration, callback, log) {
     });
     var renderer = function(options){
         if(options.content.search(/can\.EJS\(/) !== -1){
-            configuration.wrapper = 'steal("can/view/ejs/ejs.js", function(can) {\n {{{content}}} \n});'
+            configuration.wrapper = 'steal("can/view/ejs/ejs.js", function(can) {\n {{{content}}} \n});';
         }
         else if(options.content.search(/can\.stache\(/) !== -1){
-            configuration.wrapper = 'steal("can/view/stache/stache.js", function(stache) {\n {{{content}}} \n});'
+            configuration.wrapper = 'steal("can/view/stache/stache.js", function(stache) {\n {{{content}}} \n});';
         }
         else if(options.content.search(/can\.Mustache\(/) !== -1){
-            configuration.wrapper = 'steal("can/view/mustache/mustache.js", function(can) {\n {{{content}}} \n});'
+            configuration.wrapper = 'steal("can/view/mustache/mustache.js", function(can) {\n {{{content}}} \n});';
         }
         return Handlebars.compile(configuration.wrapper)(options);
     };
@@ -122,6 +122,10 @@ module.exports = function(configuration, callback, log) {
             var method = configuration.version.indexOf('2.1') === 0 ? 'preloadStringRenderer' : 'preload';
             var output = compiled[0];
 
+            // replace html comments
+            if(options.type === "stache"){
+                options.text = options.text.toString().replace(/<!--.*?-->/g, "");
+            }
             if(output === null) {
                 return "can." + options.type + "('" + options.id + "', " + JSON.stringify(options.text) + ");";
             }

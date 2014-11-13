@@ -37,10 +37,10 @@ var router = new ProcessRouter(process);
 
 var messageStream = stream.duplex();
 
-var handleError = function (text, data) {
+var handleError = function (text, data, messageKey) {
     log('error', text, {error: true});
 
-    return router.send('error', new WorkerError(text, data, data.key));
+    return router.send('error', new WorkerError(text, data, messageKey));
 };
 
 
@@ -101,7 +101,7 @@ var uploadItem = function (data, callback) {
     var uploadPageTimeDiff = timeDiff.create('upload:page');
     var next = function (err, res) {
         if (err) {
-            handleError(err, {upload: true, url: data.url});
+            handleError(err, data.origMessage, data.messageKey);
         } else {
             uploadsAmount += 1;
             log('success', res + ' time: ' + Date.now(),

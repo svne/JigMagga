@@ -111,6 +111,7 @@ module.exports = function (source, uploader, basePath, program) {
 
 
         uploader.send('new:zip', {
+            origMessage: data.message.origMessage,
             url: data.message.url,
             page: data.message.page,
             locale: data.message.locale,

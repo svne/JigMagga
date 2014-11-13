@@ -135,6 +135,7 @@ var loadLocale = es.through(function (data) {
  * @name Metadata
  * @type {{
  *     bucketName: {String},
+ *     origMessage: {Object},
  *     url: {String},
  *     page: {String},
  *     locale: {String},
@@ -145,7 +146,7 @@ var loadLocale = es.through(function (data) {
 
 /**
  *
- * @param {String} message
+ * @param {Object} message
  * @param {String} key
  * @param {String} bucketName
  * @param {Array.<UploadItem>} uploadPages
@@ -157,6 +158,7 @@ var sendToWorker = function (message, key, bucketName, uploadPages) {
         url: message.url,
         page: message.page,
         locale: message.locale,
+        origMessage: message.origMessage,
         messageKey: key
     };
 

@@ -32,7 +32,7 @@ var getConfigPlaceholders = function (obj, params, matches) {
         for (var key in obj) {
             if (obj.hasOwnProperty(key)) {
                 if (matches) {
-                    matches = _.assign(matches, getConfigPlaceholders(obj[key], params, matches));
+                    matches = deepExtend(matches, getConfigPlaceholders(obj[key], params, matches));
                 } else {
                     matches = getConfigPlaceholders(obj[key], params, matches);
                 }
@@ -42,7 +42,7 @@ var getConfigPlaceholders = function (obj, params, matches) {
     else if (obj && obj.constructor === Array) {
         for (var i = 0; i < obj.length; i++) {
             if (matches) {
-                matches = _.assign(matches, getConfigPlaceholders(obj[i], params, matches));
+                matches = deepExtend(matches, getConfigPlaceholders(obj[i], params, matches));
             } else {
                 matches = getConfigPlaceholders(obj[i], params, matches);
             }
@@ -135,10 +135,10 @@ var replaceConfigPlaceholdersByArrays = function (configs, placeholderKeys, plac
 var replaceConfigPlaceholder = function (config, placeholder, value) {
     var configs = [];
     if (!value || !value.constructor || value.constructor !== Array) {
-        configs.push(deepReplace(config, "{" + placeholder + "}", value));
+        configs.push(deepReplace(deepExtend({}, config), "{" + placeholder + "}", value));
     } else {
         value.forEach(function (v) {
-            configs.push(deepReplace(config, "{" + placeholder + "}", v));
+            configs.push(deepReplace(deepExtend({}, config), "{" + placeholder + "}", v));
         });
     }
     return configs;
@@ -150,29 +150,17 @@ exports.getConfigPlaceholders = getConfigPlaceholders;
 exports.getParamByString = getParamByString;
 exports.deepReplace = deepReplace;
 
-
-var replaceParam = function (string, paramName, parameters) {
-    var trimmedName = paramName.substring(1, paramName.length - 1);
-
-    return string.replace(paramName, parameters[trimmedName]);
-};
-
-var placeholderRegexp = new RegExp('\\{([^\\}]+)\\}', 'ig');
-
 exports.simpleReplace = function(string, params) {
     if (string.indexOf("{") < 0) {
         return string;
     }
 
-    var placeholders = string.match(placeholderRegexp);
-
-    if (placeholders.length === 1) {
-        return replaceParam(string, placeholders[0], params);
-    }
-
-    _.each(placeholders, function (placeholder) {
-        string = replaceParam(string, placeholder, params);
+    _.each(params, function(value, key) {
+        string = string.replace("{" + key + "}", value);
+        if (string.indexOf("{") < 0) {
+            return false;
+        }
     });
 
     return string;
-};
+}

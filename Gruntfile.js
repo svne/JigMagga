@@ -268,6 +268,11 @@ module.exports = function (grunt) {
                     open: true,
                     middleware: function (connect, options, middlewares) {
 
+                        var generateDefaultBase = function (cwd, filename) {
+                            var defaultBase = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,5}\//, "/default/"));
+                            return defaultBase.replace(/\/[^\/]*\.[a-z]{2,5}\//, '/');
+                        };
+
                         // inject a custom middleware into the array of default middlewares
                         middlewares.unshift(function (req, res, next) {
                             if (req.url === "/") {
@@ -309,8 +314,9 @@ module.exports = function (grunt) {
                                 var cwd = options.base[0] + "/",
                                     filename = req.url,
                                     filenameSHTML = path.join(cwd, filename.replace(/\.html/, ".shtml")),
-                                    defaultBase = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,5}\//, "/default/")),
-                                    defaultBaseSHTML = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,5}\//, "/default/").replace(/\.html/, ".shtml"));
+                                    defaultBase = generateDefaultBase(cwd, filename),
+                                    defaultBaseSHTML = generateDefaultBase(cwd, filename).replace(/\.html/, ".shtml");
+                                console.log( "----",defaultBase)
                                 if (fs.existsSync(filename)) {
                                     console.log('found as filename', filename);
                                     res.end(ssInclude.parse(filename, fs.readFileSync(filename, {

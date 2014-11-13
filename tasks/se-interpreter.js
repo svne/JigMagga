@@ -1,6 +1,6 @@
 module.exports = function (grunt) {
 
-
+    var helper = require("./selenium/selenium.js")(grunt);
     grunt.registerTask('se-interpreter', 'Selenium testing json files from selenium builder (saucelabs)', function (path) {
         var done = this.async();
         var selenium = require('selenium-standalone'),
@@ -16,30 +16,38 @@ module.exports = function (grunt) {
             // Connect selenium console output to grunt output
             console: true,
             // browser
-            browser: "chrome"
+            browser: "firefox"
         });
 
-        options.files = grunt.file.expandMapping(options.path + "*.json");
+        options.files = grunt.file.expandMapping(options.path && options.path.indexOf(".json") === -1 ? (options.path + "*.json") : options.path);
 
 
         var server = selenium();
 
-        process.stderr.on('data', function(output) {
+        process.stderr.on('data', function (output) {
             grunt.fail.warn(output);
         });
-
 
         setTimeout(function () {
 
             // Process each filepath in-order.
             grunt.util.async.forEachLimit(options.files, 1, function (file, next) {
-                var timer = setTimeout(function(){
+
+
+                var testFile = grunt.file.readJSON(file.dest);
+
+                //check if suite
+                if (testFile.type === "suite") {
+                    testFile = helper.renderSEBuilderSuite(testFile, options);
+                }
+
+                var timer = setTimeout(function () {
                     grunt.fail.warn("Timeout appears " + options.timeout);
                     next();
                 }, options.timeout);
 
-                var tr = new si.TestRun(grunt.file.readJSON(file.dest));
-                tr.browserOptions = { 'browserName': options.browser };
+                var tr = new si.TestRun(testFile);
+                tr.browserOptions = {'browserName': options.browser};
                 tr.listener = si.getInterpreterListener(tr);
                 tr.listener.startTestRun = function (testRun, info) {
                     grunt.log.writeln("Open:" + file.dest);
@@ -78,11 +86,13 @@ module.exports = function (grunt) {
                     }
                 };
                 tr.start();
+
+
             }, function () {
                 done();
-            })
+            });
 
-        }, 2000);
+        }, 3000);
     });
 
 

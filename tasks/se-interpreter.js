@@ -6,6 +6,13 @@ module.exports = function (grunt) {
         var selenium = require('selenium-standalone'),
             si = require('se-interpreter');
 
+        // check for fails
+        process.stderr.on('data', function (output) {
+            grunt.fail.warn(output);
+        });
+
+
+
 
         var options = this.options({
             // Default PhantomJS timeout.
@@ -16,19 +23,24 @@ module.exports = function (grunt) {
             // Connect selenium console output to grunt output
             console: true,
             // browser
-            browser: "firefox"
+            browser: "firefox",
+            //headless Xvfb
+            headless: !!grunt.option("headless")
         });
 
         options.files = grunt.file.expandMapping(options.path && options.path.indexOf(".json") === -1 ? (options.path + "*.json") : options.path);
 
+        helper.startServer(options, function (server, Xvfb) {
 
-        var server = selenium();
+            process.on('exit', function () {
+                if (server) {
+                    server.kill();
+                }
+                if (Xvfb) {
+                    Xvfb.kill();
+                }
+            });
 
-        process.stderr.on('data', function (output) {
-            grunt.fail.warn(output);
-        });
-
-        setTimeout(function () {
 
             // Process each filepath in-order.
             grunt.util.async.forEachLimit(options.files, 1, function (file, next) {
@@ -92,7 +104,7 @@ module.exports = function (grunt) {
                 done();
             });
 
-        }, 3000);
+        });
     });
 
 

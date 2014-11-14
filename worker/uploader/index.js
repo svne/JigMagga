@@ -63,9 +63,6 @@ var writeStream = function (message) {
         message.metadata.data = data;
         messageStream.write(message.metadata);
 
-        //console.log('DONE');
-        //router.send('message:uploaded', message.metadata.messageKey);
-
         return next();
     });
 };
@@ -74,7 +71,8 @@ router.addRoutes({
     pipe: function (message) {
         message = helper.parsePipeMessage(message);
 
-        archiver.bulkArchive(message.pages)
+        var compress = (message.metadata.page === 'ratings');
+        archiver.bulkArchive(message.pages, compress)
             .pipe(writeStream(message));
 
     },

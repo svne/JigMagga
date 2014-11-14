@@ -9,12 +9,13 @@ module.exports = {
      * return a stream with zip archive of file from file list
      *
      * @param  {Array.<UploadItem>} fileList
+     * @param  {Boolean} compress
      * @return {Readable}
      */
-    bulkArchive: function (fileList) {
+    bulkArchive: function (fileList, compress) {
         var fileListLength = fileList.length;
 
-        var options = (fileListLength > 200) ? {zlib: {level: 1}} : {store: true};
+        var options = (fileListLength > 200 || compress) ? {zlib: {level: 1}} : {store: true};
 
         var archive = archiver('zip', options);
 

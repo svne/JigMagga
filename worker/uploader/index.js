@@ -71,8 +71,7 @@ router.addRoutes({
     pipe: function (message) {
         message = helper.parsePipeMessage(message);
 
-        var compress = (message.metadata.page === 'ratings');
-        archiver.bulkArchive(message.pages, compress)
+        archiver.bulkArchive(message.pages)
             .pipe(writeStream(message));
 
     },

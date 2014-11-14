@@ -169,7 +169,7 @@ var sendToWorker = function (message, key, bucketName, uploadPages) {
 };
 
 var saveZipToDisk = function (uploadList, data) {
-    var archiveStream = archiver.bulkArchive(uploadList, true);
+    var archiveStream = archiver.bulkArchive(uploadList);
     var result = {
         message: data.message,
         key: data.key || undefined,

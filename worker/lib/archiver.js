@@ -4,6 +4,20 @@ var archiver = require('archiver');
 var async = require('async');
 var format = require('util').format;
 
+/**
+ *
+ * @param {Array.<UploadItem>} uploadList
+ * @return {Number}
+ */
+var calculateUploadSize = function (uploadList) {
+    return uploadList.reduce(function (currentSum, nextItem) {
+        return currentSum + nextItem.content.length;
+    }, 0);
+};
+
+/** @define {Number} max size of uncompressed upload - 49mb */
+var MAX_UNCOMPRESSED_UPLOAD_SIZE = 49 * 1000000;
+
 module.exports = {
     /**
      * return a stream with zip archive of file from file list
@@ -12,10 +26,12 @@ module.exports = {
      * @param  {Boolean} compress
      * @return {Readable}
      */
-    bulkArchive: function (fileList, compress) {
+    bulkArchive: function (fileList) {
         var fileListLength = fileList.length;
 
-        var options = (fileListLength > 200 || compress) ? {zlib: {level: 1}} : {store: true};
+        var uncompressedUploadSize = calculateUploadSize(fileList);
+
+        var options = (uncompressedUploadSize > MAX_UNCOMPRESSED_UPLOAD_SIZE) ? {zlib: {level: 1}} : {store: true};
 
         var archive = archiver('zip', options);
 

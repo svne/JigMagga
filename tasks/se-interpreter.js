@@ -3,14 +3,8 @@ module.exports = function (grunt) {
     var helper = require("./selenium/selenium.js")(grunt);
     grunt.registerTask('se-interpreter', 'Selenium testing json files from selenium builder (saucelabs)', function (path) {
         var done = this.async();
-        var selenium = require('selenium-standalone'),
-            si = require('se-interpreter'),
+        var si = require('se-interpreter'),
             tr, Server;
-
-        // check for fails
-        process.stderr.on('data', function (output) {
-            grunt.fail.warn(output);
-        });
 
 
         var options = this.options({

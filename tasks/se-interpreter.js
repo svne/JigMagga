@@ -22,7 +22,7 @@ module.exports = function (grunt) {
             browser: grunt.option("browser") || "firefox",
             // options for webdriver
             driverOptions: {
-                hostname: grunt.option("ip") || '0.0.0.0',
+                hostname: grunt.option("ip") || '127.0.0.1',
                 port: grunt.option("port") ||  4444
             },
             // remote server or local

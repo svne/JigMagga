@@ -36,10 +36,11 @@ module.exports = {
         var amqpQueue = config.queueBaseName;
         var amqpErrorQueue = config.queueErrorBaseName;
 
+        var domain = (program.basedomain) ? program.basedomain.split('/')[0] : '';
 
-        if (program.basedomain) {
-            amqpQueue += '.' + program.basedomain;
-            amqpErrorQueue = amqpErrorQueue.replace('error', program.basedomain + '.error');
+        if (domain) {
+            amqpQueue += '.' + domain;
+            amqpErrorQueue = amqpErrorQueue.replace('error', domain + '.error');
         }
 
         if (program.errorqueue) {
@@ -68,7 +69,7 @@ module.exports = {
         };
 
         if (program.deployuncached) {
-            var defaultName = config.queueBaseName + '.' + program.basedomain + '.' + prefixes['default'];
+            var defaultName = config.queueBaseName + '.' + domain + '.' + prefixes['default'];
             queues.amqpDeployQueue = program.deployuncached || defaultName;
         }
 

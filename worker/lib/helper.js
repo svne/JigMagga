@@ -106,7 +106,7 @@ module.exports = {
             args.unshift('--prof');
         }
 
-        args.unshift('--stack-size=32000');
+        args.unshift('--stack-size=64000');
 
         child = spawn(process.execPath, args, options);
         if (!_.isFunction(callback)) {

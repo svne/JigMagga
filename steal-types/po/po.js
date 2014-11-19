@@ -64,7 +64,7 @@ steal({id: './gettext.js', ignore: true}, "./sprintf.js",
                         .replace(/\{\{\s*_(?:\s*\\['"]([^\\]*)\\['"])*(?:\s*([^\s}]*))*\s*\}\}/mg, function(_match){
                             return _match.replace(/_\s*\\['"]([^\\]*)\\['"]/mg, function(_match, msgid){
                                 return " sprintf '" + win.gettext.gettext(msgid) + "'";
-                            })
+                            });
                         })
                         // mustache replace no sprintf!
                         .replace(/can\.Mustache\.txt\(\n\{scope:scope,options:options\},\nnull,\{get:"_"\},"([^"]+)"\)/mg, function (_match, msgid, quote) {

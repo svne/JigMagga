@@ -15,18 +15,18 @@ module.exports = function (grunt) {
 
         var options = this.options({
             // Default PhantomJS timeout.
-            timeout: grunt.options("timeout") || 120000,
+            timeout: grunt.option("timeout") || 120000,
             // Explicit path to directory with json files.
             path: path,
             // browser
-            browser: grunt.options("browser") || "firefox",
+            browser: grunt.option("browser") || "firefox",
             // options for webdriver
             driverOptions: {
-                hostname: grunt.options("ip") || '0.0.0.0',
-                port: grunt.options("port") ||  4444
+                hostname: grunt.option("ip") || '0.0.0.0',
+                port: grunt.option("port") ||  4444
             },
             // remote server or local
-            remoteServer: grunt.options("remote") || false
+            remoteServer: grunt.option("remote") || false
         });
 
         options.files = grunt.file.expandMapping(options.path && options.path.indexOf(".json") === -1 ? (options.path + "*.json") : options.path);

@@ -83,6 +83,59 @@ var getExcludedPredefinedVariables = function (jigs) {
     });
 };
 
+
+var getExcludedPredefinedFields = function (jigs) {
+    var apiCallJigs = _.filter(_.keys(jigs), function (jigName) {
+        return jigs[jigName].apicalls ;
+    });
+
+    var apiCallsWithExcludedFields = {};
+
+    _.each(apiCallJigs, function (jigName) {
+        var jig = jigs[jigName];
+        _.each(jig.apicalls, function (apiCall, apiCallName) {
+            if (!apiCallsWithExcludedFields[apiCallName]) {
+                apiCallsWithExcludedFields[apiCallName] = [];
+            }
+            if (!apiCall.excludeFromPredefined) {
+                return apiCallsWithExcludedFields[apiCallName].push([]);
+            }
+
+            apiCallsWithExcludedFields[apiCallName].push(apiCall.excludeFromPredefined);
+        });
+    });
+
+    _.each(apiCallsWithExcludedFields, function (listOfFields, name) {
+        var intersection = _.intersection.apply(null, listOfFields);
+        if (!intersection.length) {
+            delete apiCallsWithExcludedFields[name];
+            return;
+        }
+        apiCallsWithExcludedFields[name] = intersection;
+    });
+
+    return apiCallsWithExcludedFields;
+};
+
+var excludePredefinedFields = function (predefinedVar, excludedFields) {
+    var removeFromObject = function (item, fields) {
+        fields.forEach(function (field) {
+            if (item.hasOwnProperty(field)) {
+                delete item[field];
+            }
+        });
+        return item;
+    };
+
+    if (!_.isArray(predefinedVar)) {
+        return removeFromObject(predefinedVar, excludedFields);
+    }
+
+    return predefinedVar.map(function (item) {
+        return removeFromObject(item, excludedFields);
+    });
+};
+
 /**
  * generates script tags with path of production script in the src
  *
@@ -325,13 +378,21 @@ exports.generatePage = function (origConfig, callback) {
             ' window.' + namespaceCapital + ' = window.' + namespaceCapital + ' || {};' +
             ' window.' + namespaceCapital + '.predefined = window.' + namespaceCapital + '.predefined || {};' + "\n";
         var excludedPredefinedVar = getExcludedPredefinedVariables(config.jigs);
+        var excludedPredefinedFields = getExcludedPredefinedFields(config.jigs);
 
 
         for (var predefinedVar in config.predefined) {
+
+
             if (config.predefined.hasOwnProperty(predefinedVar) && config.predefined[predefinedVar] !== undefined) {
                 if (predefinedVar === "attr" || _.contains(excludedPredefinedVar, predefinedVar)) continue;
                 if (typeof config.predefined[predefinedVar] === 'function') continue;
-                predefinedVarString = JSON.stringify(config.predefined[predefinedVar]);
+                var predefinedItem = config.predefined[predefinedVar];
+                if (excludedPredefinedFields[predefinedVar]) {
+                    predefinedItem = excludePredefinedFields(predefinedItem, excludedPredefinedFields[predefinedVar]);
+                }
+
+                predefinedVarString = JSON.stringify(predefinedItem);
                 predefinedVarString = predefinedVarString.replace(/\$&/g, '');
                 predefinedVarString = predefinedVarString.replace(/<script.*?>/ig, '');
                 predefinedVarString = predefinedVarString.replace(/<style.*?>/ig, '');

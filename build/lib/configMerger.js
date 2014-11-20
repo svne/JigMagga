@@ -62,8 +62,9 @@ module.exports = {
     getPagesThatMatchThePageParam: function () {
         return es.map(function (data, callback) {
             var regex = new RegExp("^" + data.build.page + "$");
+            var locale = data.data.locales[0];
             var filteredPages = Object.keys(data.data.pages).filter(function (item) {
-                if (item && item.search(regex) !== -1) {
+                if (item && item.search(regex) !== -1 && data.data.pages[item][locale].indexOf('http://') === -1) {
                     return true;
                 }
             });

@@ -32,7 +32,14 @@ module.exports = function (grunt) {
             // save code coverage
             coverage: !!this.options("coverage"),
             // browser
-            browser : "chrome"
+            browser : "chrome",
+            // options for webdriver
+            driverOptions: {
+                hostname: grunt.option("ip") || '127.0.0.1',
+                port: grunt.option("port") ||  4444
+            },
+            // remote server or local
+            remoteServer: grunt.option("remote") || false
         });
 
         var urls;
@@ -53,7 +60,9 @@ module.exports = function (grunt) {
         var done = this.async();
 
         // selenium server
-        var server = selenium();
+        if(!options.remoteServer){
+            selenium();
+        }
         // webdriver
         var wd = require('wd');
         // testcase fail indicator
@@ -61,13 +70,11 @@ module.exports = function (grunt) {
         // tap log for output
         var tapLog = [];
 
-        process.stderr.on('data', function (output) {
-            grunt.fail.warn(output);
-        });
 
         setTimeout(function () {
 
-            var browser = wd.promiseChainRemote();
+
+            var browser =  wd.remote(options.driverOptions.hostname, options.driverOptions.port, 'promiseChain');
 
 
             // optional extra logging
@@ -108,7 +115,7 @@ module.exports = function (grunt) {
                                     }
                                     next();
                                 });
-                            })
+                            });
                         });
 
 

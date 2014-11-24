@@ -59,6 +59,9 @@ module.exports = function (grunt) {
 
                 var timer = setTimeout(function () {
                     grunt.fail.warn("Timeout appears " + options.timeout);
+                    if (tr && tr.wd) {
+                        tr.wd.quit();
+                    }
                     next();
                 }, options.timeout);
 

@@ -24,7 +24,7 @@ module.exports = function (grunt) {
             // Explicit non-file URLs to test.
             urls: [],
             // Connect phantomjs console output to grunt output
-            console: true,
+            console: false,
             // Do not use an HTTP base by default
             httpBase: false,
             // output as tap
@@ -32,11 +32,11 @@ module.exports = function (grunt) {
             // save code coverage
             coverage: !!this.options("coverage"),
             // browser
-            browser : "chrome",
+            browser: "chrome",
             // options for webdriver
             driverOptions: {
                 hostname: grunt.option("ip") || '127.0.0.1',
-                port: grunt.option("port") ||  4444
+                port: grunt.option("port") || 4444
             },
             // remote server or local
             remoteServer: grunt.option("remote") || false
@@ -60,7 +60,7 @@ module.exports = function (grunt) {
         var done = this.async();
 
         // selenium server
-        if(!options.remoteServer){
+        if (!options.remoteServer) {
             selenium();
         }
         // webdriver
@@ -69,56 +69,65 @@ module.exports = function (grunt) {
         var fail = false;
         // tap log for output
         var tapLog = [];
+        // tap for fail
+        var tapFail = function(result){
+            return "1..1\nnot ok 1 - " + result;
+        };
 
 
         setTimeout(function () {
 
 
-            var browser =  wd.remote(options.driverOptions.hostname, options.driverOptions.port, 'promiseChain');
+            var browser = wd.remote(options.driverOptions.hostname, options.driverOptions.port, 'promiseChain');
 
 
             // optional extra logging
             browser.on('status', function (info) {
-                console.log(info.cyan);
+                options.console && console.log(info.cyan);
             });
             browser.on('command', function (eventType, command, response) {
-                console.log(' > ' + eventType.cyan, command, (response || '').grey);
+                options.console && console.log(' > ' + eventType.cyan, command, (response || '').grey);
             });
             browser.on('http', function (meth, path, data) {
-                console.log(' > ' + meth.magenta, path, (data || '').grey);
+                options.console && console.log(' > ' + meth.magenta, path, (data || '').grey);
             });
 
             browser.init({browserName: options.browser}, function () {
                 // Process each filepath in-order.
                 grunt.util.async.forEachLimit(urls, 1, function (url, next) {
 
-
                         browser.get(url, function () {
                             browser.waitForConditionInBrowser("typeof QUnit !== \"undefined\" && QUnit.jigMagga && QUnit.jigMagga.done === true", options.timeout, 1000, function (err) {
                                 if (err) {
-                                    grunt.fail.warn(err);
-                                }
-                                browser.eval("JSON.stringify(QUnit.jigMagga.eventQueue)", function (err, result) {
-                                    if (err) {
-                                        grunt.fail.warn(err);
-                                    }
-                                    result = JSON.parse(result);
-                                    var tapResult = helper.getTapLogFromQunitResult(result);
-                                    tapLog = tapLog.concat(tapResult);
-                                    var doneResult = result[result.length - 2][1];
-                                    if (typeof doneResult.failed !== "undefined" && doneResult.failed == 0) {
-                                        grunt.log.ok("Test Done: " + url);
-                                    } else {
-                                        grunt.log.error(url);
-                                        grunt.log.error(JSON.stringify(result));
-                                        fail = true;
-                                    }
+                                    grunt.log.error(err);
+                                    fail = true;
+                                    tapLog = tapLog.concat(tapFail(url + " not loaded in time"));
                                     next();
-                                });
+                                } else {
+                                    browser.eval("JSON.stringify(QUnit.jigMagga.eventQueue)", function (err, result) {
+                                        if (err) {
+                                            grunt.log.error(err);
+                                            fail = true;
+                                            tapLog = tapLog.concat(tapFail(url + " not loaded in time"));
+                                        } else {
+                                            result = JSON.parse(result);
+                                            var tapResult = helper.getTapLogFromQunitResult(result);
+                                            tapLog = tapLog.concat(tapResult);
+                                            var doneResult = result[result.length - 2][1];
+                                            if (typeof doneResult.failed !== "undefined" && doneResult.failed == 0) {
+                                                grunt.log.ok("Test Done: " + url);
+                                            } else {
+                                                grunt.log.error(url);
+                                                grunt.log.error(JSON.stringify(result));
+                                                fail = true;
+                                            }
+                                        }
+                                        next();
+                                    });
+                                }
+
                             });
                         });
-
-
                     },
                     // All tests have been run.
                     function () {

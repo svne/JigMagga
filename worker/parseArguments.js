@@ -2,8 +2,15 @@
 
 var program = require('commander');
 
+var args = null;
+
 module.exports = function (processArgs) {
-    return program
+
+    if (args) {
+        return args;
+    }
+
+    args = program
         .option('-c, --cityId <n>', 'define location by cityId', Number)
         .option('-s, --regionId <n>', 'define location by regionId', Number)
         .option('-o, --districtId <n>', 'define location by districtId', Number)
@@ -35,5 +42,8 @@ module.exports = function (processArgs) {
         .option('-B, --bucket [value]', 'will override the config bucket and upload to this bucket you parse as value')
         .option('-P, --prefetch <n>', 'amount of prefetched messages from queue, makes sens only wirh -q', Number)
         .option('--longjohn', 'enable longjohn module for stack traces')
+        .option('--tag [value]', 'allows to filter logs from current worker')
         .parse(processArgs);
+
+    return args;
 };

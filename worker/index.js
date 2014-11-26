@@ -26,7 +26,7 @@ var config = require('./config');
 
 
 var amqpWrapper = require('./lib/amqpWrapper'),
-    log = require('./lib/logger')('worker', {component: 'worker', processId: process.pid}),
+    logger = require('./lib/logger'),
     ProcessRouter = require('./lib/router'),
     mainStream = require('./lib/mainStream'),
     helper = require('./lib/helper'),
@@ -35,15 +35,16 @@ var amqpWrapper = require('./lib/amqpWrapper'),
     messageStorage = require('./lib/message').storage,
     TimeDiff = require('./lib/timeDiff');
 
+// obtain application arguments by parsing command line
+var program = parseArguments(process.argv);
+var log = logger('worker',  {component: 'worker', basedomain: program.basedomain}, program);
+
 var timeDiff = new TimeDiff(log);
 var startTimeDiff = timeDiff.create('start');
 
 var generatorStream = require('./generator/index');
 
 log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
-
-// obtain application arguments by parsing command line
-var program = parseArguments(process.argv);
 
 if (program.longjohn) {
     console.log('long jhon enabled');

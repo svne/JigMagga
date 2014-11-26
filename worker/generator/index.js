@@ -15,9 +15,9 @@ var EventEmitter = require('events').EventEmitter,
     path = require('path'),
     es = require('event-stream');
 
-var messageStorage = require('../lib/message').storage;
+var args = require('../parseArguments')(process.argv);
 
-var log = require('../lib/logger')('generator', {component: 'generator', processId: process.pid}),
+var log = require('../lib/logger')('generator', {component: 'generator', basedomain: args.basedomain}, args),
     archiver = require('../lib/archiver'),
     helper = require('../lib/helper'),
     stream = require('../lib/streamHelper'),
@@ -68,7 +68,7 @@ emitter.on('call:success', function (requestId, time, fromCache) {
     log('Api call success for %s', requestId, {api: true});
 
     if (!fromCache) {
-        log('time diff for %s in msec: %d', requestId, time, {timediff: true, diff: time, prefix: 'rest:call'});
+        log('info', 'time diff for %s', requestId, {timediff: true, diff: time, prefix: 'rest:call'});
     }
 });
 
@@ -85,7 +85,7 @@ emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
  */
 var apiStream = es.through(function (data) {
     var that = this;
-    log('[*] send api request', helper.getMeta(data.message));
+    log('info', '[*] send api request', helper.getMeta(data.message));
     log('help', 'generating new message time %d', Date.now(), helper.getMeta(data.message));
     // Take first snapshot
     // var apiMessageKey = generator.createApiMessageKey(data.key);
@@ -230,7 +230,7 @@ messageStream
             }
             json = [];
 
-            log('upload list length %d', uploadPages.length);
+            log('info', 'upload list length %d', uploadPages.length,  helper.getMeta(data.message));
             generatePageTimeDiff.stop();
             //if the amount is more then 200 create an archive write it to disk and
             //send to the worker the archive link

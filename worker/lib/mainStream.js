@@ -11,8 +11,9 @@ var stream = require('./streamHelper'),
     helper = require('./helper');
 
 var generatorStream = require('../generator/index');
+var args = require('../parseArguments')(process.argv);
 
-var log = require('./logger')('worker', {component: 'worker', processId: process.pid});
+var log = require('./logger')('generator', {component: 'worker', basedomain: args.basedomain}, args);
 
 var config = require('../config');
 

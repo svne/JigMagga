@@ -81,6 +81,7 @@
     "gettext": "0.0.1",
     "git-wrapper": "~0.1.1",
     "handlebars": "~2.0.0-alpha.4",
+    "headless": "^1.0.0",
     "http-get": "~0.5.10",
     "jmUtil": "git+https://github.com/yourdelivery/JigMaggerUtilities.git",
     "jsdom": "~0.11.1",
@@ -102,6 +103,7 @@
     "stream-transform": "0.0.2",
     "uglify-js": "~2.4.15",
     "walk": "~2.3.3",
+    "wd": "^0.3.11",
     "winston": "~0.7.3",
     "winston-posix-syslog": "0.0.7"
   }

@@ -756,7 +756,8 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
 
                         } else {
                             config["predefined"][item.viewParam] = item.result;
-                            emitter.emit('call:success', item.requestId, item.time, item.fromCache);
+                            emitter.emit('call:success', item.requestId, item.time,
+                                item.fromCache, config.viewContainer.page, config.viewContainer.url);
                         }
                     }
                 }

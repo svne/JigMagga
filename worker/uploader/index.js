@@ -106,7 +106,7 @@ var uploadItem = function (data, callback) {
             var logMetadata =
                 {upload: true, url: data.url, locale: data.locale, page: data.page, uploadsAmount: uploadsAmount};
             log('success', res + ' time: ' + Date.now(), logMetadata);
-            log('info', res + ' time: ' + Date.now(), logMetadata);
+            log('info', res, logMetadata);
             router.send('message:uploaded', data.messageKey);
         }
         uploadPageTimeDiff.stop();

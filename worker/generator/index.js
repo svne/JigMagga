@@ -64,13 +64,19 @@ var emitter = new EventEmitter();
 emitter.on('call:parsing', function (name, config) {
     log('Parsing call for jig %s config: %j', name, config, {api:true});
 });
-emitter.on('call:success', function (requestId, time, fromCache) {
+emitter.on('call:success', function (requestId, time, fromCache, page, url) {
     log('Api call success for %s', requestId, {api: true});
 
     if (!fromCache) {
-        log('info', 'time diff for %s', requestId, {timediff: true, diff: time, prefix: 'rest:call'});
-    }
-});
+        var logOptions = {
+            timediff: true,
+            diff: time,
+            prefix: 'rest:call',
+            page: page,
+            url: url
+        };
+        log('info','time diff for %s', requestId, logOptions);
+    }});
 
 emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
     log('Config %d of %d for %s', readyConfigsLength, configsLength, url, {api: true});

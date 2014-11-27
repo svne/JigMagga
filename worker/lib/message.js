@@ -5,7 +5,7 @@ var es = require('event-stream'),
     _ = require('lodash');
 
 var WorkerError = require('./error').WorkerError;
-
+var generator = require('../generator/lib/generator');
 
 var isPageInConfig = function (config, page) {
     return config.pages && config.pages[page];
@@ -49,9 +49,20 @@ StoredMessage.prototype.isReady = function () {
     return this.uploadCount === 0 && this.doneCount === 0;
 };
 
+StoredMessage.prototype.clear = function () {
+    this.onDone = this.onUpload = null;
+};
+
 
 // @type {Object.<string, StoredMessage>}
 var messageStorage = {};
+
+
+var getIdValues = function (message) {
+    return _.pick(message, function (value, key) {
+        return (new RegExp('.*Id$', 'ig')).test(key);
+    });
+};
 
 module.exports = {
 
@@ -66,15 +77,10 @@ module.exports = {
     createMessage: function (message, program, domainConfig) {
         domainConfig = domainConfig || {};
 
-        var params = program.values || {
-                cityId: message.cityId || undefined,
-                regionId: message.regionId || undefined,
-                districtId: message.districtId || undefined,
-                restaurantId: message.restaurantId || undefined,
-                linkId: message.linkId || undefined,
-                reset: !program.liveuncached ? true : false
-            },
+        var params = program.values || message.params || getIdValues(message),
             locale = program.locale || message.locale;
+
+        params.reset = !program.liveuncached;
 
         return {
             basedomain: message.basedomain,
@@ -84,7 +90,7 @@ module.exports = {
             version: program.versionnumber,
             url: program.url || message.url,
             params: params,
-            origMessage: message,
+            origMessage: message.origMessage || message,
             locale: locale,
             noMessageAlternatives: program.noMessageAlternatives || undefined
         };
@@ -141,24 +147,22 @@ module.exports = {
          */
         return es.through(function (data) {
             var message,
-                result = {},
-                contentType = data.contentType;
+                result = {};
 
             if (_.isArray(data) && data.length === 1) {
                 data = data[0];
             }
 
-            if (contentType === 'text/plain' || contentType === 'text/json') {
-                try {
-                    message = _.isPlainObject(data.data) ?
-                        data.data : JSON.parse(data.data.toString('utf-8'));
-                } catch (e) {
-                    if (_.isFunction(data.queueShift)) {
-                        data.queueShift();
-                    }
-                    this.emit('err', new WorkerError('Date from queue is not JSON', data.content.toString('utf-8')));
+            try {
+                message = queuePool.constructor.parseMessage(data);
+
+            } catch (e) {
+                if (_.isFunction(data.queueShift)) {
+                    data.queueShift();
                 }
+                this.emit('err', new WorkerError('Date from queue is not JSON', data.content.toString('utf-8')));
             }
+
 
             if (message) {
                 result.message = message;
@@ -166,6 +170,7 @@ module.exports = {
                 result.queueShift = data.queueShift;
                 result.onDone = function () {
                     queuePool.amqpDoneQueue.publish(message);
+                    generator.deleteCachedCall(result.key);
                 };
                 this.emit('data', result);
             }
@@ -221,7 +226,7 @@ module.exports = {
                         result = Object.keys(config.pages)
                             .filter(filterLinks(message.locale))
                             .map(function (page) {
-                                var res = _.cloneDeep(data);
+                                var res =  _.cloneDeep(data);
                                 res.message.page = page;
                                 res.message.url = page;
                                 return res;
@@ -291,7 +296,9 @@ module.exports = {
             }
             messageStorage[key].done();
             if (messageStorage[key].isReady()) {
-                messageStorage[key] = null;
+                console.log('delete element', messageStorage[key].length);
+                messageStorage[key].clear();
+                delete messageStorage[key];
             }
         },
 
@@ -306,7 +313,9 @@ module.exports = {
             }
             messageStorage[key].upload();
             if (messageStorage[key].isReady()) {
-                messageStorage[key] = null;
+                messageStorage[key].clear();
+                delete messageStorage[key];
+
             }
         }
 

@@ -24,8 +24,9 @@ var _ = require('lodash'),
 
 var config = require('./config');
 
-var amqp = require('./lib/amqp'),
-    log = require('./lib/logger')('worker', {component: 'worker', processId: process.pid}),
+
+var amqpWrapper = require('./lib/amqpWrapper'),
+    logger = require('./lib/logger'),
     ProcessRouter = require('./lib/router'),
     mainStream = require('./lib/mainStream'),
     helper = require('./lib/helper'),
@@ -34,21 +35,27 @@ var amqp = require('./lib/amqp'),
     messageStorage = require('./lib/message').storage,
     TimeDiff = require('./lib/timeDiff');
 
+// obtain application arguments by parsing command line
+var program = parseArguments(process.argv);
+var log = logger('worker',  {component: 'worker', basedomain: program.basedomain}, program);
+
 var timeDiff = new TimeDiff(log);
 var startTimeDiff = timeDiff.create('start');
 
-var createPipeHandler = require('./lib/pipeHandler');
-
+var generatorStream = require('./generator/index');
 
 log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
 
-// obtain application arguments by parsing command line
-var program = parseArguments(process.argv);
+if (program.longjohn) {
+    console.log('long jhon enabled');
+    require('longjohn');
+}
 
 var basePath = (program.namespace) ? path.join(process.cwd(), program.namespace) : process.cwd();
 log('base project path is %s', basePath);
 
 if (program.queue) {
+    var amqp = amqpWrapper(config.amqp);
     //if queue argument exists connect to amqp queues
     var prefetch = program.prefetch || config.amqp.prefetch;
     var connection = amqp.getConnection(config.amqp);
@@ -85,41 +92,16 @@ var workerErrorHandler = function (err) {
     }
 };
 
-var generatorRouter,
-    uploaderRouter,
-    uploader,
-    generator;
+var uploaderRouter,
+    uploader;
 
-var generatorRoutes = {
-    /**
-     * if zip is creating in the generator. Generator just send a link to it
-     * to the worker and worker proxies this message to uploader
-     *
-     * @param  {{zipPath: string, message: object}} data
-     */
-    'new:zip': function (data) {
-        log('new zip saved by generator', helper.getMeta(data.message));
-        if (!program.live) {
-            messageStorage.done(data.key);
-        }
-
-        uploaderRouter.send('new:zip', {
-            url: data.message.url,
-            page: data.message.page,
-            locale: data.message.locale,
-            zipPath: data.zipPath,
-            bucketName: data.bucketName,
-            messageKey: data.key
-        });
-    },
-    error: workerErrorHandler
-};
 
 var uploaderRoutes = {
     'message:uploaded': function (key) {
 
         messageStorage.upload(key);
-        generatorRouter.send('message:uploaded', key);
+
+        generatorStream.emit('message:uploaded', key);
 
         log('message uploaded %s', key);
     },
@@ -136,17 +118,12 @@ helper.createChildProcesses(args, function (err, result) {
         throw new Error(err);
     }
 
-    uploader = result.uploader,
-    generator = result.generator;
-
-    generatorRouter = new ProcessRouter(generator);
+    uploader = result.uploader;
     uploaderRouter = new ProcessRouter(uploader);
 
     // add pipe handler a function that should be executed on pipe
     // event from the generator
-    generatorRoutes.pipe = createPipeHandler(uploaderRouter, queuePool, workerErrorHandler);
 
-    generatorRouter.addRoutes(generatorRoutes);
     uploaderRouter.addRoutes(uploaderRoutes);
 
     var source;
@@ -160,7 +137,7 @@ helper.createChildProcesses(args, function (err, result) {
         source = messageSource.getDefaultSource(program, log);
     }
 
-    var main = mainStream(source, generatorRouter, basePath, program);
+    var main = mainStream(source, uploaderRouter, basePath, program);
 
     startTimeDiff.stop();
 
@@ -173,19 +150,18 @@ helper.createChildProcesses(args, function (err, result) {
     });
 
     main.on('error:message', workerErrorHandler);
-    var exitHandler = error.getExitHandler(log, [uploader, generator]);
+    var exitHandler = error.getExitHandler(log, [uploader]);
 
     process.on('SIGTERM', exitHandler);
     process.on('SIGHUP', exitHandler);
     uploader.on('exit', exitHandler);
-    generator.on('exit', exitHandler);
 });
 
 process.on('uncaughtException', error.getErrorHandler(log, workerErrorHandler));
 
 
 if (config.main.nodetime) {
-    log('connect to nodetime for profiling');
+    console.log('connect to nodetime for profiling');
     require('nodetime').profile(config.main.nodetime);
 }
 

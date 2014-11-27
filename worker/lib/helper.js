@@ -8,6 +8,8 @@ var _ = require('lodash'),
     spawn = require('child_process').spawn;
 
 
+var METADATA_CHUNK_IDENTIFIER = '@@:::@@';
+
 module.exports = {
     /**
      * check correctness of URL
@@ -34,10 +36,11 @@ module.exports = {
         var amqpQueue = config.queueBaseName;
         var amqpErrorQueue = config.queueErrorBaseName;
 
+        var domain = (program.basedomain) ? program.basedomain.split('/')[0] : '';
 
-        if (program.basedomain) {
-            amqpQueue += '.' + program.basedomain;
-            amqpErrorQueue = amqpErrorQueue.replace('error', program.basedomain + '.error');
+        if (domain) {
+            amqpQueue += '.' + domain;
+            amqpErrorQueue = amqpErrorQueue.replace('error', domain + '.error');
         }
 
         if (program.errorqueue) {
@@ -59,12 +62,18 @@ module.exports = {
         if (program.postfix) {
             amqpQueue += '.' + program.postfix;
         }
-
-        return {
+        var queues = {
             amqpQueue: amqpQueue,
             amqpErrorQueue: amqpErrorQueue,
             amqpDoneQueue: 'pages.generate.done'
         };
+
+        if (program.deployuncached) {
+            var defaultName = config.queueBaseName + '.' + domain + '.' + prefixes['default'];
+            queues.amqpDeployQueue = program.deployuncached || defaultName;
+        }
+
+        return queues;
     },
 
     /**
@@ -87,12 +96,17 @@ module.exports = {
         var options = {stdio: [0, 1, 2, 'pipe', 'ipc']},
             child,
             waitTime;
-        if (args[0] !== 'debug') {
+        if (args[0] !== 'debug' && args[0] !== 'prof') {
             args.unshift(modulePath);
-        } else {
+        } else if (args[0] === 'debug') {
             args[0] = modulePath;
             args.unshift('--debug-brk');
+        } else if (args[0] === 'prof') {
+            args[0] = modulePath;
+            args.unshift('--prof');
         }
+
+        args.unshift('--stack-size=64000');
 
         child = spawn(process.execPath, args, options);
         if (!_.isFunction(callback)) {
@@ -169,9 +183,9 @@ module.exports = {
         }
         var that = this;
         async.parallel({
-            generator: function (next) {
-                that.createSubProcess(__dirname + '/../generator/index.js', _.cloneDeep(args), next);
-            },
+            //generator: function (next) {
+            //    that.createSubProcess(__dirname + '/../generator/index.js', _.cloneDeep(args), next);
+            //},
             uploader: function (next) {
                 that.createSubProcess(__dirname + '/../uploader/index.js', _.cloneDeep(args), next);
             }
@@ -182,12 +196,18 @@ module.exports = {
      * generate the name of bucket using message basedomain and
      * knox.buckets list from config
      *
-     * @param  {{message: {basedomain: string}}} data    [description]
-     * @param  {{live: boolean, liveuncached: boolean}} program [description]
+     * @param  {{message: {basedomain: string}}}               data
+     * @param  {{live: boolean, liveuncached: boolean}}        program
+     * @param  {{S3_BUCKET: ?string, buckets: {live: Object, stage: Object, deploy: Object}}} config
      * @return {string}
      */
-    generateBucketName: function (data, program, buckets) {
+    generateBucketName: function (data, program, config) {
         var baseDomain = data.message.basedomain;
+        var buckets = config.buckets;
+        if (config.S3_BUCKET) {
+            return config.S3_BUCKET;
+        }
+
         if (program.live || program.liveuncached) {
             return buckets.live[baseDomain] || 'www.' + baseDomain;
         }
@@ -270,5 +290,33 @@ module.exports = {
      */
     getRedisKey: function (name, pid) {
         return name + ':' + pid;
+    },
+
+    /**
+     *
+     * @param {Metadata} metadata
+     * @param {Array.<UploadItem>} archive
+     */
+    stringifyPipeMessage: function (metadata, archive) {
+        metadata = JSON.stringify(metadata) + METADATA_CHUNK_IDENTIFIER;
+
+        archive = JSON.stringify(archive);
+
+        return Buffer.concat([new Buffer(metadata), new Buffer(archive)]);
+    },
+
+    /**
+     *
+     * @param {Buffer} message
+     * @return {{metadata: Metadata, pages: Array.<UploadItem>}}
+     */
+    parsePipeMessage: function (message) {
+        message = Buffer.isBuffer(message) ? message.toString() : message;
+
+        message = message.split(METADATA_CHUNK_IDENTIFIER);
+        return {
+            metadata: JSON.parse(message[0]),
+            pages: JSON.parse(message[1])
+        };
     }
 };

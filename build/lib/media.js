@@ -84,7 +84,7 @@ var generateDestination = function (descriptor, from, buildOptions) {
     }
 
     if (!isPattern.test(descriptor.from)) {
-        return descriptor.to;
+       return descriptor.to;
     }
 
     var fromWithoutPattern = descriptor.from.replace('**', '');
@@ -187,7 +187,6 @@ module.exports = {
                     if (err) {
                         return callback(err);
                     }
-                    console.log(files);
                     if (!files.length) {
                         console.log('there is no media files for mask:', data.build.package.mediaSource);
                         return callback(null);
@@ -213,7 +212,7 @@ module.exports = {
         return es.map(function (data, callback) {
             ps.pause();
             var config = configMerge.getProjectConfig(data.build.namespace);
-            var uploader = helper.getUploader(config, data.build.domain, data.build.live);
+            var uploader = helper.getUploader(config, data.build, data.build.live);
 
             var onUpload = function (err, res) {
                 if (err) {

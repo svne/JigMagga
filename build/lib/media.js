@@ -259,18 +259,21 @@ module.exports = {
                 files = files.filter(function(file){
                     return file !== null;
                 });
-                var fileGroups = createFileGroupsBySize(files, 9500000);
+                if(files.length){
+                    var fileGroups = createFileGroupsBySize(files, 9500000);
 
-                async.each(fileGroups, function (fileGroup, cb) {
-                    console.log('starting to upload new fileGroup with size', fileGroup.size);
-                    helper.uploadArchive(fileGroup.files, data.build, function (err, res) {
-                        if (err) {
-                            return cb(err);
-                        }
-                        console.log(res);
-                        cb();
-                    });
-                }, onUpload);
+                    async.each(fileGroups, function (fileGroup, cb) {
+                        console.log('starting to upload new fileGroup with size', fileGroup.size);
+                        helper.uploadArchive(fileGroup.files, data.build, function (err, res) {
+                            if (err) {
+                                return cb(err);
+                            }
+                            console.log(res);
+                            cb();
+                        });
+                    }, onUpload);
+                }
+
             });
         });
     }

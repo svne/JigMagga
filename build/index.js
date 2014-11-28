@@ -77,7 +77,7 @@ else  {
         .pipe(builder.css.minify())
         .pipe(builder.makePackage())
         .pipe(helper.triggerDonePageEvent())
-        .pipe(helper.saveFileToDiskOrUpload())
+        .pipe(helper.saveFileToDiskOrUpload());
 
 }
 

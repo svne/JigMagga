@@ -170,6 +170,11 @@ module.exports = {
                 result.queueShift = data.queueShift;
                 result.onDone = function () {
                     queuePool.amqpDoneQueue.publish(message);
+
+                    if (queuePool.amqpDeployQueue) {
+                        queuePool.amqpDeployQueue.publish(message);
+                    }
+
                     generator.deleteCachedCall(result.key);
                 };
                 this.emit('data', result);
@@ -296,7 +301,7 @@ module.exports = {
             }
             messageStorage[key].done();
             if (messageStorage[key].isReady()) {
-                console.log('delete element', messageStorage[key].length);
+
                 messageStorage[key].clear();
                 delete messageStorage[key];
             }

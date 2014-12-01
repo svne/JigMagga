@@ -100,9 +100,7 @@ module.exports = function (source, uploader, basePath, program) {
 
 
     generatorStream.on('api:done', function (key) {
-        if (!program.live) {
-            messageStorage.done(key);
-        }
+        messageStorage.done(key);
     });
 
     /**

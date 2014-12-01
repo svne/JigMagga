@@ -65,12 +65,12 @@ module.exports = {
         var queues = {
             amqpQueue: amqpQueue,
             amqpErrorQueue: amqpErrorQueue,
-            amqpDoneQueue: 'pages.generate.done'
+            amqpDoneQueue: (program.live) ? 'pages.generate.deploy.done' : 'pages.generate.done'
         };
 
         if (program.deployuncached) {
-            var defaultName = config.queueBaseName + '.' + domain + '.' + prefixes['default'];
-            queues.amqpDeployQueue = program.deployuncached || defaultName;
+            var defaultName = 'pages.generate.deploy';
+            queues.amqpDeployQueue = _.isString(program.deployuncached) ? program.deployuncached : defaultName;
         }
 
         return queues;

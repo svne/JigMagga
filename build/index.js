@@ -77,7 +77,11 @@ else  {
         .pipe(builder.css.minify())
         .pipe(builder.makePackage())
         .pipe(helper.triggerDonePageEvent())
-        .pipe(helper.saveFileToDiskOrUpload());
+        .pipe(helper.saveFileToDiskOrUpload())
+        .on('error', function(err) {
+            console.error("ERROR: ", err);
+            process.exit(1);
+        });
 
 }
 

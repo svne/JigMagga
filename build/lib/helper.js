@@ -341,6 +341,7 @@ module.exports = {
     uploadFiles: function (uploadList, buildOptions, callback) {
         var onUpload = function (err, res) {
             if (err) {
+                callback(err);
                 return process.stdout.write('Error while uploading: ' + err + '\n');
             }
             process.stdout.write(res + '\n');

@@ -74,7 +74,7 @@ steal("can/control", "lib/view-helpers", function () {
                 clearInterval(self.browserNotification.defaults.browserNotificationTimer);
                 self.browserNotification.defaults.browserNotificationTimer = setInterval(function () {
                     if (Notification.permission === "granted" && self.browserNotification.defaults.browserNotificationLatest) {
-                        createNotification(self.browserNotification.browserNotification.defaults.browserNotificationLatest);
+                        createNotification(self.browserNotification.defaults.browserNotificationLatest);
                         self.browserNotification.defaults.browserNotificationLatest = null;
                     }
                 }, 10000);

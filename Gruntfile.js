@@ -361,7 +361,7 @@ module.exports = function (grunt) {
         },
         funcunit: {
             options: {
-                timeout: 60000,
+                timeout: 90000,
                 httpBase: "http://localhost:8000"
             },
             all: ['**/funcunit.html', '!bower_components/**', '!steal/**']

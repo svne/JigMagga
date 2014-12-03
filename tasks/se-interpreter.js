@@ -1,7 +1,7 @@
 module.exports = function (grunt) {
 
-    var helper = require("./selenium/selenium.js")(grunt);
     grunt.registerTask('se-interpreter', 'Selenium testing json files from selenium builder (saucelabs)', function (path) {
+        var helper = require("./selenium/selenium.js")(grunt);
         var done = this.async();
         var si = require('se-interpreter'),
             tr, Server;
@@ -17,7 +17,7 @@ module.exports = function (grunt) {
             // options for webdriver
             driverOptions: {
                 hostname: grunt.option("ip") || '127.0.0.1',
-                port: grunt.option("port") ||  4444
+                port: grunt.option("port") || 4444
             },
             // remote server or local
             remoteServer: grunt.option("remote") || false
@@ -25,22 +25,11 @@ module.exports = function (grunt) {
 
         options.files = grunt.file.expandMapping(options.path && options.path.indexOf(".json") === -1 ? (options.path + "*.json") : options.path);
 
-        var kill = function (callback) {
-            console.log("Killing processes ....");
-            if (Server) {
-                Server.kill();
-            }
-            if (tr && tr.wd) {
-                tr.wd.quit();
-            }
-            setTimeout(function () {
-                callback && callback();
-            }, 3000);
-        };
         ['exit', 'SIGTERM', 'SIGINT'].forEach(function listenAndKill(evName) {
-            process.on(evName, kill);
+            process.on(evName, function () {
+                process.exit(1);
+            });
         });
-
 
         helper.startServer(options, function (server) {
 
@@ -86,7 +75,7 @@ module.exports = function (grunt) {
                 tr.listener.endStep = function (testRun, info) {
                     if (info.success === false) {
                         grunt.fail.warn(info.error);
-                    }else{
+                    } else {
                         grunt.log.ok(JSON.stringify(info));
                     }
                     if (tr.hasNext()) {
@@ -113,9 +102,7 @@ module.exports = function (grunt) {
 
 
             }, function () {
-                kill(function () {
-                    done();
-                });
+                done();
             });
 
         });

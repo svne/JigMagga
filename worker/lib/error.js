@@ -74,9 +74,9 @@ exports.getWorkerErrorHandler = function (log, queuePool, messageStorage, progra
      */
     return function workerErrorHandler(err) {
         var errorMessage = format('Error while processing message: %j',  err);
-        var errorMetaData = {error: true};
-        log('error', errorMessage, err.originalMessage, errorMetaData);
-        log('info', errorMessage, err.originalMessage, errorMetaData);
+        log('error', errorMessage, err.originalMessage, {error: true});
+        err.originalMessage.error = true;
+        log('info', errorMessage, err.originalMessage);
 
         if (!program.queue) {
             return;

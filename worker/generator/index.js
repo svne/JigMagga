@@ -37,8 +37,6 @@ log('started, pid', process.pid);
 var messageStream = stream.duplex();
 
 var handleError = function (text, data) {
-    log('error', text, {error: true});
-
     messageStream.emit('err', new WorkerError(text, data.message.origMessage, data.key));
 };
 /**

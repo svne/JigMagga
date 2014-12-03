@@ -355,6 +355,36 @@ module.exports = function (grunt) {
                         });
                         middlewares.unshift(connect.bodyParser());
                         return middlewares;
+                    },
+                    onCreateServer: function(server) {
+                        var amqp = require('amqp'),
+                            sockjs = require('sockjs');
+                        var connection = amqp.createConnection({ host: 'localhost' });
+
+                        connection.on('ready', function () {
+
+                            var socketServer = sockjs.createServer();
+                            socketServer.on('connection', function (conn) {
+                                console.log("sockjs connection established");
+                                conn.on('data', function (message) {
+                                    console.log("message", message);
+                                    // Use the default 'amq.topic' exchange
+                                    connection.queue(message.route + Date.now().toString(), function (q) {
+                                        // Catch all messages
+                                        q.bind(message.route);
+                                        // Receive messages
+                                        q.subscribe(function (message) {
+                                            // Print messages to stdout
+                                            console.log(message);
+                                            conn.write(JSON.stringify(message));
+                                        });
+                                    });
+
+                                });
+                            });
+
+                            socketServer.installHandlers(server, {prefix: '/queues'});
+                        });
                     }
                 }
             }

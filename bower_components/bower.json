@@ -12,6 +12,7 @@
         "jquery-old": "jquery#1.11.1",
         "jquery-new": "jquery#2.1.1",
         "jquerypp": "1.0.1",
-        "jstorage": "0.4.8"
+        "jstorage": "0.4.8",
+        "sockjs-client": "0.3.4"
     }
 }

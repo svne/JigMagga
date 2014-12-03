@@ -1,11 +1,12 @@
 steal("can/construct", "can/map", function () {
     "use strict";
     
-     /**
+     var map = can.sockJsMap || can.Map;
+    /**
      * Represents a mediator by extending the canJS Map
      * @constructor
      */
-    var Mediator = can.Map.extend({
+    var Mediator = map.extend({
         handlers: {},
         monitorMethod: undefined,
         monitorCallback: []
@@ -17,7 +18,7 @@ steal("can/construct", "can/map", function () {
          * @param {function} cb - the callback function
          * @returns {can.Map}
          */
-        subscribe: function subscribe (queueName, subscriber, cb) {
+        subscribe: function (queueName, subscriber, cb) {
             var self = this;
             if (typeof queueName !== "string") {
                 throw new Error("Queue name must be string");

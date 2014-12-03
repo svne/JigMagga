@@ -15,6 +15,7 @@ var _ = require('lodash');
 var stream = require('./streamHelper');
 var helper = require('./helper');
 var messageHelper = require('./message');
+var error = require('../lib/error');
 
 
 module.exports = {
@@ -39,6 +40,8 @@ module.exports = {
             log('help', '%s queue stream is ready', queue);
         });
 
+
+        queueStream.on('error', error.getErrorHandler(log, function () {}));
 
         return queueStream
             .pipe(messageHelper.getMessageParser(queuePool, program.live));

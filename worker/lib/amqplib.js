@@ -1,6 +1,7 @@
 'use strict';
 var _ = require('lodash');
 var querystring = require('querystring');
+var qretry = require('qretry');
 var format = require('util').format;
 var stream = require('./streamHelper');
 var domain = require('domain');
@@ -28,7 +29,8 @@ var getChannel = function (connection, queue, callback) {
         console.log('CONNECTION ERROR', connection);
         throw new Error(err);
     });
-    connection
+
+    qretry(connection, {maxRetry: 16, interval: 1000, intervalMultiplicator: 2})
         .then(function (connected) {
             dom.add(connected);
             queue.channelPromise = connected.createChannel().then();
@@ -37,10 +39,9 @@ var getChannel = function (connection, queue, callback) {
                 queue.channel = ch;
                 return callback(null, ch);
             });
-        })
-        .catch(function (err) {
-            console.log(err);
-           return callback(err);
+        }, function (err) {
+            console.log('error');
+            return callback(err);
         });
 };
 
@@ -71,7 +72,7 @@ var getStream = exports.getStream = function (options) {
 
     getChannel(connection, this, function (err, channel) {
         if (err) {
-            throw new Error(err);
+            return duplex.emit('error', err);
         }
         var ok = channel.assertQueue(queue, {durable: true});
         if (prefetch) {
@@ -179,7 +180,7 @@ exports.getConnection = function (config) {
     }
 
     console.log('------[amqpUrl]', amqpUrl);
-    return amqplib.connect(amqpUrl);
+    return amqplib.connect.bind(amqplib, amqpUrl);
 };
 
 var QueuePool = function (queues, connection, options) {

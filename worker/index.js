@@ -66,35 +66,10 @@ if (program.queue) {
     var queuePool = new amqp.QueuePool(queues, connection, {prefetch: prefetch});
 }
 
-/**
- * handle non fatal error regarding with message parsing
- *
- * @param  {{origMessage: object, message: string, stack: string, messageKey: string}} err
- */
-var workerErrorHandler = function (err) {
-    log('error', 'Error while processing message: %j',  err, err.originalMessage, {});
-    if (!program.queue) {
-        return;
-    }
-
-    //if there is shift function for this message in the storage shift message from main queue
-    messageStorage.upload(err.messageKey);
-
-    var originalMessage = err.originalMessage || {};
-    originalMessage.error = err.message;
-
-    if (program.queue) {
-        queuePool.amqpErrorQueue.publish(originalMessage);
-
-        if (!program.live && !originalMessage.upload) {
-            messageStorage.done(err.messageKey);
-        }
-    }
-};
-
 var uploaderRouter,
     uploader;
 
+var workerErrorHandler = error.getWorkerErrorHandler(log, queuePool, messageStorage, program);
 
 var uploaderRoutes = {
     'message:uploaded': function (key) {
@@ -111,7 +86,7 @@ var uploaderRoutes = {
 var args = _.clone(process.argv).splice(2);
 
 
-// Creates a generator and uploader child processes,
+// Creates an uploader child process,
 // creates a router for them
 helper.createChildProcesses(args, function (err, result) {
     if (err) {

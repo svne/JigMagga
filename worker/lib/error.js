@@ -1,5 +1,6 @@
 'use strict';
 var inherits = require('util').inherits;
+var format = require('util').format;
 var _ = require('lodash');
 
 var WorkerError = function (message, originalMessage, messageKey) {
@@ -17,14 +18,18 @@ exports.WorkerError = WorkerError;
 
 /**
  * Handle errors
- * @param  {[type]}   log      [description]
+ * @param  {Function}   log      [description]
  * @param  {Function} callback [description]
  * @return {[type]}            [description]
  */
 exports.getErrorHandler = function (log, callback) {
     return function (err) {
         if (!(err instanceof WorkerError)) {
-            log('error', 'Fatal error. process will be terminated %s, %s', err.message, err.stack, {uncaughtException: true});
+            var logMessage = format('Fatal error. process will be terminated %s, %s', err.message, err.stack);
+            var logMeta = {uncaughtException: true, error: true};
+
+            log('error', logMessage, logMeta);
+            log('info', logMessage, logMeta);
             return setTimeout(function () {
               process.exit();
             }, 100);
@@ -49,4 +54,46 @@ exports.getExitHandler = function (log, childProcesses) {
        });
        process.exit();
    };
+};
+
+/**
+ *
+ * @param {Function} log
+ * @param {QueuePool} queuePool
+ * @param {storage} messageStorage
+ * @param {object} program
+ * @return {Function}
+ */
+exports.getWorkerErrorHandler = function (log, queuePool, messageStorage, program) {
+
+
+    /**
+     * handle non fatal error regarding with message parsing
+     *
+     * @param  {{origMessage: object, message: string, stack: string, messageKey: string}} err
+     */
+    return function workerErrorHandler(err) {
+        var errorMessage = format('Error while processing message: %j',  err);
+        var errorMetaData = {error: true};
+        log('error', errorMessage, err.originalMessage, errorMetaData);
+        log('info', errorMessage, err.originalMessage, errorMetaData);
+
+        if (!program.queue) {
+            return;
+        }
+
+        //if there is shift function for this message in the storage shift message from main queue
+        messageStorage.upload(err.messageKey);
+
+        var originalMessage = err.originalMessage || {};
+        originalMessage.error = err.message;
+
+        if (program.queue) {
+            queuePool.amqpErrorQueue.publish(originalMessage);
+
+            if (!program.live && !originalMessage.upload) {
+                messageStorage.done(err.messageKey);
+            }
+        }
+    };
 };

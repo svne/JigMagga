@@ -78,7 +78,7 @@ var getExcludedPredefinedVariables = function (jigs) {
     return _.filter(_.keys(apiCallsWithJigs), function (apiCallName) {
         var jigs = apiCallsWithJigs[apiCallName];
         return _.every(jigs, function (jig) {
-            return jig.render === false;
+            return jig.render === false && jig.includeController !== true;
         });
     });
 };

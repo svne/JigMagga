@@ -40,8 +40,6 @@ var router = new ProcessRouter(process);
 var messageStream = stream.duplex();
 
 var handleError = function (text, data, messageKey) {
-    log('error', text, {error: true});
-
     return router.send('error', new WorkerError(text, data, messageKey));
 };
 

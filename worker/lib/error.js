@@ -72,7 +72,7 @@ exports.getWorkerErrorHandler = function (log, queuePool, messageStorage, progra
      * @param  {{origMessage: object, message: string, stack: string, messageKey: string}} err
      */
     return function workerErrorHandler(err) {
-        var errorMessage = format('Error while processing message: %j',  err);
+        var errorMessage = format('Error while processing message: %s',  err.message);
         err.originalMessage.error = true;
         log('error', errorMessage, err.originalMessage);
 

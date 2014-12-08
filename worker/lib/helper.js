@@ -205,7 +205,9 @@ module.exports = {
      * @return {string}
      */
     generateBucketName: function (data, program, config) {
-        var baseDomain = data.message.basedomain;
+        var domainNames = data.message.basedomain.split('/');
+
+        var baseDomain = domainNames.length === 1 ? domainNames[0] : domainNames.reverse()[0];
         var buckets = config.buckets;
         if (config.S3_BUCKET) {
             return config.S3_BUCKET;

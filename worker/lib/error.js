@@ -29,7 +29,7 @@ exports.getErrorHandler = function (log, callback) {
             var logMeta = {uncaughtException: true, error: true};
 
             log('error', logMessage, logMeta);
-            log('info', logMessage, logMeta);
+
             return setTimeout(function () {
               process.exit();
             }, 100);
@@ -66,17 +66,15 @@ exports.getExitHandler = function (log, childProcesses) {
  */
 exports.getWorkerErrorHandler = function (log, queuePool, messageStorage, program) {
 
-
     /**
      * handle non fatal error regarding with message parsing
      *
      * @param  {{origMessage: object, message: string, stack: string, messageKey: string}} err
      */
     return function workerErrorHandler(err) {
-        var errorMessage = format('Error while processing message: %j',  err);
-        var errorMetaData = {error: true};
-        log('error', errorMessage, err.originalMessage, errorMetaData);
-        log('info', errorMessage, err.originalMessage, errorMetaData);
+        var errorMessage = format('Error while processing message: %s',  err.message);
+        err.originalMessage.error = true;
+        log('error', errorMessage, err.originalMessage);
 
         if (!program.queue) {
             return;

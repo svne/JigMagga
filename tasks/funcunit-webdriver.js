@@ -31,7 +31,7 @@ module.exports = function (grunt) {
             // save code coverage
             coverage: !!this.options("coverage"),
             // browser
-            browser: "chrome",
+            browser: grunt.option("browser") || "chrome",
             // options for webdriver
             driverOptions: {
                 hostname: grunt.option("ip") || '127.0.0.1',

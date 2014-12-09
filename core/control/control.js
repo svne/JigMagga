@@ -23,7 +23,7 @@ steal("can/control", "lib/view-helpers", function () {
 
         Controller = eval(jigs[configSelector].controller);
         if (Controller) {
-            new Controller(selector, options);
+            return new Controller(selector, options);
         }
     };
 

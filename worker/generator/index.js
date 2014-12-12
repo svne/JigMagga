@@ -202,7 +202,7 @@ messageStream
     .pipe(loadLocale)
     .on('data', function (data) {
         var saveDiskPath = path.join(data.basePath, '..'),
-            knox = config.main.knox,
+            knox = _.clone(config.main.knox),
             json;
 
         var generatePageTimeDiff = timeDiff.create('generate:page:' + data.message.page);

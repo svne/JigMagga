@@ -19,7 +19,6 @@ var args = require('../parseArguments')(process.argv);
 
 var log = require('../lib/logger')('generator', {component: 'uploader', basedomain: args.basedomain}, args),
     ProcessRouter  = require('../lib/router'),
-    stream = require('../lib/streamHelper'),
     error = require('../lib/error'),
     archiver = require('../lib/archiver'),
     stream = require('../lib/streamHelper'),
@@ -40,7 +39,7 @@ var router = new ProcessRouter(process);
 var messageStream = stream.duplex();
 
 var handleError = function (text, data, messageKey) {
-    return router.send('error', new WorkerError(text, data, messageKey));
+    return router.send('error', new WorkerError(text, data, messageKey, error.STATUS_CODES.UPLOAD_ERROR));
 };
 
 

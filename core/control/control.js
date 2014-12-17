@@ -1,4 +1,5 @@
 steal("can/control", "lib/view-helpers", function () {
+    "use strict";
 
     can.Control.prototype.renderJig = function (configSelector, selector, options) {
         var Controller,
@@ -16,7 +17,6 @@ steal("can/control", "lib/view-helpers", function () {
 
         if (!jigs || !jigs[configSelector]) {
             throw new Error("No config for " + configSelector);
-            return;
         }
 
         options = can.extend(true, {}, jigs[configSelector].options, options);
@@ -30,78 +30,7 @@ steal("can/control", "lib/view-helpers", function () {
 
 
 
-    can.Control.prototype.browserNotification = function (title, body, icon, onclick) {
-        if ("Notification" in window) {
-            var self = this,
-                timeout = 30000,
-                createNotification = function (obj) {
-                    var notification = new Notification(obj.title, {
-                        icon: icon,
-                        body: obj.body
-                    });
-                    if (obj.onclick) {
-                        notification.onclick = function () {
-                            if (obj.onclick.indexOf('#!') !== -1) {
-                                if (window.location.hash === obj.onclick) {
-                                    window.location.hash = '#!';
-                                }
-                                setTimeout(function () {
-                                    window.location.hash = obj.onclick;
-                                }, 100);
-                            } else {
-                                window.location = obj.onclick;
-                            }
-                        };
-                    }
-                    setTimeout(function () {
-                        notification.close();
-                    }, timeout);
-                    window.onunload = function () {
-                        notification.close();
-                    };
-                    window.onbeforeunload = function () {
-                        notification.close();
-                    };
-                };
 
-            // Permission Check
-            if (Notification.permission === "default") {
-                self.browserNotification.defaults.browserNotificationLatest = {
-                    title: title,
-                    body: body,
-                    onclick: onclick
-                };
-                clearInterval(self.browserNotification.defaults.browserNotificationTimer);
-                self.browserNotification.defaults.browserNotificationTimer = setInterval(function () {
-                    if (Notification.permission === "granted" && self.browserNotification.defaults.browserNotificationLatest) {
-                        createNotification(self.browserNotification.defaults.browserNotificationLatest);
-                        self.browserNotification.defaults.browserNotificationLatest = null;
-                    }
-                }, 10000);
-            } else if (Notification.permission === "granted") {
-                createNotification({
-                    title: title,
-                    body: body,
-                    onclick: onclick
-                });
-            }
-        }
-    };
-
-    can.Control.prototype.browserNotification.defaults = {
-        browserNotificationLatest: null,
-        browserNotificationTimer: null
-    };
-
-    can.Control.prototype.browserNotificationPermission = function () {
-        if ("Notification" in window) {
-            Notification.requestPermission(function (permission) {
-                if (!('permission' in Notification)) {
-                    Notification.permission = permission;
-                }
-            });
-        }
-    };
 
     can.Control.prototype.helper = {
         isKeyNumeric: function (which) {

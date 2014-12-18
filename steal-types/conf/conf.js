@@ -560,8 +560,6 @@
          */
         mergeConfigs = function (parseconfig, configs) {
 
-            configs.push(parseconfig);
-
             var config = {
                     includes: []
                 },

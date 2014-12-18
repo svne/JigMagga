@@ -44,8 +44,11 @@ module.exports = function (grunt) {
                 //check if suite
                 if (testFile.type === "suite") {
                     testFile = helper.renderSEBuilderSuite(testFile, options);
+                }else{
+                    testFile = helper.replaceVariableFromDataSource(testFile, file.dest);
                 }
 
+        
                 var timer = setTimeout(function () {
                     grunt.fail.warn("Timeout appears " + options.timeout);
                     if (tr && tr.wd) {

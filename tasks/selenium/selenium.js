@@ -8,14 +8,36 @@ module.exports = function (grunt) {
 
     return {
 
+        replaceVariableFromDataSource: function(document, documentPath){
+            var loadedFile,
+                newDocument,
+                newSteps = [];
+            if(document && document.data && document.data.configs && document.data.configs.json && document.data.configs.json.path){
+                loadedFile = grunt.file.readJSON(path.join(documentPath.replace(/\/[^/]*.json$/, ""), document.data.configs.json.path));
+                loadedFile.forEach(function (item) {
+                    newDocument = JSON.stringify(document.steps);
+                    for(var key in item) {
+                        newDocument = newDocument.replace(new RegExp("\\$\\{" + key + "\\}", "g"), item[key]);
+
+                    }
+                    newSteps = newSteps.concat(JSON.parse(newDocument));
+                });
+                document.steps = newSteps;
+            }
+            return document;
+        },
         renderSEBuilderSuite: function (suite, options) {
-            var loadedFile;
+            var loadedFile,
+                documentPath,
+                self = this;
             suite.type = "script";
             suite.steps = [];
             if (suite && suite.scripts) {
                 suite.scripts.forEach(function (item) {
-                    loadedFile = grunt.file.readJSON(path.join(options.path.replace(/\/[^/]*.json$/, ""), item.path));
+                    documentPath = path.join(options.path.replace(/\/[^/]*.json$/, ""), item.path);
+                    loadedFile = grunt.file.readJSON(documentPath);
                     if (loadedFile && loadedFile.steps) {
+                        loadedFile = self.replaceVariableFromDataSource(loadedFile, documentPath);
                         suite.steps = suite.steps.concat(loadedFile.steps);
                     }
                 });

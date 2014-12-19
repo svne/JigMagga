@@ -136,7 +136,7 @@ module.exports = function (grunt) {
                             tr.end();
                         } else {
                             clearTimeout(timer);
-                            t.end();
+                            t && t.end();
                             next();
                         }
                     };

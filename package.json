@@ -102,6 +102,7 @@
     "ssi": "~0.1.5",
     "steal": "git+https://github.com/bitovi/steal-build.git",
     "stream-transform": "0.0.2",
+    "tape": "^3.0.3",
     "uglify-js": "~2.4.15",
     "walk": "~2.3.3",
     "wd": "^0.3.11",

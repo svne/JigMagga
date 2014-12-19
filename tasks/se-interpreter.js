@@ -1,9 +1,11 @@
 module.exports = function (grunt) {
+    "use strict";
 
     grunt.registerTask('se-interpreter', 'Selenium testing json files from selenium builder (saucelabs)', function (path) {
-        var helper = require("./selenium/selenium.js")(grunt);
-        var done = this.async();
-        var si = require('se-interpreter'),
+        var helper = require("./selenium/selenium.js")(grunt),
+            done = this.async(),
+            si = require('se-interpreter'),
+            test = require('tape'),
             tr, Server;
 
 
@@ -20,8 +22,18 @@ module.exports = function (grunt) {
                 port: grunt.option("port") || 4444
             },
             // remote server or local
-            remoteServer: grunt.option("remote") || false
+            remoteServer: grunt.option("remote") || false,
+            // selenium server options https://www.npmjs.com/package/selenium-standalone
+            seleniumServer: {
+                spawnOptions: {/*stdio: 'pipe'*/},
+                seleniumArgs: [/*"--debug"*/]
+            },
+            // tap result
+            tap: !!grunt.option("tap"),
+            outputFile: grunt.option("tap-file") || "tap.log"
         });
+
+
 
         options.files = grunt.file.expandMapping(options.path && options.path.indexOf(".json") === -1 ? (options.path + "*.json") : options.path);
 
@@ -32,6 +44,14 @@ module.exports = function (grunt) {
         helper.startServer(options, function (server) {
 
             Server = server;
+
+            if(options.tap){
+                var file = require("fs").createWriteStream(options.outputFile);
+                var outStream = test.createStream();
+                outStream.pipe(file);
+                outStream.pipe(process.stdout);
+            }
+
 
             // Process each filepath in-order.
             grunt.util.async.forEachLimit(options.files, 1, function (file, next) {
@@ -47,60 +67,59 @@ module.exports = function (grunt) {
                 }
 
 
-                var timer = setTimeout(function () {
-                    grunt.fail.warn("Timeout appears " + options.timeout);
-                    if (tr && tr.wd) {
-                        tr.wd.quit();
-                    }
-                    next();
-                }, options.timeout);
+                test('Test: ' + file.dest, function (t) {
 
-                tr = new si.TestRun(testFile);
-                tr.browserOptions = {'browserName': options.browser};
-                tr.driverOptions = options.driverOptions;
-                tr.listener = si.getInterpreterListener(tr);
-                tr.listener.startTestRun = function (testRun, info) {
-                    grunt.log.writeln("Open:" + file.dest);
-                    if (info.success === false) {
-                        grunt.fail.warn(info.error);
-                    }
-                    if (tr.hasNext()) {
-                        tr.next();
-                    }
-                };
-                tr.listener.startStep = function (testRun, info) {
-                    if (info.success === false) {
-                        grunt.fail.warn(info.error);
-                    }
-                };
-                tr.listener.endStep = function (testRun, info) {
-                    if (info.success === false) {
-                        grunt.fail.warn(info.error);
-                    } else {
-                        grunt.log.ok(JSON.stringify(info));
-                    }
-                    if (tr.hasNext()) {
-                        tr.next();
-                    } else {
-                        tr.end();
-                    }
-                };
-                tr.listener.endTestRun = function (testRun, info) {
-                    if (info.success === false) {
-                        grunt.fail.warn(info.error);
-
-                    }
-                    if (tr.hasNext()) {
-                        tr.end();
-                    } else {
-                        clearTimeout(timer);
+                    var timer = setTimeout(function () {
+                        t.ok(false, "Timeout appears " + options.timeout);
+                        if (tr && tr.wd) {
+                            tr.wd.quit();
+                        }
                         next();
-                    }
-                };
+                    }, options.timeout);
 
+                    tr = new si.TestRun(testFile);
+                    tr.browserOptions = {'browserName': options.browser};
+                    tr.driverOptions = options.driverOptions;
+                    tr.listener = si.getInterpreterListener(tr);
+                    tr.listener.startTestRun = function (testRun, info) {
+                        if (info.success === false) {
+                            t.ok(false, info.error);
+                        }
+                        if (tr.hasNext()) {
+                            tr.next();
+                        }
+                    };
+                    tr.listener.startStep = function (testRun, info) {
+                        if (info.success === false) {
+                            t.ok(false, info.error);
+                        }
+                    };
+                    tr.listener.endStep = function (testRun, info) {
+                        if (info.success === false) {
+                            t.ok(false, info.error);
+                        } else {
+                            t.ok(true, info.success);
+                        }
+                        if (tr.hasNext()) {
+                            tr.next();
+                        } else {
+                            tr.end();
+                        }
+                    };
+                    tr.listener.endTestRun = function (testRun, info) {
+                        if (info.success === false) {
+                            t.ok(false, info.error);
+                        }
+                        if (tr.hasNext()) {
+                            tr.end();
+                        } else {
+                            clearTimeout(timer);
+                            next();
+                        }
+                    };
 
-                tr.start();
-
+                    tr.start();
+                });
 
             }, function () {
                 done();

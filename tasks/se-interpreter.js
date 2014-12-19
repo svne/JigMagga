@@ -94,6 +94,9 @@ module.exports = function (grunt) {
                         if (tr && tr.wd) {
                             tr.wd.quit();
                         }
+                        if(t){
+                            t.end();
+                        }
                         next();
                     }, options.timeout);
 
@@ -118,8 +121,8 @@ module.exports = function (grunt) {
                     tr.listener.endStep = function (testRun, info) {
                         if (info.success === false) {
                             log(false, info.error, t);
-                        } else if (info.success) {
-                            log(true, info.success, t);
+                        } else {
+                            log(true, JSON.stringify(info), t);
                         }
                         if (tr.hasNext()) {
                             tr.next();
@@ -135,7 +138,9 @@ module.exports = function (grunt) {
                             tr.end();
                         } else {
                             clearTimeout(timer);
-                            t && t.end();
+                            if(t){
+                                t.end();
+                            }
                             next();
                         }
                     };

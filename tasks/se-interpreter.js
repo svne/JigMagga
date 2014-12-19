@@ -35,7 +35,6 @@ module.exports = function (grunt) {
 
         var log = function (ok, msg, test) {
                 if (options.tap && test) {
-                    console.log("LOG:", ok, msg);
                     test.ok(ok, msg);
                 } else {
                     if (ok) {

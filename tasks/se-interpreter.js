@@ -33,7 +33,18 @@ module.exports = function (grunt) {
             outputFile: grunt.option("tap-file") || "tap.log"
         });
 
+        var log = function(ok, msg, test){
+            if(options.tap && test){
+                test.ok(ok, msg);
+            }else{
+                if(ok){
+                    grunt.log.ok(msg);
+                }else{
+                    grunt.log.error(msg)
+                }
+            }
 
+        };
 
         options.files = grunt.file.expandMapping(options.path && options.path.indexOf(".json") === -1 ? (options.path + "*.json") : options.path);
 
@@ -70,7 +81,7 @@ module.exports = function (grunt) {
                 test('Test: ' + file.dest, function (t) {
 
                     var timer = setTimeout(function () {
-                        t.ok(false, "Timeout appears " + options.timeout);
+                        log(false, "Timeout appears " + options.timeout + " | " +  JSON.stringify(tr && tr.currentStep()), t);
                         if (tr && tr.wd) {
                             tr.wd.quit();
                         }
@@ -83,7 +94,7 @@ module.exports = function (grunt) {
                     tr.listener = si.getInterpreterListener(tr);
                     tr.listener.startTestRun = function (testRun, info) {
                         if (info.success === false) {
-                            t.ok(false, info.error);
+                            log(false, info.error, t);
                         }
                         if (tr.hasNext()) {
                             tr.next();
@@ -91,14 +102,17 @@ module.exports = function (grunt) {
                     };
                     tr.listener.startStep = function (testRun, info) {
                         if (info.success === false) {
-                            t.ok(false, info.error);
+                            log(false, info.error, t);
+                        }
+                        if (!tr.hasNext()) {
+                            tr.end();
                         }
                     };
                     tr.listener.endStep = function (testRun, info) {
                         if (info.success === false) {
-                            t.ok(false, info.error);
-                        } else {
-                            t.ok(true, info.success);
+                            log(false, info.error, t);
+                        } else if(info.success) {
+                            log(true, info.success, t);
                         }
                         if (tr.hasNext()) {
                             tr.next();
@@ -108,7 +122,7 @@ module.exports = function (grunt) {
                     };
                     tr.listener.endTestRun = function (testRun, info) {
                         if (info.success === false) {
-                            t.ok(false, info.error);
+                            log(false, info.error, t);
                         }
                         if (tr.hasNext()) {
                             tr.end();

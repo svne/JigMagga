@@ -45,8 +45,8 @@ module.exports = function (grunt) {
             return suite;
         },
         startServer: function (options, callback) {
-            var spawnOptions = options.seleniumServer.spawnOptions || {},
-                seleniumArgs = options.seleniumServer.seleniumArgs || [];
+            var spawnOptions = typeof options.seleniumServer.spawnOptions === "object" ? options.seleniumServer.spawnOptions : null,
+                seleniumArgs = typeof options.seleniumServer.seleniumArgs === "object" ?  options.seleniumServer.seleniumArgs :  null;
             if (options.remoteServer) {
                 callback && callback(null);
             } else {

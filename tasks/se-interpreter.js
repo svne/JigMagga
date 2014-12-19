@@ -25,26 +25,36 @@ module.exports = function (grunt) {
             remoteServer: grunt.option("remote") || false,
             // selenium server options https://www.npmjs.com/package/selenium-standalone
             seleniumServer: {
-                spawnOptions: {/*stdio: 'pipe'*/},
-                seleniumArgs: [/*"--debug"*/]
+                spawnOptions: null /*{ stdio: 'inherit' }*/,
+                seleniumArgs: null /*["--debug"]*/
             },
             // tap result
             tap: !!grunt.option("tap"),
             outputFile: grunt.option("tap-file") || "tap.log"
         });
 
-        var log = function(ok, msg, test){
-            if(options.tap && test){
-                test.ok(ok, msg);
-            }else{
-                if(ok){
-                    grunt.log.ok(msg);
-                }else{
-                    grunt.log.error(msg)
+        var log = function (ok, msg, test) {
+                if (options.tap && test) {
+                    console.log("LOG:", ok, msg);
+                    test.ok(ok, msg);
+                } else {
+                    if (ok) {
+                        grunt.log.ok(msg);
+                    } else {
+                        grunt.log.error(msg);
+                    }
                 }
-            }
 
-        };
+            },
+            testStart = function (name, cb) {
+                if (options.tap) {
+                    test('Test: ' + name, function (t) {
+                        cb(t);
+                    });
+                } else {
+                    cb(null);
+                }
+            };
 
         options.files = grunt.file.expandMapping(options.path && options.path.indexOf(".json") === -1 ? (options.path + "*.json") : options.path);
 
@@ -56,7 +66,7 @@ module.exports = function (grunt) {
 
             Server = server;
 
-            if(options.tap){
+            if (options.tap) {
                 var file = require("fs").createWriteStream(options.outputFile);
                 var outStream = test.createStream();
                 outStream.pipe(file);
@@ -78,10 +88,10 @@ module.exports = function (grunt) {
                 }
 
 
-                test('Test: ' + file.dest, function (t) {
+                testStart('Test: ' + file.dest, function (t) {
 
                     var timer = setTimeout(function () {
-                        log(false, "Timeout appears " + options.timeout + " | " +  JSON.stringify(tr && tr.currentStep()), t);
+                        log(false, "Timeout appears " + options.timeout + " | " + JSON.stringify(tr && tr.currentStep()), t);
                         if (tr && tr.wd) {
                             tr.wd.quit();
                         }
@@ -104,14 +114,12 @@ module.exports = function (grunt) {
                         if (info.success === false) {
                             log(false, info.error, t);
                         }
-                        if (!tr.hasNext()) {
-                            tr.end();
-                        }
+
                     };
                     tr.listener.endStep = function (testRun, info) {
                         if (info.success === false) {
                             log(false, info.error, t);
-                        } else if(info.success) {
+                        } else if (info.success) {
                             log(true, info.success, t);
                         }
                         if (tr.hasNext()) {
@@ -128,9 +136,11 @@ module.exports = function (grunt) {
                             tr.end();
                         } else {
                             clearTimeout(timer);
+                            t.end();
                             next();
                         }
                     };
+
 
                     tr.start();
                 });

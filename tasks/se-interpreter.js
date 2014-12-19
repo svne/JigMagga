@@ -25,10 +25,8 @@ module.exports = function (grunt) {
 
         options.files = grunt.file.expandMapping(options.path && options.path.indexOf(".json") === -1 ? (options.path + "*.json") : options.path);
 
-        ['exit', 'SIGTERM', 'SIGINT'].forEach(function listenAndKill(evName) {
-            process.on(evName, function () {
-                process.exit(1);
-            });
+        process.on('SIGINT', function () {
+            process.exit(1);
         });
 
         helper.startServer(options, function (server) {
@@ -44,11 +42,11 @@ module.exports = function (grunt) {
                 //check if suite
                 if (testFile.type === "suite") {
                     testFile = helper.renderSEBuilderSuite(testFile, options);
-                }else{
+                } else {
                     testFile = helper.replaceVariableFromDataSource(testFile, file.dest);
                 }
 
-        
+
                 var timer = setTimeout(function () {
                     grunt.fail.warn("Timeout appears " + options.timeout);
                     if (tr && tr.wd) {

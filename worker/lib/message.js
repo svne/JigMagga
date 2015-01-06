@@ -60,21 +60,20 @@ var messageStorage = {};
 
 var getIdValues = function (message) {
     return _.pick(message, function (value, key) {
-        return (new RegExp('.*Id$', 'ig')).test(key);
+        return (new RegExp('.*Id(s|)$', 'ig')).test(key);
     });
 };
 
 module.exports = {
 
     /**
-     * push one message to data array in order to push it to worker
-     * later
+     * extend message with prgram arguments and config data
      *
-     * @param {array} dataArr
      * @param {object} message
      * @param {object} program
+     * @param {object} domainConfig
      */
-    createMessage: function (message, program, domainConfig) {
+    extendMessage: function (message, program, domainConfig) {
         domainConfig = domainConfig || {};
 
         var params = program.values || message.params || getIdValues(message),
@@ -103,6 +102,8 @@ module.exports = {
      * @param {object} pagesConf
      * @param {object} options
      * @return {array}
+     * @deprecated
+     *
      */
     createAllPages: function (message, pagesConf, options) {
         var that = this,
@@ -117,7 +118,7 @@ module.exports = {
                 options.page = page;
                 options.url = page;
 
-                result.push(that.createMessage(message, options));
+                result.push(that.extendMessage(message, options));
             }
 
         });

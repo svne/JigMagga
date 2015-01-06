@@ -249,8 +249,10 @@ exports.doCall = function (options, callback) {
     }
 
     cachedCalls[messageKey][requestId] = Q.defer();
+    var query = (options.query && Object.keys(options.query).length) ? "?" + querystring.stringify(options.query) : "";
+
     var getOptions = {
-        url: options.path + (options.query ? "?" + querystring.stringify(options.query) : ""),
+        url: options.path + query,
         bufferType: "buffer",
         headers: { "YD-X-Domain": options.db, "Accept-Language": options.language, 'User-Agent': 'ydFrontend_Worker' }
     };

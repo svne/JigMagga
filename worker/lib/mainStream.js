@@ -67,7 +67,7 @@ module.exports = function (source, uploader, basePath, program) {
         .pipe(tc(configMerge.getConfigStream()))
         .on('data', function (data) {
 
-            data.message = messageHelper.createMessage(data.message, program, data.config);
+            data.message = messageHelper.extendMessage(data.message, program, data.config);
             data.bucketName = helper.generateBucketName(data, program, config.main.knox);
 
             generatorStream.write(data);

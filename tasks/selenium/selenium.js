@@ -8,15 +8,15 @@ module.exports = function (grunt) {
 
     return {
 
-        replaceVariableFromDataSource: function(document, documentPath){
+        replaceVariableFromDataSource: function (document, documentPath) {
             var loadedFile,
                 newDocument,
                 newSteps = [];
-            if(document && document.data && document.data.configs && document.data.configs.json && document.data.configs.json.path){
+            if (document && document.data && document.data.configs && document.data.configs.json && document.data.configs.json.path) {
                 loadedFile = grunt.file.readJSON(path.join(documentPath.replace(/\/[^/]*.json$/, ""), document.data.configs.json.path));
                 loadedFile.forEach(function (item) {
                     newDocument = JSON.stringify(document.steps);
-                    for(var key in item) {
+                    for (var key in item) {
                         newDocument = newDocument.replace(new RegExp("\\$\\{" + key + "\\}", "g"), item[key]);
 
                     }
@@ -45,10 +45,12 @@ module.exports = function (grunt) {
             return suite;
         },
         startServer: function (options, callback) {
+            var spawnOptions = typeof options.seleniumServer.spawnOptions === "object" ? options.seleniumServer.spawnOptions : null,
+                seleniumArgs = typeof options.seleniumServer.seleniumArgs === "object" ?  options.seleniumServer.seleniumArgs :  null;
             if (options.remoteServer) {
                 callback && callback(null);
             } else {
-                var server = selenium();
+                var server = selenium(spawnOptions, seleniumArgs);
                 setTimeout(function () {
                     callback(server);
                 }, 2500);

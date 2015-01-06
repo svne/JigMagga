@@ -3,12 +3,21 @@ var inherits = require('util').inherits;
 var format = require('util').format;
 var _ = require('lodash');
 
-var WorkerError = function (message, originalMessage, messageKey) {
+var STATUS_CODES = exports.STATUS_CODES = {
+    UPLOAD_ERROR: 100,
+    API_ERROR: 200,
+    WRONG_ARGUMENT_ERROR: 300,
+    UNRECOGNIZED_ERROR: 900
+};
+
+var WorkerError = function (message, originalMessage, messageKey, status) {
     this.name = 'WorkerError';  
 
     this.originalMessage = originalMessage;
     this.messageKey = messageKey;
     this.message = message;
+
+    this.status = status || STATUS_CODES.UNRECOGNIZED_ERROR;
     Error.call(this, message);
 };
 
@@ -69,7 +78,7 @@ exports.getWorkerErrorHandler = function (log, queuePool, messageStorage, progra
     /**
      * handle non fatal error regarding with message parsing
      *
-     * @param  {{origMessage: object, message: string, stack: string, messageKey: string}} err
+     * @param  {WorkerError} err
      */
     return function workerErrorHandler(err) {
         var errorMessage = format('Error while processing message: %s',  err.message);
@@ -89,7 +98,7 @@ exports.getWorkerErrorHandler = function (log, queuePool, messageStorage, progra
         if (program.queue) {
             queuePool.amqpErrorQueue.publish(originalMessage);
 
-            if (!program.live && !originalMessage.upload) {
+            if (!program.live && err.status !== STATUS_CODES.UPLOAD_ERROR) {
                 messageStorage.done(err.messageKey);
             }
         }

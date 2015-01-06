@@ -1135,8 +1135,9 @@ This page will load a `*_test.js` JavaScript file from the jig which includes th
 Make sure that your browser doesn't block popups. The `*_test.js` will open a new window with the jig environment.
 You can run the testcases manually by opening the `funcunit.html` page of the jig in your favourite browser.
 It is also possible to run the testcases from the command line with [testem](https://github.com/airportyh/testem) 
-or use the grunt task `grunt test`.
-The configuration for testem is located in testem.json in the _JigMagger_ root directory.
+or use the grunt task `grunt test`. To test a single jig or a model, run for example `grunt test:Ab.Jig.Additions`
+to test a jig called additions in the namespace `ab`.
+The configuration for testem is located in testem.json in the _JigMagga_ root directory.
 
 Naming conventions for testcases
 --------------------------------

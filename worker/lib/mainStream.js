@@ -11,8 +11,9 @@ var stream = require('./streamHelper'),
     helper = require('./helper');
 
 var generatorStream = require('../generator/index');
+var args = require('../parseArguments')(process.argv);
 
-var log = require('./logger')('worker', {component: 'worker', processId: process.pid});
+var log = require('./logger')('generator', {component: 'worker', basedomain: args.basedomain}, args);
 
 var config = require('../config');
 
@@ -66,7 +67,7 @@ module.exports = function (source, uploader, basePath, program) {
         .pipe(tc(configMerge.getConfigStream()))
         .on('data', function (data) {
 
-            data.message = messageHelper.createMessage(data.message, program, data.config);
+            data.message = messageHelper.extendMessage(data.message, program, data.config);
             data.bucketName = helper.generateBucketName(data, program, config.main.knox);
 
             generatorStream.write(data);
@@ -94,9 +95,7 @@ module.exports = function (source, uploader, basePath, program) {
 
 
     generatorStream.on('api:done', function (key) {
-        if (!program.live) {
-            messageStorage.done(key);
-        }
+        messageStorage.done(key);
     });
 
     /**

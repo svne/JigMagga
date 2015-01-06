@@ -15,9 +15,9 @@ var EventEmitter = require('events').EventEmitter,
     path = require('path'),
     es = require('event-stream');
 
-var messageStorage = require('../lib/message').storage;
+var args = require('../parseArguments')(process.argv);
 
-var log = require('../lib/logger')('generator', {component: 'generator', processId: process.pid}),
+var log = require('../lib/logger')('generator', {component: 'generator', basedomain: args.basedomain}, args),
     archiver = require('../lib/archiver'),
     helper = require('../lib/helper'),
     stream = require('../lib/streamHelper'),
@@ -37,8 +37,6 @@ log('started, pid', process.pid);
 var messageStream = stream.duplex();
 
 var handleError = function (text, data) {
-    log('error', text, {error: true});
-
     messageStream.emit('err', new WorkerError(text, data.message.origMessage, data.key));
 };
 /**
@@ -64,13 +62,19 @@ var emitter = new EventEmitter();
 emitter.on('call:parsing', function (name, config) {
     log('Parsing call for jig %s config: %j', name, config, {api:true});
 });
-emitter.on('call:success', function (requestId, time, fromCache) {
+emitter.on('call:success', function (requestId, time, fromCache, page, url) {
     log('Api call success for %s', requestId, {api: true});
 
     if (!fromCache) {
-        log('time diff for %s in msec: %d', requestId, time, {timediff: true, diff: time, prefix: 'rest:call'});
-    }
-});
+        var logOptions = {
+            timediff: true,
+            diff: time,
+            prefix: 'rest:call',
+            page: page,
+            url: url
+        };
+        log('info','time diff for %s', requestId, logOptions);
+    }});
 
 emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
     log('Config %d of %d for %s', readyConfigsLength, configsLength, url, {api: true});
@@ -85,7 +89,7 @@ emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
  */
 var apiStream = es.through(function (data) {
     var that = this;
-    log('[*] send api request', helper.getMeta(data.message));
+    log('info', '[*] send api request', helper.getMeta(data.message));
     log('help', 'generating new message time %d', Date.now(), helper.getMeta(data.message));
     // Take first snapshot
     // var apiMessageKey = generator.createApiMessageKey(data.key);
@@ -198,7 +202,7 @@ messageStream
     .pipe(loadLocale)
     .on('data', function (data) {
         var saveDiskPath = path.join(data.basePath, '..'),
-            knox = config.main.knox,
+            knox = _.clone(config.main.knox),
             json;
 
         var generatePageTimeDiff = timeDiff.create('generate:page:' + data.message.page);
@@ -230,7 +234,7 @@ messageStream
             }
             json = [];
 
-            log('upload list length %d', uploadPages.length);
+            log('info', 'upload list length %d', uploadPages.length,  helper.getMeta(data.message));
             generatePageTimeDiff.stop();
             //if the amount is more then 200 create an archive write it to disk and
             //send to the worker the archive link

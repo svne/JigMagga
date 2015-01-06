@@ -10,6 +10,9 @@ var _ = require('lodash'),
 
 var METADATA_CHUNK_IDENTIFIER = '@@:::@@';
 
+//TODO: move to domain config
+var IGNORED_URLS = ['unknown-977514', 'test-blizzeria-hamburg-rotherbaum'];
+
 module.exports = {
     /**
      * check correctness of URL
@@ -20,7 +23,7 @@ module.exports = {
     isUrlCorrect: function (url) {
         var regexp = new RegExp('[^a-zA-Z0-9-_//]+', 'i');
 
-        return !regexp.test(url);
+        return !regexp.test(url) && !_.contains(IGNORED_URLS, url);
     },
 
     /**
@@ -65,12 +68,12 @@ module.exports = {
         var queues = {
             amqpQueue: amqpQueue,
             amqpErrorQueue: amqpErrorQueue,
-            amqpDoneQueue: 'pages.generate.done'
+            amqpDoneQueue: (program.live) ? 'pages.generate.deploy.done' : 'pages.generate.done'
         };
 
         if (program.deployuncached) {
-            var defaultName = config.queueBaseName + '.' + domain + '.' + prefixes['default'];
-            queues.amqpDeployQueue = program.deployuncached || defaultName;
+            var defaultName = 'pages.generate.deploy';
+            queues.amqpDeployQueue = _.isString(program.deployuncached) ? program.deployuncached : defaultName;
         }
 
         return queues;
@@ -202,7 +205,9 @@ module.exports = {
      * @return {string}
      */
     generateBucketName: function (data, program, config) {
-        var baseDomain = data.message.basedomain;
+        var domainNames = data.message.basedomain.split('/');
+
+        var baseDomain = domainNames.length === 1 ? domainNames[0] : domainNames.reverse()[0];
         var buckets = config.buckets;
         if (config.S3_BUCKET) {
             return config.S3_BUCKET;

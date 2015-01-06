@@ -15,9 +15,10 @@ var fs = require('fs'),
     Uploader = require('jmUtil').ydUploader,
     es = require('event-stream');
 
-var log = require('../lib/logger')('uploader', {component: 'uploader', processId: String(process.pid)}),
+var args = require('../parseArguments')(process.argv);
+
+var log = require('../lib/logger')('generator', {component: 'uploader', basedomain: args.basedomain}, args),
     ProcessRouter  = require('../lib/router'),
-    stream = require('../lib/streamHelper'),
     error = require('../lib/error'),
     archiver = require('../lib/archiver'),
     stream = require('../lib/streamHelper'),
@@ -38,9 +39,7 @@ var router = new ProcessRouter(process);
 var messageStream = stream.duplex();
 
 var handleError = function (text, data, messageKey) {
-    log('error', text, {error: true});
-
-    return router.send('error', new WorkerError(text, data, messageKey));
+    return router.send('error', new WorkerError(text, data, messageKey, error.STATUS_CODES.UPLOAD_ERROR));
 };
 
 
@@ -101,15 +100,17 @@ var uploadItem = function (data, callback) {
             handleError(err, data.origMessage, data.messageKey);
         } else {
             uploadsAmount += 1;
-            log('success', res + ' time: ' + Date.now(),
-                {upload: true, url: data.url, locale: data.locale, page: data.page, uploadsAmount: uploadsAmount});
+            var logMetadata =
+                {upload: true, url: data.url, locale: data.locale, page: data.page, uploadsAmount: uploadsAmount};
+            log('success', res + ' time: ' + Date.now(), logMetadata);
+            log('info', res, logMetadata);
             router.send('message:uploaded', data.messageKey);
         }
         uploadPageTimeDiff.stop();
         callback();
     };
 
-    log('start uploading new file url: %s', data.url);
+    log('info', 'start uploading new file', helper.getMeta(data));
 
     var url = (data.url === '/') ? 'index' : data.url;
 

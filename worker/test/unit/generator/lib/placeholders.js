@@ -7,7 +7,7 @@ var expect = require('chai').expect;
 var placeholders = require('../../../../generator/lib/placeholders');
 
 describe('placeholders', function () {
-    describe.only('#simpleReplace', function () {
+    describe('#simpleReplace', function () {
 
         it('should replace all placeholder in string', function () {
             var string = '/meal-{id}-{name}.json';

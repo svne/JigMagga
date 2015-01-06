@@ -162,7 +162,7 @@ exports.getConnection = function (config) {
     }, {reconnect: true, defaultExchange: 'amq.direct'});
 
     connection.on('error', function (err) {
-        console.log('CONNECTION ERROR');
+        console.log('CONNECTION ERROR', credentials);
         console.log(err);
         throw new Error(err);
     });

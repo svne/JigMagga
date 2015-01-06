@@ -35,20 +35,25 @@ module.exports = {
 
         var archive = archiver('zip', options);
 
-        for (var i = 0; i < fileListLength; i++) {
+        // this function is in async mode in oder to do a archive#apend it timeOut for cleaning call stuck
+        async.eachSeries(fileList, function (item, next) {
+            var date = item.time ? new Date(item.time) : new Date();
 
-            var date = fileList[i].time ? new Date(fileList[i].time) : new Date();
-
-            if (typeof fileList[i].content !== 'string') {
-                throw new Error(format('Content for url: %s missing should be string but %s', fileList[i].url, fileList[i].content));
+            if (typeof item.content !== 'string') {
+                throw new Error(format('Content for url: %s missing should be string but %s', item.url, item.content));
             }
 
-            archive.append(new Buffer(fileList[i].content), {
-                name: fileList[i].url,
-                date: date
+            setTimeout(function () {
+                archive.append(new Buffer(item.content), {
+                    name: item.url,
+                    date: date
+                });
+                next();
             });
-        }
-        archive.finalize();
+
+        }, function () {
+            archive.finalize();
+        });
 
         return archive;
     }

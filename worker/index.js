@@ -26,7 +26,7 @@ var config = require('./config');
 
 
 var amqpWrapper = require('./lib/amqpWrapper'),
-    log = require('./lib/logger')('worker', {component: 'worker', processId: process.pid}),
+    logger = require('./lib/logger'),
     ProcessRouter = require('./lib/router'),
     mainStream = require('./lib/mainStream'),
     helper = require('./lib/helper'),
@@ -35,15 +35,16 @@ var amqpWrapper = require('./lib/amqpWrapper'),
     messageStorage = require('./lib/message').storage,
     TimeDiff = require('./lib/timeDiff');
 
+// obtain application arguments by parsing command line
+var program = parseArguments(process.argv);
+var log = logger('worker',  {component: 'worker', basedomain: program.basedomain}, program);
+
 var timeDiff = new TimeDiff(log);
 var startTimeDiff = timeDiff.create('start');
 
 var generatorStream = require('./generator/index');
 
 log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
-
-// obtain application arguments by parsing command line
-var program = parseArguments(process.argv);
 
 if (program.longjohn) {
     console.log('long jhon enabled');
@@ -65,35 +66,10 @@ if (program.queue) {
     var queuePool = new amqp.QueuePool(queues, connection, {prefetch: prefetch});
 }
 
-/**
- * handle non fatal error regarding with message parsing
- *
- * @param  {{origMessage: object, message: string, stack: string, messageKey: string}} err
- */
-var workerErrorHandler = function (err) {
-    log('error', 'Error while processing message: %j',  err, err.originalMessage, {});
-    if (!program.queue) {
-        return;
-    }
-
-    //if there is shift function for this message in the storage shift message from main queue
-    messageStorage.upload(err.messageKey);
-
-    var originalMessage = err.originalMessage || {};
-    originalMessage.error = err.message;
-
-    if (program.queue) {
-        queuePool.amqpErrorQueue.publish(originalMessage);
-
-        if (!program.live && !originalMessage.upload) {
-            messageStorage.done(err.messageKey);
-        }
-    }
-};
-
 var uploaderRouter,
     uploader;
 
+var workerErrorHandler = error.getWorkerErrorHandler(log, queuePool, messageStorage, program);
 
 var uploaderRoutes = {
     'message:uploaded': function (key) {
@@ -110,7 +86,7 @@ var uploaderRoutes = {
 var args = _.clone(process.argv).splice(2);
 
 
-// Creates a generator and uploader child processes,
+// Creates an uploader child process,
 // creates a router for them
 helper.createChildProcesses(args, function (err, result) {
     if (err) {

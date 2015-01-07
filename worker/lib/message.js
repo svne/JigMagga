@@ -170,8 +170,15 @@ module.exports = {
                 result.key = that.createMessageKey(message);
                 result.queueShift = data.queueShift;
                 result.onDone = function () {
-                    queuePool.amqpDoneQueue.publish(message);
+                    //if message has origin field and it is a string it means that it was created
+                    //by some service(backend, api or salesforce) and we have to publish it to done queue in order
+                    //to notify them about page generation
+                    if (_.isString(message.origin)) {
+                        queuePool.amqpDoneQueue.publish(message);
+                    }
 
+                    //if worker is in "two-bucket-deploy" mode publish message for page that was generated
+                    //to deploy queue in order
                     if (queuePool.amqpDeployQueue) {
                         queuePool.amqpDeployQueue.publish(message);
                     }

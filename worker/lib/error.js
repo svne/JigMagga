@@ -83,6 +83,8 @@ exports.getWorkerErrorHandler = function (log, queuePool, messageStorage, progra
     return function workerErrorHandler(err) {
         var errorMessage = format('Error while processing message: %s',  err.message);
         err.originalMessage.error = true;
+        err.originalMessage.status = err.status;
+
         log('error', errorMessage, err.originalMessage);
 
         if (!program.queue) {
@@ -94,6 +96,7 @@ exports.getWorkerErrorHandler = function (log, queuePool, messageStorage, progra
 
         var originalMessage = err.originalMessage || {};
         originalMessage.error = err.message;
+        originalMessage.errorTimestamp = Date.now();
 
         if (program.queue) {
             queuePool.amqpErrorQueue.publish(originalMessage);

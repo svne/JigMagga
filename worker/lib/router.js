@@ -57,7 +57,7 @@ var ProcessRouter = function (processInstance, pipeFdNumber) {
         var routeHandler = that.routes[data.command];
 
         if (!_.isFunction(routeHandler)) {
-            return that.routes.error.call(that, 'there is no handler for command: ' + data.command);
+            return;
         }
 
         routeHandler.call(that, data.data);
@@ -132,6 +132,11 @@ ProcessRouter.prototype.send = function (command, data) {
     };
 
     this.processInstance.send(message);
+};
+
+
+ProcessRouter.prototype.ready = function () {
+    this.processInstance.send({ready: true});
 };
 
 module.exports = ProcessRouter;

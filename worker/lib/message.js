@@ -138,55 +138,41 @@ module.exports = {
     },
 
 
-    getMessageParser: function (queuePool) {
-        var that = this;
+    /**
+     *
+     * @param {ProcessRouter} queuePool
+     * @return {*}
+     */
+    assignMessageMethods: function (queuePool) {
         /**
-         * returns stream that parses each message from rabbit
+         * returns stream that assign queueShift and onDone methods to each message from rabbit
          *
          * @param {{content: Buffer, properties: {contentType: string}}} data
          * @return {{message: object, key: string, queueShift: function}}
          */
         return es.through(function (data) {
-            var message,
-                result = {};
+            var message = data.message,
+                key = data.key;
 
-            if (_.isArray(data) && data.length === 1) {
-                data = data[0];
-            }
+            data.queueShift = function () {
+                queuePool.send('ack:message', key);
+            };
 
-            try {
-                message = queuePool.constructor.parseMessage(data);
-
-            } catch (e) {
-                if (_.isFunction(data.queueShift)) {
-                    data.queueShift();
+            data.onDone = function () {
+                //if message has origin field and it is a string it means that it was created
+                //by some service(backend, api or salesforce) and we have to publish it to done queue in order
+                //to notify them about page generation
+                if (_.isString(message.origin)) {
+                    queuePool.send('publish:amqpDoneQueue', message);
                 }
-                this.emit('err', new WorkerError('Date from queue is not JSON', data.content.toString('utf-8')));
-            }
 
+                //if worker is in "two-bucket-deploy" mode publish message for page that was generated
+                //to deploy queue
+                queuePool.send('publish:amqpDeployQueue', message);
 
-            if (message) {
-                result.message = message;
-                result.key = that.createMessageKey(message);
-                result.queueShift = data.queueShift;
-                result.onDone = function () {
-                    //if message has origin field and it is a string it means that it was created
-                    //by some service(backend, api or salesforce) and we have to publish it to done queue in order
-                    //to notify them about page generation
-                    if (_.isString(message.origin)) {
-                        queuePool.amqpDoneQueue.publish(message);
-                    }
-
-                    //if worker is in "two-bucket-deploy" mode publish message for page that was generated
-                    //to deploy queue in order
-                    if (queuePool.amqpDeployQueue) {
-                        queuePool.amqpDeployQueue.publish(message);
-                    }
-
-                    generator.deleteCachedCall(result.key);
-                };
-                this.emit('data', result);
-            }
+                generator.deleteCachedCall(data.key);
+            };
+            this.emit('data', data);
         });
     },
 

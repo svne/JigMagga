@@ -26,25 +26,22 @@ module.exports = {
      * and pipe to the messageParser
      * 
      * @param  {object} program
-     * @param  {Functon} log     - function that could be used for logging
-     * @param {object} queuePool
+     * @param  {Function} log
+     * @param {ProcessRouter} queuePool
      * @return {Readable}
      */
     getQueueSource: function (program, log, queuePool) {
-        if (!queuePool.amqpQueue || !_.isFunction(queuePool.amqpQueue.getStream)) {
-            throw new Error('There is no amqpQueue in queuePool');
-        }
+        var queueStream = messageHelper.assignMessageMethods(queuePool);
 
-        var queueStream = queuePool.amqpQueue.getStream();
-        queueStream.on('ready', function (queue) {
-            log('help', '%s queue stream is ready', queue);
+        queuePool.addRoutes({
+            'message:amqpQueue': function (message) {
+                queueStream.write(message);
+            }
         });
 
+        queuePool.send('get:stream', 'amqpQueue');
 
-        queueStream.on('error', error.getErrorHandler(log, function () {}));
-
-        return queueStream
-            .pipe(messageHelper.getMessageParser(queuePool, program.live));
+        return queueStream;
     },
 
     /**

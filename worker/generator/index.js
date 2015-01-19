@@ -17,7 +17,7 @@ var EventEmitter = require('events').EventEmitter,
 
 var args = require('../parseArguments')(process.argv);
 
-var log = require('../lib/logger')('generator', {component: 'generator', basedomain: args.basedomain}, args),
+var log = require('../lib/logger')('generator', {basedomain: args.basedomain}, args),
     archiver = require('../lib/archiver'),
     helper = require('../lib/helper'),
     stream = require('../lib/streamHelper'),

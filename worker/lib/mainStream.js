@@ -13,7 +13,7 @@ var stream = require('./streamHelper'),
 var generatorStream = require('../generator/index');
 var args = require('../parseArguments')(process.argv);
 
-var log = require('./logger')('generator', {component: 'worker', basedomain: args.basedomain}, args);
+var log = require('./logger')('worker', {basedomain: args.basedomain}, args);
 
 var config = require('../config');
 

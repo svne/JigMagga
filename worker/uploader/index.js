@@ -17,7 +17,7 @@ var fs = require('fs'),
 
 var args = require('../parseArguments')(process.argv);
 
-var log = require('../lib/logger')('generator', {component: 'uploader', basedomain: args.basedomain}, args),
+var log = require('../lib/logger')('uploader', {basedomain: args.basedomain}, args),
     ProcessRouter  = require('../lib/router'),
     error = require('../lib/error'),
     archiver = require('../lib/archiver'),

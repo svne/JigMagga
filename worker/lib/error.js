@@ -40,7 +40,8 @@ exports.getErrorHandler = function (log, callback) {
             log('error', logMessage, logMeta);
 
             return setTimeout(function () {
-              process.exit();
+              //process.exit();
+                process.kill(process.pid, 'SIGTERM');
             }, 100);
         }
         callback(err);
@@ -55,7 +56,7 @@ exports.getErrorHandler = function (log, callback) {
  */
 exports.getExitHandler = function (log, childProcesses) {
    return function () {
-       log('warn', 'process terminated remotely', {exit: true});
+       log('warn', 'process terminated', {exit: true});
        childProcesses.forEach(function (child) {
            if (child && _.isFunction(child.kill)) {
                child.kill();
@@ -68,7 +69,7 @@ exports.getExitHandler = function (log, childProcesses) {
 /**
  *
  * @param {Function} log
- * @param {QueuePool} queuePool
+ * @param {ProcessRouter} queuePool
  * @param {storage} messageStorage
  * @param {object} program
  * @return {Function}
@@ -99,7 +100,7 @@ exports.getWorkerErrorHandler = function (log, queuePool, messageStorage, progra
         originalMessage.errorTimestamp = Date.now();
 
         if (program.queue) {
-            queuePool.amqpErrorQueue.publish(originalMessage);
+            queuePool.send('publish:amqpErrorQueue', originalMessage);
 
             if (!program.live && err.status !== STATUS_CODES.UPLOAD_ERROR) {
                 messageStorage.done(err.messageKey);

@@ -61,6 +61,7 @@ var getLogger = function (component, config) {
 module.exports = function (component, metadata, processArguments) {
     metadata = metadata || {};
     processArguments = processArguments || {};
+    metadata.component = component;
 
     if (processArguments.tag) {
         metadata.tag = processArguments.tag;

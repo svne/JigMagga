@@ -44,10 +44,10 @@ describe('message', function () {
     });
 
 
-    describe('#getMessageParser', function () {
+    describe('#assignMessageMethods', function () {
         var stream;
         beforeEach(function () {
-            stream = messageHelper.getMessageParser();
+            stream = messageHelper.assignMessageMethods();
         });
 
         afterEach(function () {

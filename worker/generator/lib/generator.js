@@ -790,9 +790,15 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
                         }
                     }
                     if (config["pagination-dependency"]) {
-                        var dataLength = placeholderHelper.getParamByString(config["pagination-dependency"].replace(/[{}]/g, ""), config["predefined"]);
+                        var dataLength = placeholderHelper.getParamByString(config["pagination-dependency"].replace(/[{}]/g, ""), config.predefined);
                         if (dataLength) {
-                            for (var i = 2; i < dataLength / config["predefined"].pageLimit + 1; i++) {
+                            var maxPage = dataLength / config.predefined.pageLimit + 1;
+
+                            if (config["pagination-dependency-max"] && config["pagination-dependency-max"] + 1 < maxPage) {
+                                maxPage = config["pagination-dependency-max"] + 1;
+                            }
+
+                            for (var i = 2; i < maxPage; i++) {
                                 nextConfig = deepExtend({}, config);
 
                                 try {
@@ -800,7 +806,7 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
                                 } catch (e) {
                                 }
                                 nextConfig["pagination-number"] = i;
-                                nextConfig["predefined"].pageNum = i;
+                                nextConfig.predefined.pageNum = i;
                                 nextConfig["child-page-path"] = nextConfig["child-page-path"] || [];
                                 nextConfig["child-page-path"].push({url: i});
                                 nextConfig["pagination-dependency"] = false;

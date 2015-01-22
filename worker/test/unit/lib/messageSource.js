@@ -36,7 +36,7 @@ describe('messageSource', function () {
             amqpQueue: {}
         };
         var messageHelper = {
-            getMessageParser: function () {return streamHelper.duplex()}
+            assignMessageMethods: function () {return streamHelper.duplex();}
         };
 
         messageSource.__set__({

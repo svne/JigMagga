@@ -270,7 +270,7 @@ module.exports = function (grunt) {
 
                         var generateDefaultBase = function (cwd, filename) {
                             var defaultBase = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,5}\//, "/default/"));
-                            return defaultBase.replace(/\/[^\/]*\.[a-z]{2,5}\//, '/');
+                            return defaultBase.replace(/default(\/.*?)?\/[^\/]*\.[a-z]{2,5}\//, 'default/');
                         };
 
                         // inject a custom middleware into the array of default middlewares
@@ -361,7 +361,7 @@ module.exports = function (grunt) {
         },
         funcunit: {
             options: {
-                timeout: 150000,
+                timeout: 90000,
                 httpBase: "http://localhost:8000"
             },
             all: ['**/funcunit.html', '!bower_components/**', '!steal/**']
@@ -401,7 +401,7 @@ module.exports = function (grunt) {
         grunt.config("connect.server.options.open", false);
         grunt.config("funcunit-webdriver", grunt.config("funcunit"));
         if (grunt.option("webdriver")) {
-            task = "funcunit-webdriver"
+            task = "funcunit-webdriver";
         }
         if (namespace) {
             // run a test for single jig

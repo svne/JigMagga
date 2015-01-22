@@ -15,6 +15,7 @@ var _ = require('lodash');
 var stream = require('./streamHelper');
 var helper = require('./helper');
 var messageHelper = require('./message');
+var error = require('../lib/error');
 
 
 module.exports = {
@@ -25,23 +26,22 @@ module.exports = {
      * and pipe to the messageParser
      * 
      * @param  {object} program
-     * @param  {Functon} log     - function that could be used for logging
-     * @param {object} queuePool
+     * @param  {Function} log
+     * @param {ProcessRouter} queuePool
      * @return {Readable}
      */
     getQueueSource: function (program, log, queuePool) {
-        if (!queuePool.amqpQueue || !_.isFunction(queuePool.amqpQueue.getStream)) {
-            throw new Error('There is no amqpQueue in queuePool');
-        }
+        var queueStream = messageHelper.assignMessageMethods(queuePool);
 
-        var queueStream = queuePool.amqpQueue.getStream();
-        queueStream.on('ready', function (queue) {
-            log('help', '%s queue stream is ready', queue);
+        queuePool.addRoutes({
+            'message:amqpQueue': function (message) {
+                queueStream.write(message);
+            }
         });
 
+        queuePool.send('get:stream', 'amqpQueue');
 
-        return queueStream
-            .pipe(messageHelper.getMessageParser(queuePool, program.live));
+        return queueStream;
     },
 
     /**

@@ -84,7 +84,7 @@ var generateDestination = function (descriptor, from, buildOptions) {
     }
 
     if (!isPattern.test(descriptor.from)) {
-        return descriptor.to;
+       return descriptor.to;
     }
 
     var fromWithoutPattern = descriptor.from.replace('**', '');
@@ -187,7 +187,6 @@ module.exports = {
                     if (err) {
                         return callback(err);
                     }
-                    console.log(files);
                     if (!files.length) {
                         console.log('there is no media files for mask:', data.build.package.mediaSource);
                         return callback(null);
@@ -218,7 +217,7 @@ module.exports = {
             var onUpload = function (err, res) {
                 if (err) {
                     if (err.code === 'ENOENT' && !data.build.package.mediaSource.required) {
-                        console.log('media file is absent but it is not required');
+                        console.log('meida file is absent but it is not required');
                         ps.resume();
                         return callback();
                     }
@@ -246,9 +245,9 @@ module.exports = {
                         file.size = stat.size;
                         next(null, file);
                     });
-                } else if (file.require) {
+                } else if(file.require){
                     next(new Error('meida file is absent but it is required'));
-                } else {
+                } else{
                     console.log('meida file is absent but it is not required');
                     next(null, null);
                 }
@@ -257,10 +256,10 @@ module.exports = {
                     return console.log(err);
                 }
                 // filter all files that non exits
-                files = files.filter(function (file) {
+                files = files.filter(function(file){
                     return file !== null;
                 });
-                if (files.length) {
+                if(files.length){
                     var fileGroups = createFileGroupsBySize(files, 9500000);
 
                     async.each(fileGroups, function (fileGroup, cb) {
@@ -274,6 +273,7 @@ module.exports = {
                         });
                     }, onUpload);
                 }
+
             });
         });
     }

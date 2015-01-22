@@ -26,7 +26,7 @@ var config = require('./config');
 
 
 var amqpWrapper = require('./lib/amqpWrapper'),
-    log = require('./lib/logger')('worker', {component: 'worker', processId: process.pid}),
+    logger = require('./lib/logger'),
     ProcessRouter = require('./lib/router'),
     mainStream = require('./lib/mainStream'),
     helper = require('./lib/helper'),
@@ -35,15 +35,18 @@ var amqpWrapper = require('./lib/amqpWrapper'),
     messageStorage = require('./lib/message').storage,
     TimeDiff = require('./lib/timeDiff');
 
+// obtain application arguments by parsing command line
+var program = parseArguments(process.argv);
+
+var args = _.clone(process.argv).splice(2);
+var log = logger('worker',  {basedomain: program.basedomain}, program);
+
 var timeDiff = new TimeDiff(log);
 var startTimeDiff = timeDiff.create('start');
 
 var generatorStream = require('./generator/index');
 
 log('started app pid %d current env is %s', process.pid, process.env.NODE_ENV);
-
-// obtain application arguments by parsing command line
-var program = parseArguments(process.argv);
 
 if (program.longjohn) {
     console.log('long jhon enabled');
@@ -53,47 +56,16 @@ if (program.longjohn) {
 var basePath = (program.namespace) ? path.join(process.cwd(), program.namespace) : process.cwd();
 log('base project path is %s', basePath);
 
+var amqpProcess = null;
 if (program.queue) {
-    var amqp = amqpWrapper(config.amqp);
-    //if queue argument exists connect to amqp queues
-    var prefetch = program.prefetch || config.amqp.prefetch;
-    var connection = amqp.getConnection(config.amqp);
-    log('worker connected to AMQP server on %s', config.amqp.credentials.host);
-    var queues = helper.getQueNames(program, config.amqp);
-
-    log('queues in pool %j', queues, {});
-    var queuePool = new amqp.QueuePool(queues, connection, {prefetch: prefetch});
+    amqpProcess = helper.createSubProcess('./worker/amqpProxy.js', args);
+    var queuePool = new ProcessRouter(amqpProcess);
 }
-
-/**
- * handle non fatal error regarding with message parsing
- *
- * @param  {{origMessage: object, message: string, stack: string, messageKey: string}} err
- */
-var workerErrorHandler = function (err) {
-    log('error', 'Error while processing message: %j',  err, err.originalMessage, {});
-    if (!program.queue) {
-        return;
-    }
-
-    //if there is shift function for this message in the storage shift message from main queue
-    messageStorage.upload(err.messageKey);
-
-    var originalMessage = err.originalMessage || {};
-    originalMessage.error = err.message;
-
-    if (program.queue) {
-        queuePool.amqpErrorQueue.publish(originalMessage);
-
-        if (!program.live && !originalMessage.upload) {
-            messageStorage.done(err.messageKey);
-        }
-    }
-};
 
 var uploaderRouter,
     uploader;
 
+var workerErrorHandler = error.getWorkerErrorHandler(log, queuePool, messageStorage, program);
 
 var uploaderRoutes = {
     'message:uploaded': function (key) {
@@ -107,10 +79,8 @@ var uploaderRoutes = {
     error: workerErrorHandler
 };
 
-var args = _.clone(process.argv).splice(2);
 
-
-// Creates a generator and uploader child processes,
+// Creates an uploader child process,
 // creates a router for them
 helper.createChildProcesses(args, function (err, result) {
     if (err) {
@@ -149,11 +119,15 @@ helper.createChildProcesses(args, function (err, result) {
     });
 
     main.on('error:message', workerErrorHandler);
-    var exitHandler = error.getExitHandler(log, [uploader]);
+    var exitHandler = error.getExitHandler(log, [uploader, amqpProcess]);
 
     process.on('SIGTERM', exitHandler);
     process.on('SIGHUP', exitHandler);
     uploader.on('exit', exitHandler);
+
+    if (amqpProcess) {
+        amqpProcess.on('exit', exitHandler);
+    }
 });
 
 process.on('uncaughtException', error.getErrorHandler(log, workerErrorHandler));

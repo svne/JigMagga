@@ -60,21 +60,20 @@ var messageStorage = {};
 
 var getIdValues = function (message) {
     return _.pick(message, function (value, key) {
-        return (new RegExp('.*Id$', 'ig')).test(key);
+        return (new RegExp('.*Id(s|)$', 'ig')).test(key);
     });
 };
 
 module.exports = {
 
     /**
-     * push one message to data array in order to push it to worker
-     * later
+     * extend message with prgram arguments and config data
      *
-     * @param {array} dataArr
      * @param {object} message
      * @param {object} program
+     * @param {object} domainConfig
      */
-    createMessage: function (message, program, domainConfig) {
+    extendMessage: function (message, program, domainConfig) {
         domainConfig = domainConfig || {};
 
         var params = program.values || message.params || getIdValues(message),
@@ -103,6 +102,8 @@ module.exports = {
      * @param {object} pagesConf
      * @param {object} options
      * @return {array}
+     * @deprecated
+     *
      */
     createAllPages: function (message, pagesConf, options) {
         var that = this,
@@ -117,7 +118,7 @@ module.exports = {
                 options.page = page;
                 options.url = page;
 
-                result.push(that.createMessage(message, options));
+                result.push(that.extendMessage(message, options));
             }
 
         });
@@ -137,43 +138,41 @@ module.exports = {
     },
 
 
-    getMessageParser: function (queuePool) {
-        var that = this;
+    /**
+     *
+     * @param {ProcessRouter} queuePool
+     * @return {*}
+     */
+    assignMessageMethods: function (queuePool) {
         /**
-         * returns stream that parses each message from rabbit
+         * returns stream that assign queueShift and onDone methods to each message from rabbit
          *
          * @param {{content: Buffer, properties: {contentType: string}}} data
          * @return {{message: object, key: string, queueShift: function}}
          */
         return es.through(function (data) {
-            var message,
-                result = {};
+            var message = data.message,
+                key = data.key;
 
-            if (_.isArray(data) && data.length === 1) {
-                data = data[0];
-            }
+            data.queueShift = function () {
+                queuePool.send('ack:message', key);
+            };
 
-            try {
-                message = queuePool.constructor.parseMessage(data);
-
-            } catch (e) {
-                if (_.isFunction(data.queueShift)) {
-                    data.queueShift();
+            data.onDone = function () {
+                //if message has origin field and it is a string it means that it was created
+                //by some service(backend, api or salesforce) and we have to publish it to done queue in order
+                //to notify them about page generation
+                if (_.isString(message.origin)) {
+                    queuePool.send('publish:amqpDoneQueue', message);
                 }
-                this.emit('err', new WorkerError('Date from queue is not JSON', data.content.toString('utf-8')));
-            }
 
+                //if worker is in "two-bucket-deploy" mode publish message for page that was generated
+                //to deploy queue
+                queuePool.send('publish:amqpDeployQueue', message);
 
-            if (message) {
-                result.message = message;
-                result.key = that.createMessageKey(message);
-                result.queueShift = data.queueShift;
-                result.onDone = function () {
-                    queuePool.amqpDoneQueue.publish(message);
-                    generator.deleteCachedCall(result.key);
-                };
-                this.emit('data', result);
-            }
+                generator.deleteCachedCall(data.key);
+            };
+            this.emit('data', data);
         });
     },
 
@@ -296,7 +295,7 @@ module.exports = {
             }
             messageStorage[key].done();
             if (messageStorage[key].isReady()) {
-                console.log('delete element', messageStorage[key].length);
+
                 messageStorage[key].clear();
                 delete messageStorage[key];
             }

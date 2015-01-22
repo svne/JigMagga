@@ -231,7 +231,7 @@ module.exports = function (data, workerConfig, callback) {
             viewContainer.filename = path.join(result.path, pageWithoutPath + '.html');
 
             if (message.version) {
-                return next();
+                return next(null, null);
             }
             fs.readFile(path.join(data.basePath, 'version.json'), next);
         },

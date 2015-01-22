@@ -10,12 +10,12 @@
 'use strict';
 
 
-var phridge = require("phridge");
+
 
 module.exports = function (grunt) {
 
-
     grunt.registerMultiTask('funcunit', 'Run QUnit unit tests in a headless PhantomJS instance.', function () {
+        var phridge = require("phridge");
         // Merge task-specific and/or target-specific options with these defaults.
         var options = this.options({
             // Default PhantomJS timeout.

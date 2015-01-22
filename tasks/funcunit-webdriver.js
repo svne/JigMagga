@@ -10,13 +10,12 @@
 'use strict';
 
 
-var selenium = require('selenium-standalone');
-var helper = require('./qunit/helper.js');
-
 module.exports = function (grunt) {
 
 
     grunt.registerMultiTask('funcunit-webdriver', 'Run QUnit unit tests in a headless PhantomJS instance.', function () {
+        var selenium = require('selenium-standalone');
+        var helper = require('./qunit/helper.js');
         // Merge task-specific and/or target-specific options with these defaults.
         var options = this.options({
             // Default PhantomJS timeout.
@@ -24,7 +23,7 @@ module.exports = function (grunt) {
             // Explicit non-file URLs to test.
             urls: [],
             // Connect phantomjs console output to grunt output
-            console: true,
+            console: false,
             // Do not use an HTTP base by default
             httpBase: false,
             // output as tap
@@ -32,7 +31,16 @@ module.exports = function (grunt) {
             // save code coverage
             coverage: !!this.options("coverage"),
             // browser
-            browser : "chrome"
+            browser: grunt.option("browser") || "chrome",
+            // options for webdriver
+            driverOptions: {
+                hostname: grunt.option("ip") || '127.0.0.1',
+                port: grunt.option("port") || 4444
+            },
+            // remote server or local
+            remoteServer: grunt.option("remote") || false,
+            // parallel count
+            parallel: 2
         });
 
         var urls;
@@ -53,82 +61,103 @@ module.exports = function (grunt) {
         var done = this.async();
 
         // selenium server
-        var server = selenium();
+        if (!options.remoteServer) {
+            selenium();
+
+        }
+        ['exit', 'SIGTERM', 'SIGINT'].forEach(function listenAndKill(evName) {
+            process.on(evName, function () {
+                process.exit(1);
+            });
+        });
+
         // webdriver
         var wd = require('wd');
         // testcase fail indicator
         var fail = false;
         // tap log for output
         var tapLog = [];
+        // tap for fail
+        var tapFail = function (result) {
+            return "1..1\nnot ok 1 - " + result;
+        };
 
-        process.stderr.on('data', function (output) {
-            grunt.fail.warn(output);
-        });
 
         setTimeout(function () {
 
-            var browser = wd.promiseChainRemote();
+            grunt.util.async.forEachLimit(urls, options.parallel, function (url, next) {
+                var browser = wd.remote(options.driverOptions.hostname, options.driverOptions.port, 'promiseChain');
 
 
-            // optional extra logging
-            browser.on('status', function (info) {
-                console.log(info.cyan);
-            });
-            browser.on('command', function (eventType, command, response) {
-                console.log(' > ' + eventType.cyan, command, (response || '').grey);
-            });
-            browser.on('http', function (meth, path, data) {
-                console.log(' > ' + meth.magenta, path, (data || '').grey);
-            });
+                // optional extra logging
+                browser.on('status', function (info) {
+                    options.console && console.log(info.cyan);
+                });
+                browser.on('command', function (eventType, command, response) {
+                    options.console && console.log(' > ' + eventType.cyan, command, (response || '').grey);
+                });
+                browser.on('http', function (meth, path, data) {
+                    options.console && console.log(' > ' + meth.magenta, path, (data || '').grey);
+                });
 
-            browser.init({browserName: options.browser}, function () {
-                // Process each filepath in-order.
-                grunt.util.async.forEachLimit(urls, 1, function (url, next) {
+                browser.init({browserName: options.browser}, function () {
+                    // Process each filepath in-order.
 
 
-                        browser.get(url, function () {
-                            browser.waitForConditionInBrowser("typeof QUnit !== \"undefined\" && QUnit.jigMagga && QUnit.jigMagga.done === true", options.timeout, 1000, function (err) {
-                                if (err) {
-                                    grunt.fail.warn(err);
-                                }
-                                browser.eval("JSON.stringify(QUnit.jigMagga.eventQueue)", function (err, result) {
-                                    if (err) {
-                                        grunt.fail.warn(err);
-                                    }
-                                    result = JSON.parse(result);
-                                    var tapResult = helper.getTapLogFromQunitResult(result);
-                                    tapLog = tapLog.concat(tapResult);
-                                    var doneResult = result[result.length - 2][1];
-                                    if (typeof doneResult.failed !== "undefined" && doneResult.failed == 0) {
-                                        grunt.log.ok("Test Done: " + url);
-                                    } else {
-                                        grunt.log.error(url);
-                                        grunt.log.error(JSON.stringify(result));
-                                        fail = true;
-                                    }
+                    browser.get(url, function () {
+                        browser.waitForConditionInBrowser("typeof QUnit !== \"undefined\" && QUnit.jigMagga && QUnit.jigMagga.done === true", options.timeout, 1000, function (err) {
+                            if (err) {
+                                grunt.log.error(err);
+                                fail = true;
+                                tapLog = tapLog.concat(tapFail(url + " not loaded in time"));
+                                browser.quit(function () {
                                     next();
                                 });
-                            })
-                        });
-
-
-                    },
-                    // All tests have been run.
-                    function () {
-                        // All done!
-                        browser.quit(function () {
-                            if (options.tap) {
-                                helper.tapReport(tapLog);
-                            }
-                            if (fail) {
-                                done(false);
                             } else {
-                                done();
+                                browser.eval("JSON.stringify(QUnit.jigMagga.eventQueue)", function (err, result) {
+                                    if (err) {
+                                        grunt.log.error(err);
+                                        fail = true;
+                                        tapLog = tapLog.concat(tapFail(url + " not loaded in time"));
+                                    } else {
+                                        result = JSON.parse(result);
+                                        var tapResult = helper.getTapLogFromQunitResult(result);
+                                        tapLog = tapLog.concat(tapResult);
+                                        var doneResult = result[result.length - 2][1];
+                                        if (typeof doneResult.failed !== "undefined" && doneResult.failed == 0) {
+                                            grunt.log.ok("Test Done: " + url);
+                                        } else {
+                                            grunt.log.error(url);
+                                            grunt.log.error(JSON.stringify(result));
+                                            fail = true;
+                                        }
+                                    }
+                                    browser.quit(function () {
+                                        next();
+                                    });
+
+                                });
                             }
 
                         });
                     });
-            }).setAsyncScriptTimeout(options.timeout);
+
+                }).setAsyncScriptTimeout(options.timeout);
+
+                // All tests have been run.
+            }, function () {
+                // All done!
+                if (options.tap) {
+                    helper.tapReport(tapLog);
+                }
+                if (fail) {
+                    done(false);
+                } else {
+                    done();
+                }
+
+            });
+
 
         }, 3000);
 

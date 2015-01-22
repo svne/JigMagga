@@ -78,6 +78,10 @@ else  {
         .pipe(builder.makePackage())
         .pipe(helper.triggerDonePageEvent())
         .pipe(helper.saveFileToDiskOrUpload())
+        .on('error', function(err) {
+            console.error("ERROR: ", err);
+            process.exit(1);
+        });
 
 }
 

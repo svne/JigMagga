@@ -4,7 +4,7 @@ var _ = require('lodash');
 var winston = require('winston');
 var config = require('../config');
 
-//require('winston-rsyslog');
+require('winston-posix-syslog');
 /**
  * capitalize first letter
  * @param {String} word
@@ -32,16 +32,17 @@ var getLogger = function (component, config) {
             new (winston.transports.Console)(config.console)
         ]
     });
-    //
-    //if (config.transports && _.isObject(config.transports)) {
-    //    _.each(config.transports, function (options, transportName) {
-    //        var className = capitalFirst(transportName);
-    //
-    //        if (winston.transports[className]) {
-    //            logger.add(winston.transports[className], options);
-    //        }
-    //    });
-    //}
+
+    if (config.transports && _.isObject(config.transports)) {
+        _.each(config.transports, function (options, transportName) {
+            var className = capitalFirst(transportName);
+
+            if (winston.transports[className]) {
+                console.log('add', className);
+                logger.add(winston.transports[className], options);
+            }
+        });
+    }
 
     loggers[component] = logger;
 
@@ -54,13 +55,20 @@ var getLogger = function (component, config) {
  *
  * @param  {string} component
  * @param  {object} metadata
+ * @param  {object} processArguments
  * @return {function}
  */
-module.exports = function (component, metadata) {
+module.exports = function (component, metadata, processArguments) {
     metadata = metadata || {};
+    processArguments = processArguments || {};
+    metadata.component = component;
+
+    if (processArguments.tag) {
+        metadata.tag = processArguments.tag;
+    }
 
     if (_.contains(process.argv, '-v') || _.contains(process.argv, '--verbose')) {
-        config.main.logger.console.level = 'info';
+        config.main.logger.console.level = config.main.logger.defaultLogLevel;
     }
 
     var logger = getLogger(component, config.main.logger);
@@ -70,18 +78,23 @@ module.exports = function (component, metadata) {
     /**
      * first argument could be one of the log levels
      * like:
-     *  info,
-     *  fail
-     *  success,
-     *  warn,
-     *  error,
-     *  debug
-     *  alert
+     *   silly
+     *   input
+     *   verbose
+     *   prompt
+     *   debug
+     *   info
+     *   data
+     *   help
+     *   warn
+     *   error
+     *   success
+     *   fail
      *
      * if the first argument is not one of those string it used like log message.
-     * log level in this case is 'info'
+     * log level in this case is 'verbose'
      * @example
-     * log('info', 'foo bar');
+     * log('verbose', 'foo bar');
      * is the same as
      * log('foo bar');
      *

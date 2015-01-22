@@ -1,13 +1,23 @@
 'use strict';
 var inherits = require('util').inherits;
+var format = require('util').format;
 var _ = require('lodash');
 
-var WorkerError = function (message, originalMessage, messageKey) {
+var STATUS_CODES = exports.STATUS_CODES = {
+    UPLOAD_ERROR: 100,
+    API_ERROR: 200,
+    WRONG_ARGUMENT_ERROR: 300,
+    UNRECOGNIZED_ERROR: 900
+};
+
+var WorkerError = function (message, originalMessage, messageKey, status) {
     this.name = 'WorkerError';  
 
     this.originalMessage = originalMessage;
     this.messageKey = messageKey;
     this.message = message;
+
+    this.status = status || STATUS_CODES.UNRECOGNIZED_ERROR;
     Error.call(this, message);
 };
 
@@ -17,16 +27,21 @@ exports.WorkerError = WorkerError;
 
 /**
  * Handle errors
- * @param  {[type]}   log      [description]
+ * @param  {Function}   log      [description]
  * @param  {Function} callback [description]
  * @return {[type]}            [description]
  */
 exports.getErrorHandler = function (log, callback) {
     return function (err) {
         if (!(err instanceof WorkerError)) {
-            log('error', 'Fatal error. process will be terminated %s, %s', err.message, err.stack, {uncaughtException: true});
+            var logMessage = format('Fatal error. process will be terminated %s, %s', err.message, err.stack);
+            var logMeta = {uncaughtException: true, error: true};
+
+            log('error', logMessage, logMeta);
+
             return setTimeout(function () {
-              process.exit();
+              //process.exit();
+                process.kill(process.pid, 'SIGTERM');
             }, 100);
         }
         callback(err);
@@ -41,7 +56,7 @@ exports.getErrorHandler = function (log, callback) {
  */
 exports.getExitHandler = function (log, childProcesses) {
    return function () {
-       log('warn', 'process terminated remotely', {exit: true});
+       log('warn', 'process terminated', {exit: true});
        childProcesses.forEach(function (child) {
            if (child && _.isFunction(child.kill)) {
                child.kill();
@@ -49,4 +64,47 @@ exports.getExitHandler = function (log, childProcesses) {
        });
        process.exit();
    };
+};
+
+/**
+ *
+ * @param {Function} log
+ * @param {ProcessRouter} queuePool
+ * @param {storage} messageStorage
+ * @param {object} program
+ * @return {Function}
+ */
+exports.getWorkerErrorHandler = function (log, queuePool, messageStorage, program) {
+
+    /**
+     * handle non fatal error regarding with message parsing
+     *
+     * @param  {WorkerError} err
+     */
+    return function workerErrorHandler(err) {
+        var errorMessage = format('Error while processing message: %s',  err.message);
+        err.originalMessage.error = true;
+        err.originalMessage.status = err.status;
+
+        log('error', errorMessage, err.originalMessage);
+
+        if (!program.queue) {
+            return;
+        }
+
+        //if there is shift function for this message in the storage shift message from main queue
+        messageStorage.upload(err.messageKey);
+
+        var originalMessage = err.originalMessage || {};
+        originalMessage.error = err.message;
+        originalMessage.errorTimestamp = Date.now();
+
+        if (program.queue) {
+            queuePool.send('publish:amqpErrorQueue', originalMessage);
+
+            if (!program.live && err.status !== STATUS_CODES.UPLOAD_ERROR) {
+                messageStorage.done(err.messageKey);
+            }
+        }
+    };
 };

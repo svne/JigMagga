@@ -20,14 +20,10 @@ var viewHelper = require("./view.js");
 var restHelper = require("./rest.js");
 var placeholderHelper = require("./placeholders.js");
 var slots = require('./slots');
-var http = require('http-get');
 var _ = require('lodash');
 var Q = require('q');
-var Uploader = require('jmUtil').ydUploader;
-var zlib = require('zlib');
 var md5 = require('MD5');
 var gt;
-var pageCounter = 0;
 var knoxConfig;
 var saveDiskPath;
 
@@ -734,14 +730,14 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
         }
 
         // work through all calls and wait for all to finish
-        async.map(callbackContainer, restHelper.doCall, function (err, results) {
+        async.map(callbackContainer, restHelper.doCall, function (error, results) {
 
             var failedCalls = [],
                 nextConfig;
-            try {
-                for (var key in results) {
-                    if (results.hasOwnProperty(key)) {
-                        var item = results[key];
+            var parseResult = function (err, res) {
+                for (var key in res) {
+                    if (res.hasOwnProperty(key)) {
+                        var item = res[key];
                         if (item.success == false) {
                             var reason = ''
                             if (item.resultCode) {
@@ -822,9 +818,12 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
                 } else {
                     apiCalls(configs, emitter, callback, readyConfigs);
                 }
+            };
+            try {
+                parseResult(error, results);
             }
-            catch (err) {
-                callback({message: "failed to parse configs: " + err, err: err});
+            catch (e) {
+                callback({message: "failed to parse configs: " + e, err: e});
             }
 
         });

@@ -37,7 +37,9 @@ var amqpWrapper = require('./lib/amqpWrapper'),
 
 // obtain application arguments by parsing command line
 var program = parseArguments(process.argv);
-var log = logger('worker',  {component: 'worker', basedomain: program.basedomain}, program);
+
+var args = _.clone(process.argv).splice(2);
+var log = logger('worker',  {basedomain: program.basedomain}, program);
 
 var timeDiff = new TimeDiff(log);
 var startTimeDiff = timeDiff.create('start');
@@ -54,16 +56,10 @@ if (program.longjohn) {
 var basePath = (program.namespace) ? path.join(process.cwd(), program.namespace) : process.cwd();
 log('base project path is %s', basePath);
 
+var amqpProcess = null;
 if (program.queue) {
-    var amqp = amqpWrapper(config.amqp);
-    //if queue argument exists connect to amqp queues
-    var prefetch = program.prefetch || config.amqp.prefetch;
-    var connection = amqp.getConnection(config.amqp);
-    log('worker connected to AMQP server on %s', config.amqp.credentials.host);
-    var queues = helper.getQueNames(program, config.amqp);
-
-    log('queues in pool %j', queues, {});
-    var queuePool = new amqp.QueuePool(queues, connection, {prefetch: prefetch});
+    amqpProcess = helper.createSubProcess('./worker/amqpProxy.js', args);
+    var queuePool = new ProcessRouter(amqpProcess);
 }
 
 var uploaderRouter,
@@ -82,8 +78,6 @@ var uploaderRoutes = {
     },
     error: workerErrorHandler
 };
-
-var args = _.clone(process.argv).splice(2);
 
 
 // Creates an uploader child process,
@@ -125,11 +119,15 @@ helper.createChildProcesses(args, function (err, result) {
     });
 
     main.on('error:message', workerErrorHandler);
-    var exitHandler = error.getExitHandler(log, [uploader]);
+    var exitHandler = error.getExitHandler(log, [uploader, amqpProcess]);
 
     process.on('SIGTERM', exitHandler);
     process.on('SIGHUP', exitHandler);
     uploader.on('exit', exitHandler);
+
+    if (amqpProcess) {
+        amqpProcess.on('exit', exitHandler);
+    }
 });
 
 process.on('uncaughtException', error.getErrorHandler(log, workerErrorHandler));

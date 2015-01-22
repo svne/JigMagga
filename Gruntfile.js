@@ -270,7 +270,7 @@ module.exports = function (grunt) {
 
                         var generateDefaultBase = function (cwd, filename) {
                             var defaultBase = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,5}\//, "/default/"));
-                            return defaultBase.replace(/\/[^\/]*\.[a-z]{2,5}\//, '/');
+                            return defaultBase.replace(/default(\/.*?)?\/[^\/]*\.[a-z]{2,5}\//, 'default/');
                         };
 
                         // inject a custom middleware into the array of default middlewares

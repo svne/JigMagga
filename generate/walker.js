@@ -122,7 +122,7 @@ module.exports = function (defaultFolderPath, config) {
                 }
             });
 
-            return _.first(results, 40);
+            return results;
         },
 
         /**

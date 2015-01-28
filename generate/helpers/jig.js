@@ -57,6 +57,7 @@ exports.create = function (config) {
 
     var namespace = config.namespace,
         name = config.name,
+        jigName,
         pathToConfig = config.domain,
         pathToFolder = path.join(config.domain, '..'),
         parent = (config.slotParent === '') ? null : config.slotParent,
@@ -67,15 +68,16 @@ exports.create = function (config) {
         jigPath,
         params;
 
-    jigClass = format('.%s-jig-%s', config.namespace, config.name);
+    jigClass = format('.%s-jig-%s', config.namespace, config.name.replace(/\//g, "-"));
     jigPath = path.join(jigFolderPath, name);
+    // get the actual name, in case we have subfolders
+    jigName = name.split('/')[name.split('/').length-1];
     if (fs.existsSync(jigPath)) {
         grunt.log.error('Such jig already exists in namespace');
         return done();
     }
 
-    params = baseHelper.getPlaceholders({name: name, namespace: namespace});
-
+    params = baseHelper.getPlaceholders({name: jigName, namespace: namespace});
     async.series([
         _.curry(fsExtra.createFolderIfNotExists)(jigFolderPath),
         _.curry(fsExtra.createFolderIfNotExists)(jigPath),
@@ -108,7 +110,6 @@ exports.create = function (config) {
             if (parent || config.domain === "none") {
                 return next();
             }
-
             insertJigSectionInPage(pathToFolder, namespace, jigClass, next);
         }
     ], function (err) {

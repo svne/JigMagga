@@ -143,7 +143,24 @@ module.exports = function (grunt) {
                             config: "generator.domain",
                             type: "list",
                             choices: function (answers) {
-                                var result = walker.getAllPagesInDomains(answers['generator.namespace']);
+                                var result = walker.getAllFirstLevelDomains(answers['generator.namespace']);
+                                // print out all domains and domains/pages in the current namespace/page (all with a conf-file inside)
+                                result.unshift({name: "default", value: "default"});
+                                return result;
+                            },
+                            message: "In which domain this jig should be rendered?",
+                            filter: function (value) {
+                                return value;
+                            },
+                            when: function (answers) {
+                                return answers['generator.template'] === 'jig';
+                            }
+                        },{
+                            config: "generator.domain",
+                            type: "list",
+                            choices: function (answers) {
+                                var result = walker.getAllPagesInDomains(answers['generator.namespace'],
+                                    answers['generator.domain']);
                                 // print out all domains and domains/pages in the current namespace/page (all with a conf-file inside)
                                 result.unshift({name: "No page", value: "none"});
                                 return result;

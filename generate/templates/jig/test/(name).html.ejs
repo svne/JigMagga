@@ -1,16 +1,16 @@
 <!DOCTYPE HTML>
 <head>
     <meta charset="utf-8">
-    <title>Jig.<%= name %></title>
+    <title>Jig.<%= FullName.join('.') %></title>
 </head>
 <body>
-<h1 class="<%= namespace %>-testcase-title"><%= name %> <span>Testcase</span></h1>
+<h1 class="<%= namespace %>-testcase-title"><%= fullName.join('-') %> <span>Testcase</span></h1>
 
 <div class="<%= namespace %>-inner">
     <div class="<%= namespace %>-grid">
         <div class="<%= namespace %>-grid-24">
 
-            <section class='<%= namespace %>-jig-<%= name %>'></section>
+            <section class="<%= namespace %>-jig-<%= fullName.join('-') %>"></section>
 
         </div>
     </div>
@@ -19,7 +19,7 @@
 <script type='text/javascript'>
     if (window.name !== "funcunit") {
         steal.config("domain", "default");
-        steal("steal/instrument").then("<%= namespace %>/jig/<%= name %>/test/<%= name %>.conf")
+        steal("steal/instrument").then("<%= namespace %>/jig/<%= fullName.join('/') %>/test/<%= name %>.conf")
     }
 </script>
 </body>

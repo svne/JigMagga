@@ -8,11 +8,11 @@ steal('core/control',
     /**
      * @class <%= name %>
      */
-    can.Control.extend('<%= Namespace %>.Jig.<%= Name %>',
+    can.Control.extend('<%= Namespace %>.Jig.<%= FullName.join('.') %>',
     /** @Static */
         {
             defaults : {
-                template: "//<%= namespace %>/jig/<%= name %>/views/init.mustache",
+                template: "//<%= namespace %>/jig/<%= fullName.join('/') %>/views/init.mustache",
                 message: "test message"
             }
         },

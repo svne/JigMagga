@@ -1,9 +1,9 @@
 {
     "jigs" : {
-        ".<%= namespace %>-jig-<%= name %>" : {
-            "controller" : "<%= Namespace %>.Jig.<%= Name %>",
-            "template": "<%= namespace %>/jig/<%= name %>/views/init.mustache",
-            "css" : "<%= namespace %>/jig/<%= name %>/css/<%= name %>.scss",
+        ".<%= namespace %>-jig-<%= fullName.join('-') %>" : {
+            "controller" : "<%= Namespace %>.Jig.<%= FullName.join('.') %>",
+            "template": "<%= namespace %>/jig/<%= fullName.join('/') %>/views/init.mustache",
+            "css" : "<%= namespace %>/jig/<%= fullName.join('/') %>/css/<%= name %>.scss",
             "render": true,
             "prerender": true
         }

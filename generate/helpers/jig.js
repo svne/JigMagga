@@ -35,6 +35,7 @@ walker = walker(projectRoot, {});
 var insertJigSectionInPage = exports.insertJigSectionInPage = function (pagePath, namespace, jigClasses, callback) {
 
     var classToInsert = format('.%s-content-inner', namespace),
+        oldClassToInsert = format('.%s-content .%s-inner', namespace, namespace),
         tag;
 
     jigClasses = _.isArray(jigClasses) ? jigClasses : [jigClasses];
@@ -46,8 +47,18 @@ var insertJigSectionInPage = exports.insertJigSectionInPage = function (pagePath
     walker.forEachPageInPath(pagePath, function (fileName, pathToFile, cb) {
         fsExtra.editFile(path.join(pathToFile, fileName), function (data) {
             var $ = cheerio.load(data);
-            $(classToInsert).prepend(tag);
-            return $.html();
+
+            if ($(classToInsert).length) {
+                $(classToInsert).prepend(tag);
+                return $.html();
+            }
+
+            if ($(oldClassToInsert).length) {
+                $(oldClassToInsert).prepend(tag);
+                return $.html();
+            }
+
+            return data;
         }, cb);
     }, callback);
 };
@@ -66,18 +77,21 @@ exports.create = function (config) {
         jigFolderPath = path.join(projectRoot, namespace, 'jig'),
         jigClass,
         jigPath,
+        fullJigName,
         params;
 
+    // get the actual name, in case we have subfolders
+    fullJigName = name.split('/');
     jigClass = format('.%s-jig-%s', config.namespace, config.name.replace(/\//g, "-"));
     jigPath = path.join(jigFolderPath, name);
-    // get the actual name, in case we have subfolders
     jigName = name.split('/')[name.split('/').length-1];
+
     if (fs.existsSync(jigPath)) {
         grunt.log.error('Such jig already exists in namespace');
         return done();
     }
 
-    params = baseHelper.getPlaceholders({name: jigName, namespace: namespace});
+    params = baseHelper.getPlaceholders({name: jigName, namespace: namespace, fullName: fullJigName});
     async.series([
         _.curry(fsExtra.createFolderIfNotExists)(jigFolderPath),
         _.curry(fsExtra.createFolderIfNotExists)(jigPath),
@@ -90,8 +104,8 @@ exports.create = function (config) {
                 data.jigs = data.jigs || {};
 
                 data.jigs[jigClass] = {
-                    "controller": format('%s.Jig.%s', params.Namespace, params.Name),
-                    "template": format('%s/jig/%s/views/init.mustache',params.namespace, params.name),
+                    "controller": format('%s.Jig.%s', params.Namespace, params.FullName.join('.')),
+                    "template": format('%s/jig/%s/views/init.mustache',params.namespace, params.fullName.join('/')),
                     "options": {},
                     "render": true,
                     "prerender": true

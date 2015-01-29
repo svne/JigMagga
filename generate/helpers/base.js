@@ -39,6 +39,10 @@ exports.getPlaceholders = function (data) {
         placeholders.nameLast = _.last(data.path.split('/'));
     }
 
+    if (data.fullName) {
+        placeholders.FullName = data.fullName.map(capitalizeFirst);
+    }
+
     return placeholders;
 };
 

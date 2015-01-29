@@ -1271,8 +1271,8 @@ You can build your css and js production files with the build tool.
 You want to join the JigMagga team?
 ===================================
 
-Please take a look at our Jobs page at [lieferando](http://www.lieferando.de/jobs).
-If you want to use JigMagga and want to make bug fixes and improvements, we are welcome for [pull requests](https://help.github.com/articles/using-pull-requests).
+Please take a look at our Jobs page at [lieferando](//www.lieferando.de/jobs).
+If you want to use JigMagga and want to make bug fixes and improvements, we are welcome for [pull requests](//help.github.com/articles/using-pull-requests).
 
 Coding conventions
 ------------------

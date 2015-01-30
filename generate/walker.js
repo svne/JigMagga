@@ -134,12 +134,13 @@ module.exports = function (defaultFolderPath, config) {
         /**
          * return all domains
          *
-         * @param namespace
+         * @param {String} namespace
+         * @param {String} domainPath
          * @return {Array}
          */
-        getAllDomains: function (namespace) {
+        getAllDomains: function (namespace, domainPath) {
 
-            var rootPath = path.join(projectPath, namespace),
+            var rootPath = domainPath ? domainPath : path.join(projectPath, namespace),
                 results = [];
 
             getWalker(rootPath, {

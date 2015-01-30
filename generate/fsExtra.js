@@ -200,7 +200,9 @@ var editFile = exports.editFile = function (filePath, edit, callback) {
         function (data, next) {
             data = edit(data.toString('utf-8'));
 
-            fs.writeFile(filePath, data, next);
+            if (data) {
+                fs.writeFile(filePath, data, next);
+            }
         }
     ], callback);
 };
@@ -223,9 +225,19 @@ exports.getConfig = function (filePath, callback) {
  */
 exports.editConfigFile = function (filePath, edit, callback) {
     editFile(filePath, function (data) {
-        data = JSON.parse(data);
-        data = edit(data);
-        return JSON.stringify(data, null, '    ');
+        var parsedData;
+
+        try {
+            parsedData = JSON.parse(data);
+        } catch (e) {
+            return data;
+        }
+
+        parsedData = edit(parsedData);
+        if (!parsedData) {
+            return false;
+        }
+        return JSON.stringify(parsedData, null, '    ');
     }, callback);
 };
 

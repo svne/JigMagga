@@ -26,6 +26,8 @@ walker = walker(projectRoot, {});
 
 
 exports.create = function (config) {
+    console.log(config);
+
     var namespace = config.namespace,
         name = config.name,
         done = this.async(),
@@ -45,6 +47,8 @@ exports.create = function (config) {
         appPath: '/' + namespace
     });
 
+    var isFixtureExisted = false;
+
     async.series([
         _.curry(fsExtra.createFolderIfNotExists)(modelsPath),
         _.curry(fsExtra.createFolderIfNotExists)(fixturesPath),
@@ -52,6 +56,7 @@ exports.create = function (config) {
         function (next) {
             fs.exists(path.join(fixturesPath, 'fixtures.js'), function (result) {
                 if (result) {
+                    isFixtureExisted = true;
                     return next();
                 }
                 var fixtureTpl = path.join(tplPath, '..', 'fixture');
@@ -59,11 +64,16 @@ exports.create = function (config) {
             });
         },
         function (next) {
+            if (isFixtureExisted) {
+                return next();
+            }
             walker.forEachDomain(namespace, function (folder, root, cb) {
                 fsExtra.editConfigFile(path.join(root, folder + '.conf'), function (data) {
-                    if (!data.includes) {
-                        data.includes = [{ "id": "//" + namespace +"/fixture/fixtures.js", "ignore" : true}];
+                    if (data.includes) {
+                        return false;
                     }
+
+                    data.includes = [{ "id": "//" + namespace +"/fixture/fixtures.js", "ignore" : true}];
                     return data;
                 }, cb);
             }, next);

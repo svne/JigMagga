@@ -1,6 +1,7 @@
 "use strict";
 var fs = require("fs"),
     path = require('path'),
+    _ = require('lodash'),
     sass = require('node-sass'),
     ssInclude = new (require("ssi"));
 
@@ -143,7 +144,24 @@ module.exports = function (grunt) {
                             config: "generator.domain",
                             type: "list",
                             choices: function (answers) {
-                                var result = walker.getAllPagesInDomains(answers['generator.namespace']);
+                                var result = walker.getAllFirstLevelDomains(answers['generator.namespace']);
+                                // print out all domains and domains/pages in the current namespace/page (all with a conf-file inside)
+                                result.unshift({name: "default", value: "default"});
+                                return result;
+                            },
+                            message: "In which domain this jig should be rendered?",
+                            filter: function (value) {
+                                return value;
+                            },
+                            when: function (answers) {
+                                return answers['generator.template'] === 'jig';
+                            }
+                        },{
+                            config: "generator.domain",
+                            type: "list",
+                            choices: function (answers) {
+                                var result = walker.getAllPagesInDomains(answers['generator.namespace'],
+                                    answers['generator.domain']);
                                 // print out all domains and domains/pages in the current namespace/page (all with a conf-file inside)
                                 result.unshift({name: "No page", value: "none"});
                                 return result;
@@ -161,7 +179,7 @@ module.exports = function (grunt) {
                             type: "list",
                             choices: function (answers) {
                                 // print out all domains in the current namespace/page
-                                var result = walker.getAllDomains(answers['generator.namespace']);
+                                var result = walker.getAllFirstLevelDomains(answers['generator.namespace']);
 
                                 result.unshift('default');
                                 return result;
@@ -172,6 +190,32 @@ module.exports = function (grunt) {
                             },
                             when: function (answers) {
                                 return answers['generator.template'] === 'page';
+                            }
+                        },
+                        {
+                            config: "generator.domain",
+                            type: "list",
+                            choices: function (answers) {
+                                // print out all domains in the current namespace/page
+                                var result = walker.getAllDomains(answers['generator.namespace'],
+                                    answers['generator.domain']);
+
+
+                                return result;
+                            },
+                            message: "This domain contains subdomains should we use some of them?",
+                            filter: function (value) {
+                                return value;
+                            },
+                            when: function (answers) {
+                                if (answers['generator.template'] !== 'page') {
+                                    return false;
+                                }
+                                var subdomains = walker.getAllDomains(answers['generator.namespace'],
+                                    answers['generator.domain']);
+
+
+                                return subdomains.length > 1;
                             }
                         },
                         {

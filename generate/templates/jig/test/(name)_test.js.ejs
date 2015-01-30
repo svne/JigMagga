@@ -1,12 +1,12 @@
 steal('test', function () {
     "use strict";
 
-    module("<%= Namespace %>.Jig.<%= Name %>", {
+    module("<%= Namespace %>.Jig.<%= FullName.join('.') %>", {
         setup: function () {
-            F.open("/<%= namespace %>/jig/<%= name %>/test/<%= name %>.html", function(){
+            F.open("/<%= namespace %>/jig/<%= fullName.join('/') %>/test/<%= name %>.html", function(){
                 stop()
                 F.win.steal.config("domain", "default");
-                F.win.steal("<%= namespace %>/jig/<%= name %>/test/<%= name %>.conf", function(){
+                F.win.steal("<%= namespace %>/jig/<%= fullName.join('/') %>/test/<%= name %>.conf", function(){
                 start();
                 });
             });
@@ -14,7 +14,7 @@ steal('test', function () {
     });
 
     test("visible Test", function () {
-        //TODO implement testacse for <%= Namespace %>.Jig.<%= Name %>
+        //TODO implement testacse for <%= Namespace %>.Jig.<%= FullName.join('.') %>
         ok(false, "no testcase")
     });
 });

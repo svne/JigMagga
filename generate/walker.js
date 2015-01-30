@@ -82,10 +82,16 @@ module.exports = function (defaultFolderPath, config) {
          * @param {string} namespace
          * @return {array}
          */
-        getAllPagesInDomains: function (namespace) {
+        getAllPagesInDomains: function (namespace, domain) {
 
-            var rootPath = path.join(projectPath, namespace),
+            var rootPath,
                 results = [];
+
+            if (!domain) {
+                rootPath = path.join(projectPath, namespace);
+            } else {
+                rootPath = (domain !== 'default') ? domain : path.join(projectPath, namespace, 'page/default');
+            }
 
             getWalker(rootPath, {
                 files: function (root, fileStats, next) {
@@ -113,7 +119,7 @@ module.exports = function (defaultFolderPath, config) {
                         domain = _.last(domains);
                         if (!domain) {
                             defaultPath = pathList.slice(pathList.indexOf('default'), pathList.length - 1);
-                            domain = defaultPath.join('_');
+                            domain = defaultPath.join('/');
                         }
                         page = folder;
                     }
@@ -128,12 +134,13 @@ module.exports = function (defaultFolderPath, config) {
         /**
          * return all domains
          *
-         * @param namespace
+         * @param {String} namespace
+         * @param {String} domainPath
          * @return {Array}
          */
-        getAllDomains: function (namespace) {
+        getAllDomains: function (namespace, domainPath) {
 
-            var rootPath = path.join(projectPath, namespace),
+            var rootPath = domainPath ? domainPath : path.join(projectPath, namespace),
                 results = [];
 
             getWalker(rootPath, {

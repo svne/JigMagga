@@ -34,7 +34,7 @@ module.exports = function (source, uploader, basePath, program) {
 
     tc(source)
         .pipe(tc(es.through(function (data) {
-            if (!helper.isMessageFormatCorrect(data.message, config)) {
+            if (!helper.isMessageFormatCorrect(data.message)) {
                 if (_.isFunction(data.queueShift)) {
                     data.queueShift();
                 }

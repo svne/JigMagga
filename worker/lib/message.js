@@ -195,10 +195,16 @@ module.exports = {
                 message = data.message,
                 config = data.config;
 
+            function isExternal (link) {
+                return link.indexOf('http://') === 0 ||
+                    link.indexOf('//') === 0 ||
+                    link.indexOf('https://') === 0;
+            }
+
             function filterLinks(locale) {
                 return function (page) {
                     var pageLink = config.pages[page][locale];
-                    return pageLink && pageLink.indexOf('http://') === -1 && pageLink.indexOf('{url}') === -1;
+                    return pageLink && !isExternal(pageLink) && pageLink.indexOf('{url}') === -1;
                 };
             }
             try {

@@ -230,9 +230,10 @@ module.exports = {
      * or should not have both of them
      *
      * @param  {object}  message
+     * @param  {object}  comfig
      * @return {Boolean}
      */
-    isMessageFormatCorrect: function (message) {
+    isMessageFormatCorrect: function (message, config) {
         return Boolean((message && message.basedomain && !this.isDomainInSkipList(message.basedomain, config.main.skipDomains)) &&
                     ((message.url && message.page) || (!message.url && !message.page)));
     },

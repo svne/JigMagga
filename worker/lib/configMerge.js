@@ -34,28 +34,31 @@ module.exports = {
          * @param  {{message: WorkerMessage, basePath: string, isPageConfigLoaded: boolean}}   data
          * @param  {Function} callback
          */
-        return es.map(function (data, callback) {
+        return es.map(this.getConfig.bind(this));
+    },
 
-            var message = data.message,
-                basePath = data.basePath;
 
-            if (data.isPageConfigLoaded) {
-                return callback(null, data);
+    getConfig: function (data, callback) {
+
+        var message = data.message,
+            basePath = data.basePath;
+
+        if (data.isPageConfigLoaded) {
+            return callback(null, data);
+        }
+
+        basePath = path.join(basePath, 'page');
+
+        configMerge.getPageConfig(basePath, message.basedomain, message.page, function (err, config) {
+            if (err) {
+                return callback(new WorkerError(err.message || err, data.message, data.key));
             }
 
-            basePath = path.join(basePath, 'page');
+            var result = data;
+            result.config = config;
+            result.isPageConfigLoaded = (message.page) ? true : false;
+            callback(null, result);
 
-            configMerge.getPageConfig(basePath, message.basedomain, message.page, function (err, config) {
-                if (err) {
-                    return callback(new WorkerError(err.message || err, data.message, data.key));
-                }
-
-                var result = data;
-                result.config = config;
-                result.isPageConfigLoaded = (message.page) ? true : false;
-                callback(null, result);
-
-            });
         });
     }
 };

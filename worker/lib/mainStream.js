@@ -5,6 +5,7 @@ var es = require('event-stream'),
     EventEmitter = require('events').EventEmitter;
 
 var stream = require('./streamHelper'),
+    dependentPageSplitter = require('./dependentPageSplitter'),
     configMerge = require('./configMerge'),
     messageHelper = require('./message'),
     error = require('./error'),
@@ -58,13 +59,14 @@ module.exports = function (source, uploader, basePath, program) {
         })))
         .pipe(tc(configMerge.getConfigStream()))
         .pipe(tc(messageHelper.pageLocaleSplitter()))
+        .pipe(tc(dependentPageSplitter(config)))
         .pipe(es.through(function (data) {
             messageStorage.add(data.key, data.onDone, data.queueShift);
             data.onDone = data.queueShift = null;
             this.emit('data', data);
         }))
         //add page configs for those messages that did not have page key before splitting
-        .pipe(tc(configMerge.getConfigStream()))
+        //.pipe(tc(configMerge.getConfigStream()))
         .on('data', function (data) {
 
             data.message = messageHelper.extendMessage(data.message, program, data.config);

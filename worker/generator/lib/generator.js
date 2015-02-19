@@ -15,7 +15,7 @@ var util = require('util');
 var deepExtend = require('deep-extend');
 var path = require('path');
 var ejs = require("ejs");
-var mustache = require('mustache');
+var Handlebars = require('handlebars');
 var viewHelper = require("./view.js");
 var restHelper = require("./rest.js");
 var placeholderHelper = require("./placeholders.js");
@@ -285,7 +285,12 @@ var generateJigs = function (config, viewContainer, callback) {
             gt.setLocale(viewContainer.locale);
             viewContainer._ = gt._.bind(gt);
             if (ejsTemplateFile.match("\.mustache$")) {
-                ejsTemplate = mustache.to_html(ejsTemplate, viewContainer);
+                _.each(viewContainer, function (value, name) {
+                    if (_.isFunction(value)) {
+                        Handlebars.registerHelper(name, value);
+                    }
+                });
+                ejsTemplate = Handlebars.compile(ejsTemplate)(viewContainer);
             } else if (ejsTemplateFile.match("\.ejs")) {
 
                 ejsTemplate = ejs.render(ejsTemplate, viewContainer);

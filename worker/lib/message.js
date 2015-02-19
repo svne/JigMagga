@@ -2,9 +2,11 @@
 
 var es = require('event-stream'),
     md5 = require('MD5'),
+    async = require('async'),
     _ = require('lodash');
 
 var WorkerError = require('./error').WorkerError;
+var configMerge = require('./configMerge');
 var generator = require('../generator/lib/generator');
 
 var isPageInConfig = function (config, page) {
@@ -261,8 +263,17 @@ module.exports = {
                 this.emit('err', new WorkerError('there is no such pages in config file', data.message, data.key));
                 return data.queueShift();
             }
-            result.forEach(function (item) {
-                that.emit('data', item);
+
+            async.forEachSeries(result, function (item, cb) {
+                configMerge.getConfig(item, function (err, res) {
+                    if (err) {
+                        that.emit('err', err);
+                        return cb();
+                    }
+
+                    that.emit('data', res);
+                    cb();
+                });
             });
         });
     },

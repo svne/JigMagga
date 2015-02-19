@@ -48,9 +48,7 @@ module.exports = {
      */
     getConfigFromPageItem: function (page, basePath, domain, cb) {
 
-        jmUtil.configMerge.getPageConfig(basePath, domain, page, function (err, result) {
-            cb(null, result);
-        });
+        jmUtil.configMerge.getPageConfig(basePath, domain, page, cb);
 
     },
 
@@ -89,6 +87,10 @@ module.exports = {
             }
             async.mapLimit(data.build.pages, 1, function (item, cb) {
                 self.getConfigFromPageItem(item, data.build.basePath, data.build.domain, function (err, result) {
+                    if (err) {
+                        console.log(item);
+                        throw err;
+                    }
                     result.build = util._extend({}, data.build);
                     result.build.page = item;
                     cb(null, result);

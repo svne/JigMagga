@@ -1,11 +1,15 @@
 'use strict';
 
 var es = require('event-stream'),
+    fs = require('fs'),
+    path = require('path'),
+    walk = require('walk'),
     md5 = require('MD5'),
     async = require('async'),
     _ = require('lodash');
 
 var WorkerError = require('./error').WorkerError;
+var STATUS_CODES = require('./error').STATUS_CODES;
 var configMerge = require('./configMerge');
 var generator = require('../generator/lib/generator');
 
@@ -63,6 +67,34 @@ var messageStorage = {};
 var getIdValues = function (message) {
     return _.pick(message, function (value, key) {
         return (new RegExp('.*Id(s|)$', 'ig')).test(key);
+    });
+};
+
+var lookForDomain = function (basePath, baseDomain, domain, callback) {
+    var walker = walk.walk(path.join(basePath, 'page', baseDomain));
+    var result;
+
+    walker.on('directories', function (root, stats, next) {
+        var domainExistInFolder = _.some(stats, function (stat) {
+            return stat.name === domain;
+        });
+
+        if (domainExistInFolder) {
+
+            result = root.replace(basePath + '/page/', '');
+        }
+        next();
+    });
+
+    walker.on('errors', function (root, nodeStatsArray, next) {
+        callback(nodeStatsArray);
+    });
+
+    walker.on('end', function () {
+        if (!result) {
+            return callback('There is no such domain');
+        }
+        callback(null, path.join(result, domain));
     });
 };
 
@@ -274,6 +306,44 @@ module.exports = {
                     that.emit('data', res);
                     cb();
                 });
+            });
+        });
+    },
+
+    checkBaseDomain: function (basePath) {
+        return es.map(function (data, callback) {
+            var message = data.message;
+
+            if (message.url && message.page ||
+                !message.url && !message.page ||
+                !message.url && message.page) {
+                return callback(null, data);
+            }
+
+            var basedomain = message.basedomain + '/' + message.url;
+
+            var pathToDomain = path.join(basePath, basedomain);
+
+            async.waterfall([
+                function (next) {
+                    fs.exists(pathToDomain, function (exists) {
+                        next(null, exists);
+                    });
+                },
+                function (exists, next) {
+                    if (exists) {
+                        return next(null, basedomain);
+                    }
+                    lookForDomain(basePath, message.basedomain, message.url, next);
+                }
+            ], function (err, basedomain) {
+                if (err) {
+                    return callback(new WorkerError(err, message, null, STATUS_CODES.WRONG_ARGUMENT_ERROR));
+                }
+                data.message.basedomain = basedomain;
+                data.message.url = null;
+                callback(null, data);
+
             });
         });
     },

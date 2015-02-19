@@ -38,7 +38,6 @@ var doApiCall = function (path, config, apiconfig, callback) {
         'yd-x-domain': domain
     };
 
-    console.log('-------->[request]', url, headers);
     request.get(url, {headers: headers, json: true}, callback);
 };
 
@@ -90,7 +89,6 @@ module.exports = function (globalConfig) {
 
             var messageList = generateMessageList(body, data, dependentPage);
 
-            console.log('messageList.length------->', messageList.length);
 
             async.forEachSeries(messageList, function (item, cb) {
                 configMerge.getConfig(item, function (err, res) {

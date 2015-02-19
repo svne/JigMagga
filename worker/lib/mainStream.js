@@ -34,6 +34,7 @@ module.exports = function (source, uploader, basePath, program) {
     var emitter = new EventEmitter();
 
     tc(source)
+        .pipe(tc(messageHelper.checkBaseDomain(basePath)))
         .pipe(tc(es.through(function (data) {
             if (!helper.isMessageFormatCorrect(data.message, config)) {
                 if (_.isFunction(data.queueShift)) {
@@ -57,6 +58,7 @@ module.exports = function (source, uploader, basePath, program) {
 
             this.emit('data', data);
         })))
+
         .pipe(tc(configMerge.getConfigStream()))
         .pipe(tc(messageHelper.pageLocaleSplitter()))
         .pipe(tc(dependentPageSplitter(config)))

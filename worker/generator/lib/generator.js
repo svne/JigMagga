@@ -80,6 +80,43 @@ var getExcludedPredefinedVariables = function (jigs) {
 };
 
 
+var removePropertyByPath = function (itemPath, object) {
+    var last = itemPath.pop();
+
+    var parent = _.reduce(itemPath, function (result, currentItem) {
+        if (!result) {
+            return null;
+        }
+        if (_.isPlainObject(result) && !result[currentItem]) {
+            return null;
+        }
+        if (_.isArray(result) && !result.length) {
+            return null;
+        }
+
+        if (_.isPlainObject(result)) {
+            return result[currentItem];
+        } else if (_.isArray(result)) {
+            return result.map(function (item) {
+                return item[currentItem];
+            });
+        }
+
+    }, object);
+
+    if (_.isPlainObject(parent)) {
+        parent[last] = undefined;
+    } else if (_.isArray(parent)) {
+        parent = parent.map(function (item) {
+            item[last] = undefined;
+            return item;
+        });
+    }
+
+    return object;
+};
+
+
 var getExcludedPredefinedFields = function (jigs) {
     var apiCallJigs = _.filter(_.keys(jigs), function (jigName) {
         return jigs[jigName].apicalls ;
@@ -93,8 +130,9 @@ var getExcludedPredefinedFields = function (jigs) {
             if (!apiCallsWithExcludedFields[apiCallName]) {
                 apiCallsWithExcludedFields[apiCallName] = [];
             }
+
             if (!apiCall.excludeFromPredefined) {
-                return apiCallsWithExcludedFields[apiCallName].push([]);
+                return;
             }
 
             apiCallsWithExcludedFields[apiCallName].push(apiCall.excludeFromPredefined);
@@ -455,6 +493,8 @@ exports.generatePage = function (origConfig, callback) {
 
 
 
+
+
 /**
  *
  * @param config
@@ -472,7 +512,13 @@ exports.generateJsonPage = function (config) {
                 copyResult = JSON.parse(JSON.stringify(result));
             if (options.remove) {
                 _.each(options.remove, function (key) {
-                    if (key in result) delete result[key];
+                    var keys = key.split('.');
+                    if (keys.length === 1 && result[key]) {
+                        result[key] = undefined;
+                        return;
+                    }
+
+                    removePropertyByPath(keys, result);
                 });
             }
             if (options.pick) {
@@ -508,7 +554,7 @@ exports.generateJsonPage = function (config) {
                                     extResult[key] = result[key];
                                     result[key] = "/" + childUrl;
                                     if (extract.remove) {
-                                        delete result[key];
+                                        result[key] = undefined;
                                     }
                                 } else if (extract.nullIfEmpty) {
                                     result[key] = null;
@@ -542,7 +588,7 @@ exports.generateJsonPage = function (config) {
                 });
             }
         });
-    }
+    };
     _.each(config.jigs, function (jig, jigClass) {
         _.each(jig.apicalls, function (apiCall, apiCallName) {
             if (!apiCall.cache) {

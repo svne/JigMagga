@@ -1,6 +1,7 @@
 'use strict';
 
 var es = require('event-stream');
+var hgl = require('highland');
 var _ = require('lodash');
 
 
@@ -62,7 +63,7 @@ module.exports = {
      * 
      * @param  {Function} callback
      */
-        accumulate: function (callback) {
+    accumulate: function (callback) {
         var buffers = [];
 
         return es.through(function write(data) {
@@ -103,5 +104,22 @@ module.exports = {
         };
 
         return tryCatch;
+    },
+    
+    asyncThrough: function (fn, source) {
+        source = source || hgl;
+
+        return source.consume(function (err, data, push, next) {
+            if (err) {
+                // pass errors along the stream and consume next value
+                push(err);
+                next();
+            }
+            else if (data !== hgl.nil) {
+                // pass nil (end event) along the stream
+                //push(null, data);
+                fn(data, push, next);
+            }
+        });
     }
 };

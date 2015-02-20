@@ -1,6 +1,7 @@
 'use strict';
 
 var es = require('event-stream'),
+    hgl = require('highland'),
     WorkerError = require('./error').WorkerError,
     _ = require('lodash'),
     configMerge = require('jmUtil').configMerge,
@@ -35,6 +36,10 @@ module.exports = {
          * @param  {Function} callback
          */
         return es.map(this.getConfig.bind(this));
+    },
+
+    getConfigHighStream: function () {
+        return hgl.flatMap(hgl.wrapCallback(this.getConfig));
     },
 
 

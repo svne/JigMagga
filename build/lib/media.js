@@ -115,7 +115,10 @@ var extractFilePath = function (buildOptions, callback) {
         }
 
         var domain = _.last(buildOptions.domain.split('/'));
-        descriptor.from = descriptor.from.replace('<%= domain %>', domain);
+        descriptor.from = descriptor.from
+            .replace('<%= domain %>', domain)
+            .replace('<%= domainPath %>', buildOptions.domain);
+
         exactFilePath = path.join(buildOptions.namespacePath, descriptor.from);
 
         var next = function (err, result) {

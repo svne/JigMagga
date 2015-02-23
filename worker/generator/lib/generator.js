@@ -83,34 +83,37 @@ var getExcludedPredefinedVariables = function (jigs) {
 var removePropertyByPath = function (itemPath, object) {
     var last = itemPath.pop();
 
-    var parent = _.reduce(itemPath, function (result, currentItem) {
-        if (!result) {
+    var i = itemPath.length;
+    var parent = object;
+    while (i--) {
+        var currentItem = itemPath[i];
+        if (!parent) {
             return null;
         }
-        if (_.isPlainObject(result) && !result[currentItem]) {
+        if (_.isPlainObject(parent) && !parent[currentItem]) {
             return null;
         }
-        if (_.isArray(result) && !result.length) {
+        if (_.isArray(parent) && !parent.length) {
             return null;
         }
 
-        if (_.isPlainObject(result)) {
-            return result[currentItem];
-        } else if (_.isArray(result)) {
-            return result.map(function (item) {
-                return item[currentItem];
-            });
+        if (_.isPlainObject(parent)) {
+            parent = parent[currentItem];
+        } else if (_.isArray(parent)) {
+            var j = parent.length;
+            while (j--) {
+                parent[j] = parent[j][currentItem];
+            }
         }
-
-    }, object);
+    }
 
     if (_.isPlainObject(parent)) {
         parent[last] = undefined;
     } else if (_.isArray(parent)) {
-        parent = parent.map(function (item) {
-            item[last] = undefined;
-            return item;
-        });
+        var k = parent.length;
+        while (k--) {
+            parent[k][last] = undefined;
+        }
     }
 
     return object;
@@ -153,11 +156,16 @@ var getExcludedPredefinedFields = function (jigs) {
 
 var excludePredefinedFields = function (predefinedVar, excludedFields) {
     var removeFromObject = function (item, fields) {
-        fields.forEach(function (field) {
+        var i = fields.length;
+        while (i--) {
+            var field = fields[i];
             if (item.hasOwnProperty(field)) {
-                delete item[field];
+                item[field] = undefined;
+            } else {
+                removePropertyByPath(field.split('.'), item);
             }
-        });
+        }
+
         return item;
     };
 

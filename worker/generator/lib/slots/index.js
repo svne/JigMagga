@@ -114,6 +114,8 @@ var mapJigsWithStrategy= function (config, page) {
 
     var result = [];
     var appendToEmptyList = {};
+
+    console.log(_.keys(config));
     _.each(config, function (jig, className) {
         if (_.isObject(jig.slot) && jig.controller) {
 
@@ -141,7 +143,7 @@ var mapJigsWithStrategy= function (config, page) {
 
     if (_.keys(appendToEmptyList).length) {
         appendToEmptyList = _.flatten(_.values(appendToEmptyList));
-        result = result.concat(appendToEmptyList);
+        result = appendToEmptyList.concat(result);
     }
 
     return result;
@@ -179,6 +181,10 @@ var createSection = function (jig) {
  */
 exports.executeJigSlotLogic = function (config, page) {
     var jigs = mapJigsWithStrategy(config, page);
+    //console.log(_.filter(jigs, function (item) {
+    //    return item.slot.parent === '.yd-cart';
+    //}));
+
     jigs.forEach(function (jig) {
         var section = createSection(jig);
 

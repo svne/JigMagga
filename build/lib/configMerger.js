@@ -24,6 +24,12 @@ function callPageConfigUtil() {
     });
 }
 
+function isExternal (link) {
+    return link.indexOf('http://') === 0 ||
+        link.indexOf('//') === 0 ||
+        link.indexOf('https://') === 0;
+}
+
 var projectConfigStore = {};
 
 
@@ -62,7 +68,7 @@ module.exports = {
             var regex = new RegExp("^" + data.build.page + "$");
             var locale = data.data.locales[0];
             var filteredPages = Object.keys(data.data.pages).filter(function (item) {
-                if (item && item.search(regex) !== -1 && data.data.pages[item][locale].indexOf('http://') === -1) {
+                if (item && item.search(regex) !== -1 && !isExternal(data.data.pages[item][locale])) {
                     return true;
                 }
             });

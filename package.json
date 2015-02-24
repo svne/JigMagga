@@ -82,6 +82,7 @@
     "git-wrapper": "~0.1.1",
     "handlebars": "^2.0.0",
     "headless": "^1.0.0",
+    "highland": "^2.4.0",
     "http-get": "~0.5.10",
     "jmUtil": "git+https://github.com/yourdelivery/JigMaggerUtilities.git",
     "jsdom": "~0.11.1",

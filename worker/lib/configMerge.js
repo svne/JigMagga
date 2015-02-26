@@ -27,22 +27,19 @@ module.exports = {
      * @return {Transform}
      */
     getConfigStream: function () {
-        /**
-         * stream that create config using getPageConfig function for each message
-         * if there is the page config was loaded it sets isPageConfigLoaded to true
-         * in order to prevent this message from second config load
-         * 
-         * @param  {{message: WorkerMessage, basePath: string, isPageConfigLoaded: boolean}}   data
-         * @param  {Function} callback
-         */
-        return es.map(this.getConfig.bind(this));
-    },
 
-    getConfigHighStream: function () {
         return hgl.flatMap(hgl.wrapCallback(this.getConfig));
     },
 
 
+    /**
+     * stream that create config using getPageConfig function for each message
+     * if there is the page config was loaded it sets isPageConfigLoaded to true
+     * in order to prevent this message from second config load
+     *
+     * @param  {{message: WorkerMessage, basePath: string, isPageConfigLoaded: boolean}}   data
+     * @param  {Function} callback
+     */
     getConfig: function (data, callback) {
 
         var message = data.message,

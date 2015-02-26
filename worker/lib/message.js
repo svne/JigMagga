@@ -1,6 +1,7 @@
 'use strict';
 
 var es = require('event-stream'),
+    hgl = require('highland'),
     fs = require('fs'),
     path = require('path'),
     walk = require('walk'),
@@ -212,27 +213,31 @@ module.exports = {
         });
     },
 
-    pageLocaleHighSplitter: function () {
+    pageLocaleSplitter: function () {
+        function isExternal (link) {
+            return link.indexOf('http://') === 0 ||
+                link.indexOf('//') === 0 ||
+                link.indexOf('https://') === 0;
+        }
+
+        function filterLinks(locale, config) {
+            return function (page) {
+                var pageLink = config.pages[page][locale];
+                return pageLink && !isExternal(pageLink) && pageLink.indexOf('{url}') === -1;
+            };
+        }
+
         return streamHelper.asyncThrough(function (data, push, callback) {
-            var that = this,
-                result = [],
+            var result = [],
                 message = data.message,
                 config = data.config;
 
-            function isExternal (link) {
-                return link.indexOf('http://') === 0 ||
-                    link.indexOf('//') === 0 ||
-                    link.indexOf('https://') === 0;
-            }
-
-            function filterLinks(locale) {
-                return function (page) {
-                    var pageLink = config.pages[page][locale];
-                    return pageLink && !isExternal(pageLink) && pageLink.indexOf('{url}') === -1;
-                };
-            }
             try {
                 var page = (message.staticOld) ? 'static-old' : message.page;
+
+                if (!message.url && page) {
+                    message.url = page;
+                }
 
                 if (message.url && page) {
 
@@ -253,7 +258,7 @@ module.exports = {
 
                     if (message.locale) {
                         result = Object.keys(config.pages)
-                            .filter(filterLinks(message.locale))
+                            .filter(filterLinks(message.locale, config))
                             .map(function (page) {
                                 var res =  _.cloneDeep(data);
                                 res.message.page = page;
@@ -263,7 +268,7 @@ module.exports = {
                     } else {
                         result = config.locales.reduce(function (currentResult, locale) {
                             var localePages = Object.keys(config.pages)
-                                .filter(filterLinks(locale))
+                                .filter(filterLinks(locale, config))
                                 .map(function (page) {
                                     var res = _.cloneDeep(data);
 
@@ -291,7 +296,6 @@ module.exports = {
             async.forEachSeries(result, function (item, cb) {
                 configMerge.getConfig(item, function (err, res) {
                     if (err) {
-                        that.emit('err', err);
                         return cb(err);
                     }
 
@@ -308,108 +312,8 @@ module.exports = {
         });
     },
 
-    pageLocaleSplitter: function () {
-        /**
-         * stream that analyze the messages. If there is no locale key inside
-         * it emits one message for each locale from the message config
-         *
-         * The same for page property if there is no page field stream will
-         * emit one message for each static page inside config.
-         *
-         * If in the message there are page and locale it just emit this message
-         *
-         * @param  {{config: object, message: object}} data
-         * @return {object}
-         */
-        return es.through(function (data) {
-            var that = this,
-                result = [],
-                message = data.message,
-                config = data.config;
-
-            function isExternal (link) {
-                return link.indexOf('http://') === 0 ||
-                    link.indexOf('//') === 0 ||
-                    link.indexOf('https://') === 0;
-            }
-
-            function filterLinks(locale) {
-                return function (page) {
-                    var pageLink = config.pages[page][locale];
-                    return pageLink && !isExternal(pageLink) && pageLink.indexOf('{url}') === -1;
-                };
-            }
-            try {
-                var page = (message.staticOld) ? 'static-old' : message.page;
-
-                if (message.url && page) {
-
-                    if (message.locale) {
-                        result.push(data);
-                    } else if (isPageInConfig(config, page)) {
-                        result = config.locales
-                            .filter(function (locale) {
-                                return config.pages[page][locale];
-                            })
-                            .map(function (locale) {
-                                var res = _.cloneDeep(data);
-                                res.message.locale = locale;
-                                return res;
-                            });
-                    }
-                } else if (!page && config.pages) {
-
-                    if (message.locale) {
-                        result = Object.keys(config.pages)
-                            .filter(filterLinks(message.locale))
-                            .map(function (page) {
-                                var res =  _.cloneDeep(data);
-                                res.message.page = page;
-                                res.message.url = page;
-                                return res;
-                            });
-                    } else {
-                        result = config.locales.reduce(function (currentResult, locale) {
-                            var localePages = Object.keys(config.pages)
-                                .filter(filterLinks(locale))
-                                .map(function (page) {
-                                    var res = _.cloneDeep(data);
-
-                                    res.message.page = page;
-                                    res.message.url = page;
-                                    res.message.locale = locale;
-                                    return res;
-                                });
-                            return currentResult.concat(localePages);
-                        }, []);
-                    }
-                }
-            } catch (err) {
-                this.emit('err', new WorkerError(err.message || err, data.message, data.key));
-                return data.queueShift();
-            }
-
-            if (!result.length) {
-                this.emit('err', new WorkerError('there is no such pages in config file', data.message, data.key));
-                return data.queueShift();
-            }
-
-            async.forEachSeries(result, function (item, cb) {
-                configMerge.getConfig(item, function (err, res) {
-                    if (err) {
-                        that.emit('err', err);
-                        return cb();
-                    }
-
-                    that.emit('data', res);
-                    cb();
-                });
-            });
-        });
-    },
-
     checkBaseDomain: function (basePath) {
-        return es.map(function (data, callback) {
+        return streamHelper.map(function (data, callback) {
             var message = data.message;
 
             if (message.url && message.page ||
@@ -441,34 +345,34 @@ module.exports = {
                 data.message.basedomain = basedomain;
                 data.message.url = null;
                 callback(null, data);
-
             });
         });
     },
 
     validateStream: function (emitter, basePath, config) {
-        return es.through(function (data) {
+        return streamHelper.asyncThrough(function (data, push, next) {
             if (!helper.isMessageFormatCorrect(data.message, config)) {
                 if (_.isFunction(data.queueShift)) {
                     data.queueShift();
                 }
 
-                return this.emit('err', new WorkerError('something wrong with message fields', data.message));
+                push(new WorkerError('something wrong with message fields', data.message));
+                return next();
             }
 
             if (data.message.url && !helper.isUrlCorrect(data.message.url)) {
                 if (_.isFunction(data.queueShift)) {
                     data.queueShift();
                 }
-                return this.emit('err', new WorkerError('something wrong with message url', data.message));
+                push(new WorkerError('something wrong with message url', data.message));
+                return next();
             }
 
             data.basePath = basePath;
             emitter.emit('new:message', helper.getMeta(data.message));
 
-
-
-            this.emit('data', data);
+            push(null, data);
+            next();
         });
     },
 

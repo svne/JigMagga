@@ -121,5 +121,9 @@ module.exports = {
                 fn(data, push, next);
             }
         });
+    },
+    map: function (fn, source) {
+        source = source || hgl;
+        return source.flatMap(hgl.wrapCallback(fn));
     }
 };

@@ -67,46 +67,6 @@ var generateMessageList = function (body, data, dependentPage) {
 };
 
 
-//module.exports = function (globalConfig) {
-//
-//    return es.through(function (data) {
-//        var config = data.config,
-//            message = data.message;
-//
-//        var that = this;
-//        var dependentPages = grepDependentPages(config);
-//
-//        if (!dependentPages.length) {
-//            return this.emit('data', data);
-//        }
-//
-//        var dependentPage = _.first(dependentPages);
-//        var path = replacePlaceholders(dependentPage.path, message, /{([\s\S]+?)}/g);
-//
-//        doApiCall(path, config, globalConfig.api, function (err, res, body) {
-//
-//            if (err || res.statusCode >= 400) {
-//                this.emit('err', err || body);
-//            }
-//
-//            var messageList = generateMessageList(body, data, dependentPage);
-//
-//
-//            async.forEachSeries(messageList, function (item, cb) {
-//                configMerge.getConfig(item, function (err, res) {
-//                    if (err) {
-//                        that.emit('err', err);
-//                        return cb();
-//                    }
-//
-//                    that.emit('data', res);
-//                    cb();
-//                });
-//            });
-//        });
-//    });
-//};
-
 module.exports = function (globalConfig) {
 
     return streamHelper.asyncThrough(function (data, push, callback) {

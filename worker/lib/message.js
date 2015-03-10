@@ -1,7 +1,6 @@
 'use strict';
 
 var es = require('event-stream'),
-    hgl = require('highland'),
     fs = require('fs'),
     path = require('path'),
     walk = require('walk'),
@@ -73,10 +72,25 @@ var getIdValues = function (message) {
     });
 };
 
-var lookForDomain = function (basePath, baseDomain, domain, callback) {
-    var walker = walk.walk(path.join(basePath, 'page', baseDomain));
-    var result;
+var domainCache = {};
 
+/**
+ * look for domain folder based on base domain and exact domain
+ *
+ *
+ * @param {string} basePath
+ * @param {string} baseDomain
+ * @param {string} domain
+ * @param {function} callback
+ */
+var lookForDomain = function (basePath, baseDomain, domain, callback) {
+    var walker = walk.walk(path.join(basePath, 'page', baseDomain)),
+        cacheKey = basePath + baseDomain + domain,
+        result;
+
+    if (domainCache[cacheKey]) {
+        return callback(null, domainCache[cacheKey]);
+    }
     walker.on('directories', function (root, stats, next) {
         var domainExistInFolder = _.some(stats, function (stat) {
             return stat.name === domain;
@@ -97,7 +111,9 @@ var lookForDomain = function (basePath, baseDomain, domain, callback) {
         if (!result) {
             return callback('There is no such domain');
         }
-        callback(null, path.join(result, domain));
+
+        domainCache[cacheKey] = path.join(result, domain);
+        callback(null, domainCache[cacheKey]);
     });
 };
 
@@ -227,6 +243,30 @@ module.exports = {
             };
         }
 
+        var splitterStrategy = {
+            byLocale: function (page, data, config) {
+                return  config.locales
+                    .filter(function (locale) {
+                        return config.pages[page][locale];
+                    })
+                    .map(function (locale) {
+                        var res = _.cloneDeep(data);
+                        res.message.locale = locale;
+                        return res;
+                    });
+            },
+            byPage: function (locale, data,  config) {
+                return Object.keys(config.pages)
+                    .filter(filterLinks(locale, config))
+                    .map(function (page) {
+                        var res =  _.cloneDeep(data);
+                        res.message.page = page;
+                        res.message.url = page;
+                        return res;
+                    });
+            }
+        };
+
         return streamHelper.asyncThrough(function (data, push, callback) {
             var result = [],
                 message = data.message,
@@ -240,43 +280,23 @@ module.exports = {
                 }
 
                 if (message.url && page) {
-
                     if (message.locale) {
                         result.push(data);
                     } else if (isPageInConfig(config, page)) {
-                        result = config.locales
-                            .filter(function (locale) {
-                                return config.pages[page][locale];
-                            })
-                            .map(function (locale) {
-                                var res = _.cloneDeep(data);
-                                res.message.locale = locale;
-                                return res;
-                            });
+                        result = splitterStrategy.byLocale(page, data, config);
                     }
                 } else if (!page && config.pages) {
 
                     if (message.locale) {
-                        result = Object.keys(config.pages)
-                            .filter(filterLinks(message.locale, config))
-                            .map(function (page) {
-                                var res =  _.cloneDeep(data);
-                                res.message.page = page;
-                                res.message.url = page;
-                                return res;
-                            });
+                        result = splitterStrategy.byPage(message.locale, data, config);
                     } else {
                         result = config.locales.reduce(function (currentResult, locale) {
-                            var localePages = Object.keys(config.pages)
-                                .filter(filterLinks(locale, config))
-                                .map(function (page) {
-                                    var res = _.cloneDeep(data);
+                            var localePages = splitterStrategy.byPage(locale, data, config);
 
-                                    res.message.page = page;
-                                    res.message.url = page;
-                                    res.message.locale = locale;
-                                    return res;
-                                });
+                            localePages = localePages.map(function (item) {
+                                item.message.locale = locale;
+                                return item;
+                            });
                             return currentResult.concat(localePages);
                         }, []);
                     }

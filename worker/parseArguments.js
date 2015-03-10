@@ -11,14 +11,8 @@ module.exports = function (processArgs) {
     }
 
     args = program
-        .option('-c, --cityId <n>', 'define location by cityId', Number)
-        .option('-s, --regionId <n>', 'define location by regionId', Number)
-        .option('-o, --districtId <n>', 'define location by districtId', Number)
-        .option('-l, --linkId <n>', 'define internlinkpage by linkId', Number)
         .option('-j, --values [values]', 'specify values as JSON')
         .option('-v, --verbose', 'whether to print to output all log information')
-        .option('-r, --restaurantId <n>', 'define restaurant by restaurantId', Number)
-        .option('-R, --satelliteId <n>', 'define restaurant by satelliteId', Number)
         .option('-b, --versionnumber [value]', 'specify build version as float')
         .option('-q, --queue', 'start program to listen on queue')
         .option('-e, --errorqueue', 'use error queue')

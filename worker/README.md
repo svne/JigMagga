@@ -14,14 +14,8 @@ Usage: worker [options]
   Options:
 
     -h, --help                    output usage information
-    -c, --cityId <n>              define location by cityId
-    -s, --regionId <n>            define location by regionId
-    -o, --districtId <n>          define location by districtId
-    -l, --linkId <n>              define internlinkpage by linkId
     -j, --values [values]         specify values as JSON
     -v, --verbose                 whether to print to output all log information
-    -r, --restaurantId <n>        define restaurant by restaurantId
-    -R, --satelliteId <n>         define restaurant by satelliteId
     -b, --versionnumber [value]   specify build version as float
     -q, --queue                   start program to listen on queue
     -e, --errorqueue              use error queue

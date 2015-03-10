@@ -61,12 +61,11 @@ module.exports = {
         var values = {};
 
         if (program.values) {
-            values = JSON.parse(program.values);
-        } else {
-            //grab all keys that ended on Id from arguments to the message
-            values = _.pick(program, function (value, key) {
-                return (new RegExp('.*Id$', 'ig')).test(key);
-            });
+            try {
+                values = JSON.parse(program.values);
+            } catch (e) {
+                throw new Error('Wrong format of values parameter. Should be JSON');
+            }
         }
         data.message = _.assign(data.message, values);
         data.key = messageHelper.createMessageKey(data.message);

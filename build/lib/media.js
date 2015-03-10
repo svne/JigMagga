@@ -113,7 +113,12 @@ var extractFilePath = function (buildOptions, callback) {
         if (!descriptor.from) {
             throw new Error('there is no from field in media source descriptor');
         }
-        descriptor.from = descriptor.from.replace('<%= domain %>', buildOptions.domain);
+
+        var domain = _.last(buildOptions.domain.split('/'));
+        descriptor.from = descriptor.from
+            .replace('<%= domain %>', domain)
+            .replace('<%= domainPath %>', buildOptions.domain);
+
         exactFilePath = path.join(buildOptions.namespacePath, descriptor.from);
 
         var next = function (err, result) {

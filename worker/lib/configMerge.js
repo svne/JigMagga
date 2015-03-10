@@ -1,6 +1,7 @@
 'use strict';
 
 var es = require('event-stream'),
+    hgl = require('highland'),
     WorkerError = require('./error').WorkerError,
     _ = require('lodash'),
     configMerge = require('jmUtil').configMerge,
@@ -26,36 +27,40 @@ module.exports = {
      * @return {Transform}
      */
     getConfigStream: function () {
-        /**
-         * stream that create config using getPageConfig function for each message
-         * if there is the page config was loaded it sets isPageConfigLoaded to true
-         * in order to prevent this message from second config load
-         * 
-         * @param  {{message: WorkerMessage, basePath: string, isPageConfigLoaded: boolean}}   data
-         * @param  {Function} callback
-         */
-        return es.map(function (data, callback) {
 
-            var message = data.message,
-                basePath = data.basePath;
+        return hgl.flatMap(hgl.wrapCallback(this.getConfig));
+    },
 
-            if (data.isPageConfigLoaded) {
-                return callback(null, data);
+
+    /**
+     * stream that create config using getPageConfig function for each message
+     * if there is the page config was loaded it sets isPageConfigLoaded to true
+     * in order to prevent this message from second config load
+     *
+     * @param  {{message: WorkerMessage, basePath: string, isPageConfigLoaded: boolean}}   data
+     * @param  {Function} callback
+     */
+    getConfig: function (data, callback) {
+
+        var message = data.message,
+            basePath = data.basePath;
+
+        if (data.isPageConfigLoaded) {
+            return callback(null, data);
+        }
+
+        basePath = path.join(basePath, 'page');
+
+        configMerge.getPageConfig(basePath, message.basedomain, message.page, function (err, config) {
+            if (err) {
+                return callback(new WorkerError(err.message || err, data.message, data.key));
             }
 
-            basePath = path.join(basePath, 'page');
+            var result = data;
+            result.config = config;
+            result.isPageConfigLoaded = (message.page) ? true : false;
+            callback(null, result);
 
-            configMerge.getPageConfig(basePath, message.basedomain, message.page, function (err, config) {
-                if (err) {
-                    return callback(new WorkerError(err.message || err, data.message, data.key));
-                }
-
-                var result = data;
-                result.config = config;
-                result.isPageConfigLoaded = (message.page) ? true : false;
-                callback(null, result);
-
-            });
         });
     }
 };

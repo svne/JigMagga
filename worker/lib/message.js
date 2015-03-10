@@ -1,10 +1,18 @@
 'use strict';
 
 var es = require('event-stream'),
+    fs = require('fs'),
+    path = require('path'),
+    walk = require('walk'),
     md5 = require('MD5'),
+    async = require('async'),
     _ = require('lodash');
 
 var WorkerError = require('./error').WorkerError;
+var STATUS_CODES = require('./error').STATUS_CODES;
+var configMerge = require('./configMerge');
+var streamHelper = require('./streamHelper');
+var helper = require('./helper');
 var generator = require('../generator/lib/generator');
 
 var isPageInConfig = function (config, page) {
@@ -64,6 +72,51 @@ var getIdValues = function (message) {
     });
 };
 
+var domainCache = {};
+
+/**
+ * look for domain folder based on base domain and exact domain
+ *
+ *
+ * @param {string} basePath
+ * @param {string} baseDomain
+ * @param {string} domain
+ * @param {function} callback
+ */
+var lookForDomain = function (basePath, baseDomain, domain, callback) {
+    var walker = walk.walk(path.join(basePath, 'page', baseDomain)),
+        cacheKey = basePath + baseDomain + domain,
+        result;
+
+    if (domainCache[cacheKey]) {
+        return callback(null, domainCache[cacheKey]);
+    }
+    walker.on('directories', function (root, stats, next) {
+        var domainExistInFolder = _.some(stats, function (stat) {
+            return stat.name === domain;
+        });
+
+        if (domainExistInFolder) {
+
+            result = root.replace(basePath + '/page/', '');
+        }
+        next();
+    });
+
+    walker.on('errors', function (root, nodeStatsArray, next) {
+        callback(nodeStatsArray);
+    });
+
+    walker.on('end', function () {
+        if (!result) {
+            return callback('There is no such domain');
+        }
+
+        domainCache[cacheKey] = path.join(result, domain);
+        callback(null, domainCache[cacheKey]);
+    });
+};
+
 module.exports = {
 
     /**
@@ -76,7 +129,7 @@ module.exports = {
     extendMessage: function (message, program, domainConfig) {
         domainConfig = domainConfig || {};
 
-        var params = program.values || message.params || getIdValues(message),
+        var params = message.params || getIdValues(message),
             locale = program.locale || message.locale;
 
         params.reset = !program.liveuncached;
@@ -84,10 +137,10 @@ module.exports = {
         return {
             basedomain: message.basedomain,
             domain: domainConfig.domain || message.basedomain,
-            page: program.page || message.page,
+            page: message.page || program.page,
             childpage: program.childpage || message.childpage,
             version: program.versionnumber,
-            url: program.url || message.url,
+            url:  message.url || program.url,
             params: params,
             origMessage: message.origMessage || message,
             locale: locale,
@@ -177,93 +230,169 @@ module.exports = {
     },
 
     pageLocaleSplitter: function () {
-        /**
-         * stream that analyze the messages. If there is no locale key inside
-         * it emits one message for each locale from the message config
-         *
-         * The same for page property if there is no page field stream will
-         * emit one message for each static page inside config.
-         *
-         * If in the message there are page and locale it just emit this message
-         *
-         * @param  {{config: object, message: object}} data
-         * @return {object}
-         */
-        return es.through(function (data) {
-            var that = this,
-                result = [],
+        function isExternal (link) {
+            return link.indexOf('http://') === 0 ||
+                link.indexOf('//') === 0 ||
+                link.indexOf('https://') === 0;
+        }
+
+        function filterLinks(locale, config) {
+            return function (page) {
+                var pageLink = config.pages[page][locale];
+                return pageLink && !isExternal(pageLink) && pageLink.indexOf('{url}') === -1;
+            };
+        }
+
+        var splitterStrategy = {
+            byLocale: function (page, data, config) {
+                return  config.locales
+                    .filter(function (locale) {
+                        return config.pages[page][locale];
+                    })
+                    .map(function (locale) {
+                        var res = _.cloneDeep(data);
+                        res.message.locale = locale;
+                        return res;
+                    });
+            },
+            byPage: function (locale, data,  config) {
+                return Object.keys(config.pages)
+                    .filter(filterLinks(locale, config))
+                    .map(function (page) {
+                        var res =  _.cloneDeep(data);
+                        res.message.page = page;
+                        res.message.url = page;
+                        return res;
+                    });
+            }
+        };
+
+        return streamHelper.asyncThrough(function (data, push, callback) {
+            var result = [],
                 message = data.message,
                 config = data.config;
 
-            function isExternal (link) {
-                return link.indexOf('http://') === 0 ||
-                    link.indexOf('//') === 0 ||
-                    link.indexOf('https://') === 0;
-            }
-
-            function filterLinks(locale) {
-                return function (page) {
-                    var pageLink = config.pages[page][locale];
-                    return pageLink && !isExternal(pageLink) && pageLink.indexOf('{url}') === -1;
-                };
-            }
             try {
                 var page = (message.staticOld) ? 'static-old' : message.page;
 
-                if (message.url && page) {
+                if (!message.url && page) {
+                    message.url = page;
+                }
 
+                if (message.url && page) {
                     if (message.locale) {
                         result.push(data);
                     } else if (isPageInConfig(config, page)) {
-                        result = config.locales
-                            .filter(function (locale) {
-                                return config.pages[page][locale];
-                            })
-                            .map(function (locale) {
-                                var res = _.cloneDeep(data);
-                                res.message.locale = locale;
-                                return res;
-                            });
+                        result = splitterStrategy.byLocale(page, data, config);
                     }
                 } else if (!page && config.pages) {
 
                     if (message.locale) {
-                        result = Object.keys(config.pages)
-                            .filter(filterLinks(message.locale))
-                            .map(function (page) {
-                                var res =  _.cloneDeep(data);
-                                res.message.page = page;
-                                res.message.url = page;
-                                return res;
-                            });
+                        result = splitterStrategy.byPage(message.locale, data, config);
                     } else {
                         result = config.locales.reduce(function (currentResult, locale) {
-                            var localePages = Object.keys(config.pages)
-                                .filter(filterLinks(locale))
-                                .map(function (page) {
-                                    var res = _.cloneDeep(data);
+                            var localePages = splitterStrategy.byPage(locale, data, config);
 
-                                    res.message.page = page;
-                                    res.message.url = page;
-                                    res.message.locale = locale;
-                                    return res;
-                                });
+                            localePages = localePages.map(function (item) {
+                                item.message.locale = locale;
+                                return item;
+                            });
                             return currentResult.concat(localePages);
                         }, []);
                     }
                 }
             } catch (err) {
-                this.emit('err', new WorkerError(err.message || err, data.message, data.key));
-                return data.queueShift();
+                push(new WorkerError(err.message || err, data.message, data.key));
+                data.queueShift();
+                return callback();
             }
 
             if (!result.length) {
-                this.emit('err', new WorkerError('there is no such pages in config file', data.message, data.key));
-                return data.queueShift();
+                push(new WorkerError('there is no such pages in config file', data.message, data.key));
+                data.queueShift();
+                return callback();
             }
-            result.forEach(function (item) {
-                that.emit('data', item);
+
+            async.forEachSeries(result, function (item, cb) {
+                configMerge.getConfig(item, function (err, res) {
+                    if (err) {
+                        return cb(err);
+                    }
+
+                    push(null, res);
+                    cb();
+                });
+            }, function (err) {
+                if (err) {
+                    push(err);
+                }
+                callback();
             });
+
+        });
+    },
+
+    checkBaseDomain: function (basePath) {
+        return streamHelper.map(function (data, callback) {
+            var message = data.message;
+
+            if (message.url && message.page ||
+                !message.url && !message.page ||
+                !message.url && message.page) {
+                return callback(null, data);
+            }
+
+            var basedomain = message.basedomain + '/' + message.url;
+
+            var pathToDomain = path.join(basePath, basedomain);
+
+            async.waterfall([
+                function (next) {
+                    fs.exists(pathToDomain, function (exists) {
+                        next(null, exists);
+                    });
+                },
+                function (exists, next) {
+                    if (exists) {
+                        return next(null, basedomain);
+                    }
+                    lookForDomain(basePath, message.basedomain, message.url, next);
+                }
+            ], function (err, basedomain) {
+                if (err) {
+                    return callback(new WorkerError(err, message, null, STATUS_CODES.WRONG_ARGUMENT_ERROR));
+                }
+                data.message.basedomain = basedomain;
+                data.message.url = null;
+                callback(null, data);
+            });
+        });
+    },
+
+    validateStream: function (emitter, basePath, config) {
+        return streamHelper.asyncThrough(function (data, push, next) {
+            if (!helper.isMessageFormatCorrect(data.message, config)) {
+                if (_.isFunction(data.queueShift)) {
+                    data.queueShift();
+                }
+
+                push(new WorkerError('something wrong with message fields', data.message));
+                return next();
+            }
+
+            if (data.message.url && !helper.isUrlCorrect(data.message.url)) {
+                if (_.isFunction(data.queueShift)) {
+                    data.queueShift();
+                }
+                push(new WorkerError('something wrong with message url', data.message));
+                return next();
+            }
+
+            data.basePath = basePath;
+            emitter.emit('new:message', helper.getMeta(data.message));
+
+            push(null, data);
+            next();
         });
     },
 

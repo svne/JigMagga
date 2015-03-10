@@ -24,6 +24,12 @@ function callPageConfigUtil() {
     });
 }
 
+function isExternal (link) {
+    return link.indexOf('http://') === 0 ||
+        link.indexOf('//') === 0 ||
+        link.indexOf('https://') === 0;
+}
+
 var projectConfigStore = {};
 
 
@@ -48,9 +54,7 @@ module.exports = {
      */
     getConfigFromPageItem: function (page, basePath, domain, cb) {
 
-        jmUtil.configMerge.getPageConfig(basePath, domain, page, function (err, result) {
-            cb(null, result);
-        });
+        jmUtil.configMerge.getPageConfig(basePath, domain, page, cb);
 
     },
 
@@ -64,7 +68,7 @@ module.exports = {
             var regex = new RegExp("^" + data.build.page + "$");
             var locale = data.data.locales[0];
             var filteredPages = Object.keys(data.data.pages).filter(function (item) {
-                if (item && item.search(regex) !== -1 && data.data.pages[item][locale].indexOf('http://') === -1) {
+                if (item && item.search(regex) !== -1 && !isExternal(data.data.pages[item][locale])) {
                     return true;
                 }
             });
@@ -89,6 +93,10 @@ module.exports = {
             }
             async.mapLimit(data.build.pages, 1, function (item, cb) {
                 self.getConfigFromPageItem(item, data.build.basePath, data.build.domain, function (err, result) {
+                    if (err) {
+                        console.log(item);
+                        throw err;
+                    }
                     result.build = util._extend({}, data.build);
                     result.build.page = item;
                     cb(null, result);

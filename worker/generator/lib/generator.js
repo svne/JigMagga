@@ -15,7 +15,7 @@ var util = require('util');
 var deepExtend = require('deep-extend');
 var path = require('path');
 var ejs = require("ejs");
-var mustache = require('mustache');
+var Handlebars = require('handlebars');
 var viewHelper = require("./view.js");
 var restHelper = require("./rest.js");
 var placeholderHelper = require("./placeholders.js");
@@ -80,6 +80,46 @@ var getExcludedPredefinedVariables = function (jigs) {
 };
 
 
+var removePropertyByPath = function (itemPath, object) {
+    var last = itemPath.pop();
+
+    var i = itemPath.length;
+    var parent = object;
+    while (i--) {
+        var currentItem = itemPath[i];
+        if (!parent) {
+            return null;
+        }
+        if (_.isPlainObject(parent) && !parent[currentItem]) {
+            return null;
+        }
+        if (_.isArray(parent) && !parent.length) {
+            return null;
+        }
+
+        if (_.isPlainObject(parent)) {
+            parent = parent[currentItem];
+        } else if (_.isArray(parent)) {
+            var j = parent.length;
+            while (j--) {
+                parent[j] = parent[j][currentItem];
+            }
+        }
+    }
+
+    if (_.isPlainObject(parent)) {
+        parent[last] = undefined;
+    } else if (_.isArray(parent)) {
+        var k = parent.length;
+        while (k--) {
+            parent[k][last] = undefined;
+        }
+    }
+
+    return object;
+};
+
+
 var getExcludedPredefinedFields = function (jigs) {
     var apiCallJigs = _.filter(_.keys(jigs), function (jigName) {
         return jigs[jigName].apicalls ;
@@ -93,8 +133,9 @@ var getExcludedPredefinedFields = function (jigs) {
             if (!apiCallsWithExcludedFields[apiCallName]) {
                 apiCallsWithExcludedFields[apiCallName] = [];
             }
+
             if (!apiCall.excludeFromPredefined) {
-                return apiCallsWithExcludedFields[apiCallName].push([]);
+                return;
             }
 
             apiCallsWithExcludedFields[apiCallName].push(apiCall.excludeFromPredefined);
@@ -115,11 +156,16 @@ var getExcludedPredefinedFields = function (jigs) {
 
 var excludePredefinedFields = function (predefinedVar, excludedFields) {
     var removeFromObject = function (item, fields) {
-        fields.forEach(function (field) {
+        var i = fields.length;
+        while (i--) {
+            var field = fields[i];
             if (item.hasOwnProperty(field)) {
-                delete item[field];
+                item[field] = undefined;
+            } else {
+                removePropertyByPath(field.split('.'), item);
             }
-        });
+        }
+
         return item;
     };
 
@@ -285,7 +331,12 @@ var generateJigs = function (config, viewContainer, callback) {
             gt.setLocale(viewContainer.locale);
             viewContainer._ = gt._.bind(gt);
             if (ejsTemplateFile.match("\.mustache$")) {
-                ejsTemplate = mustache.to_html(ejsTemplate, viewContainer);
+                _.each(viewContainer, function (value, name) {
+                    if (_.isFunction(value)) {
+                        Handlebars.registerHelper(name, value);
+                    }
+                });
+                ejsTemplate = Handlebars.compile(ejsTemplate)(viewContainer);
             } else if (ejsTemplateFile.match("\.ejs")) {
 
                 ejsTemplate = ejs.render(ejsTemplate, viewContainer);
@@ -450,6 +501,8 @@ exports.generatePage = function (origConfig, callback) {
 
 
 
+
+
 /**
  *
  * @param config
@@ -467,7 +520,13 @@ exports.generateJsonPage = function (config) {
                 copyResult = JSON.parse(JSON.stringify(result));
             if (options.remove) {
                 _.each(options.remove, function (key) {
-                    if (key in result) delete result[key];
+                    var keys = key.split('.');
+                    if (keys.length === 1 && result[key]) {
+                        result[key] = undefined;
+                        return;
+                    }
+
+                    removePropertyByPath(keys, result);
                 });
             }
             if (options.pick) {
@@ -503,7 +562,7 @@ exports.generateJsonPage = function (config) {
                                     extResult[key] = result[key];
                                     result[key] = "/" + childUrl;
                                     if (extract.remove) {
-                                        delete result[key];
+                                        result[key] = undefined;
                                     }
                                 } else if (extract.nullIfEmpty) {
                                     result[key] = null;
@@ -537,7 +596,7 @@ exports.generateJsonPage = function (config) {
                 });
             }
         });
-    }
+    };
     _.each(config.jigs, function (jig, jigClass) {
         _.each(jig.apicalls, function (apiCall, apiCallName) {
             if (!apiCall.cache) {

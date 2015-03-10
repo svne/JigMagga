@@ -214,7 +214,7 @@ module.exports = function (data, workerConfig, callback) {
         domainPagePath = format("%s/page/%s/%s/", projectName, message.basedomain, message.page);
     }
 
-    data.locale = viewContainer['workerLocale'] = data.message.locale;
+    data.locale = viewContainer.workerLocale = data.message.locale;
 
     data.isMainLocale = data.locale === mainLocale;
 

@@ -1,13 +1,12 @@
 'use strict';
 
-var es = require('event-stream'),
+var hgl = require('highland'),
     _ = require('lodash'),
     EventEmitter = require('events').EventEmitter;
 
-var stream = require('./streamHelper'),
+var dependentPageSplitter = require('./dependentPageSplitter'),
     configMerge = require('./configMerge'),
     messageHelper = require('./message'),
-    error = require('./error'),
     helper = require('./helper');
 
 var generatorStream = require('../generator/index');
@@ -29,49 +28,27 @@ var messageStorage = messageHelper.storage;
  * @param  {{live: boolean, bucket: ?string}} program
  */
 module.exports = function (source, uploader, basePath, program) {
-    var tc = stream.tryCatch('err');
     var emitter = new EventEmitter();
 
-    tc(source)
-        .pipe(tc(es.through(function (data) {
-            if (!helper.isMessageFormatCorrect(data.message, config)) {
-                if (_.isFunction(data.queueShift)) {
-                    data.queueShift();
-                }
-
-                return this.emit('err', new error.WorkerError('something wrong with message fields', data.message));
-            }
-
-            if (data.message.url && !helper.isUrlCorrect(data.message.url)) {
-                if (_.isFunction(data.queueShift)) {
-                    data.queueShift();
-                }
-                return this.emit('err', new error.WorkerError('something wrong with message url', data.message));
-            }
-
-            data.basePath = basePath;
-            emitter.emit('new:message', helper.getMeta(data.message));
-
-
-
-            this.emit('data', data);
-        })))
-        .pipe(tc(configMerge.getConfigStream()))
-        .pipe(tc(messageHelper.pageLocaleSplitter()))
-        .pipe(es.through(function (data) {
+    source.pipe(hgl.pipeline(
+        messageHelper.checkBaseDomain(basePath),
+        messageHelper.validateStream(emitter, basePath, config),
+        configMerge.getConfigStream(),
+        messageHelper.pageLocaleSplitter(),
+        dependentPageSplitter(config),
+        hgl.map(function (data) {
             messageStorage.add(data.key, data.onDone, data.queueShift);
             data.onDone = data.queueShift = null;
-            this.emit('data', data);
-        }))
-        //add page configs for those messages that did not have page key before splitting
-        .pipe(tc(configMerge.getConfigStream()))
-        .on('data', function (data) {
 
             data.message = messageHelper.extendMessage(data.message, program, data.config);
             data.bucketName = helper.generateBucketName(data, program, config.main.knox);
-
-            generatorStream.write(data);
-        });
+            return data;
+        }),
+        hgl.errors(function (err) {
+            emitter.emit('error:message', err);
+        })
+    ))
+    .pipe(generatorStream);
 
     generatorStream.on('new:uploadList', function (metadata, uploadList) {
         metadata.bucketName = program.bucket || metadata.bucketName;
@@ -82,6 +59,8 @@ module.exports = function (source, uploader, basePath, program) {
             return;
         }
 
+        // if write argument is true worker stores all generated files
+        //in disk
         helper.saveFiles(uploadList, log, function (err) {
             if (err) {
                 return log('error', err);
@@ -107,8 +86,6 @@ module.exports = function (source, uploader, basePath, program) {
     generatorStream.on('new:zip', function (data) {
         log('new zip saved by generator', helper.getMeta(data.message));
 
-
-
         uploader.send('new:zip', {
             origMessage: data.message.origMessage,
             url: data.message.url,
@@ -122,10 +99,6 @@ module.exports = function (source, uploader, basePath, program) {
 
     generatorStream.on('err', function (err) {
         emitter.emit('error:message', err);
-    });
-
-    tc.catch(function (error) {
-        emitter.emit('error:message', error);
     });
 
     return emitter;

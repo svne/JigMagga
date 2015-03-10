@@ -64,7 +64,7 @@ Table of Contents
 - [Models](#models)
 - [Using locales](#using-locales)
 - [Styling with SASS](#styling-with-sass)
-- [Grid](#Grid)
+- [Grid](#grid)
 - [The slot system](#the-slot-system)
 - [Images](#images)
 - [Testing](#testing)

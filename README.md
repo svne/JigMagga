@@ -53,6 +53,25 @@ It uses several queues and workers generating the different domains and pushing 
  
 ![JigMagga](media/img/JigMaggaRabbitMq.png)
 
+Table of Contents
+------------------
+
+[Getting started](#getting-started)
+[Generate projects, pages and jigs](#generate-projects-pages-and-jigs)
+[Stealing files](#stealing-files)
+[Pages and config files](#pages-and-config-files)
+[Jigs](#jigs)
+[Models](#models)
+[Using locales](#using-locales)
+[Styling with SASS](#styling-with-sass)
+[Grid](#Grid)
+[The slot system](#the-slot-system)
+[Images](#images)
+[Testing](#testing)
+[HTML-Workers](#html-workers)
+[Js/Css-Builder](#jscss-builder)
+[License](#license)
+
 Getting started
 ===============
 
@@ -1008,8 +1027,8 @@ At last here is a short example of what you can do with SASS in _JigMagga_:
         
 For detailed information about SASS please have a look at the [SASS documentation](http://sass-lang.com/documentation/file.SASS_REFERENCE.html)
 
-configurable SASS variables
-===========================
+Configurable SASS variables
+---------------------------
 
 You can also add as many SASS variables as you want to every config file. After that you can use them in every .scss file.
 
@@ -1190,6 +1209,6 @@ License
 _JigMagga_ is released under the LPGL licence. 
 
 
-[1]: https://github.com/yourdelivery/JigMagga/blob/callapizza/worker/README.md
+[1]: https://github.com/yourdelivery/JigMagga/blob/master/worker/README.md
 
 

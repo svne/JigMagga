@@ -56,21 +56,21 @@ It uses several queues and workers generating the different domains and pushing 
 Table of Contents
 ------------------
 
-[Getting started](#getting-started)
-[Generate projects, pages and jigs](#generate-projects-pages-and-jigs)
-[Stealing files](#stealing-files)
-[Pages and config files](#pages-and-config-files)
-[Jigs](#jigs)
-[Models](#models)
-[Using locales](#using-locales)
-[Styling with SASS](#styling-with-sass)
-[Grid](#Grid)
-[The slot system](#the-slot-system)
-[Images](#images)
-[Testing](#testing)
-[HTML-Workers](#html-workers)
-[Js/Css-Builder](#jscss-builder)
-[License](#license)
+- [Getting started](#getting-started)
+- [Generate projects, pages and jigs](#generate-projects-pages-and-jigs)
+- [Stealing files](#stealing-files)
+- [Pages and config files](#pages-and-config-files)
+- [Jigs](#jigs)
+- [Models](#models)
+- [Using locales](#using-locales)
+- [Styling with SASS](#styling-with-sass)
+- [Grid](#Grid)
+- [The slot system](#the-slot-system)
+- [Images](#images)
+- [Testing](#testing)
+- [HTML-Workers](#html-workers)
+- [Js/Css-Builder](#jscss-builder)
+- [License](#license)
 
 Getting started
 ===============

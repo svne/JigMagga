@@ -220,16 +220,25 @@ module.exports = function (data, workerConfig, callback) {
 
 
     async.waterfall([
-        obtainTemplate.bind(null, message, data.basePath),
-        function (result, next) {
-            localConfig.template = result.content;
-            if (isStaticOld) {
-                result.path = path.join(result.path, '..');
+        function (next) {
+            if (localConfig.uploadOnlyJson) {
+                return next(null, null);
             }
 
-            localConfig.pagePath =  path.join(result.path, '/');
-            viewContainer.filename = path.join(result.path, pageWithoutPath + '.html');
+            obtainTemplate(message, data.basePath, next);
+        },
+        function (result, next) {
+            if (_.isPlainObject(result)) {
+                localConfig.template = result.content;
 
+
+                if (isStaticOld) {
+                    result.path = path.join(result.path, '..');
+                }
+
+                localConfig.pagePath = path.join(result.path, '/');
+                viewContainer.filename = path.join(result.path, pageWithoutPath + '.html');
+            }
             if (message.version) {
                 return next(null, null);
             }

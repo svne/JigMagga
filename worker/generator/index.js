@@ -30,33 +30,11 @@ var log = require('../lib/logger')('generator', {basedomain: args.basedomain}, a
 var timeDiff = new TimeDiff(log);
 var config = require('../config');
 
-
-//init process router
-log('started, pid', process.pid);
-
 var messageStream = stream.duplex();
 
 var handleError = function (text, data) {
     messageStream.emit('err', new WorkerError(text, data.message.origMessage, data.key));
 };
-/**
- * merge all configs and create viewContainer
- * @param  {object}   data [data from worker]
- * @param  {Function} next
- * @return {stream}
- */
-var configStream = es.through(function (data) {
-    var that = this;
-
-    generateConfig(data, config, function (err, res) {
-        if (err) {
-            handleError(err.stack || err, data);
-            return;
-        }
-
-        that.emit('data', res);
-    });
-});
 
 var emitter = new EventEmitter();
 emitter.on('call:parsing', function (name, config) {
@@ -79,6 +57,27 @@ emitter.on('call:success', function (requestId, time, fromCache, page, url) {
 emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
     log('Config %d of %d for %s', readyConfigsLength, configsLength, url, {api: true});
 });
+
+
+/**
+ * merge all configs and create viewContainer
+ * @param  {object}   data [data from worker]
+ * @param  {Function} next
+ * @return {stream}
+ */
+var configStream = es.through(function (data) {
+    var that = this;
+
+    generateConfig(data, config, function (err, res) {
+        if (err) {
+            handleError(err.stack || err, data);
+            return;
+        }
+
+        that.emit('data', res);
+    });
+});
+
 
 /**
  * makes an api call for each message that comming to stream
@@ -107,6 +106,41 @@ var apiStream = es.through(function (data) {
         data.apiCallResult = res;
         apiCallTimeDiff.stop();
         return that.emit('data', data);
+    });
+
+});
+
+var generateStream = es.through(function (data) {
+    var saveDiskPath = path.join(data.basePath, '..'),
+        knox = _.clone(config.main.knox),
+        json,
+        that = this;
+
+    var generatePageTimeDiff = timeDiff.create('generate:page:' + data.message.page);
+
+    knox.S3_BUCKET = data.bucketName;
+
+    ydGetText.setLocale(data.message.locale);
+    generator.init(knox, ydGetText, saveDiskPath);
+    // generate json and html files
+
+    json = _.map(data.apiCallResult, generator.generateJsonPage);
+
+    if (data.config.uploadOnlyJson) {
+        return this.emit('data', {data: data, json: json, html: []});
+    }
+
+    async.mapSeries(data.apiCallResult, function (config, next) {
+        log('Processing page url: %s pagePath: %s', config.uploadUrl, config.pagePath);
+        generator.generatePage(config, next);
+    }, function (err, html) {
+        if (err) {
+            return  handleError(err.stack || err, data);
+        }
+
+        generatePageTimeDiff.stop();
+
+        that.emit('data', {data: data, json: json, html: html});
     });
 
 });
@@ -200,52 +234,25 @@ messageStream
     .pipe(configStream)
     .pipe(apiStream)
     .pipe(loadLocale)
-    .on('data', function (data) {
-        var saveDiskPath = path.join(data.basePath, '..'),
-            knox = _.clone(config.main.knox),
-            json;
+    .pipe(generateStream)
+    .on('data', function (result) {
 
-        var generatePageTimeDiff = timeDiff.create('generate:page:' + data.message.page);
+        var data = result.data,
+            htmlFiles = result.html,
+            fileList;
 
+        fileList = htmlFiles.concat(_.flatten(result.json));
 
-        knox.S3_BUCKET = data.bucketName;
+        log('info', 'upload list length %d', fileList.length,  helper.getMeta(data.message));
+        //if the amount is more then 200 create an archive write it to disk and
+        //send to the worker the archive link
 
-        ydGetText.setLocale(data.message.locale);
-        generator.init(knox, ydGetText, saveDiskPath);
-        // generate json and html files
+        if (htmlFiles.length > 250) {
+            return saveZipToDisk(fileList, data);
+        }
+        //if html files amount is less then 200 send them to the worker
 
-        json = _.map(data.apiCallResult, generator.generateJsonPage);
-
-        async.mapSeries(data.apiCallResult, function (config, next) {
-            log('Processing page url: %s pagePath: %s', config.uploadUrl, config.pagePath);
-            generator.generatePage(config, next);
-        }, function (err, uploadPages) {
-            if (err) {
-                return  handleError(err.stack || err, data);
-            }
-
-            var jsonLength = json.length,
-                htmlLength = uploadPages.length;
-
-
-            //create list of files to upload
-            for (var i = 0; i < jsonLength; i++) {
-                uploadPages = uploadPages.concat(json[i]);
-            }
-            json = [];
-
-            log('info', 'upload list length %d', uploadPages.length,  helper.getMeta(data.message));
-            generatePageTimeDiff.stop();
-            //if the amount is more then 200 create an archive write it to disk and
-            //send to the worker the archive link
-
-            if (htmlLength > 250) {
-                return saveZipToDisk(uploadPages, data);
-            }
-            //if html files amount is less then 200 send them to the worker
-
-            sendToWorker(data.message, data.key, data.bucketName, uploadPages);
-        });
+        sendToWorker(data.message, data.key, data.bucketName, fileList);
     });
 
 messageStream.on('message:uploaded', function (key) {

@@ -13,7 +13,7 @@ var STATUS_CODES = exports.STATUS_CODES = {
 var WorkerError = function (message, originalMessage, messageKey, status) {
     this.name = 'WorkerError';  
 
-    this.originalMessage = originalMessage;
+    this.originalMessage = originalMessage || {};
     this.messageKey = messageKey;
     this.message = message;
 

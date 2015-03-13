@@ -229,6 +229,13 @@ module.exports = {
         });
     },
 
+    /**
+     * Return the stream that obtain a message and if this message does not have
+     * page or locale inside it greps all existing pages and locales from config
+     * and split the message on several. One for each page or locale
+     *
+     * @return {Transform}
+     */
     pageLocaleSplitter: function () {
         function isExternal (link) {
             return link.indexOf('http://') === 0 ||
@@ -332,9 +339,20 @@ module.exports = {
         });
     },
 
+    /**
+     * return stream that checks whether the basedomain is available and if not
+     *
+     *
+     * @param basePath
+     * @return {Transform}
+     */
     checkBaseDomain: function (basePath) {
         return streamHelper.map(function (data, callback) {
             var message = data.message;
+
+            if (!message) {
+                return callback(new WorkerError('wrong message format', message, null, STATUS_CODES.WRONG_ARGUMENT_ERROR));
+            }
 
             if (message.url && message.page ||
                 !message.url && !message.page ||

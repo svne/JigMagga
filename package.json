@@ -35,6 +35,9 @@
       "url": "http://www.gnu.org/licenses/lgpl.html"
     }
   ],
+  "bin": {
+    "worker": "worker/index.js"
+  },
   "main": "home",
   "scripts": {
     "integration": "NODE_ENV=test mocha --recursive -t 2000000 -R spec ./worker/test/integration",

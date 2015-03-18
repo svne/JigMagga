@@ -79,11 +79,13 @@ var domainCache = {};
  *
  *
  * @param {string} basePath
- * @param {string} baseDomain
- * @param {string} domain
+ * @param {object} message
  * @param {function} callback
  */
-var lookForDomain = function (basePath, baseDomain, domain, callback) {
+var lookForDomain = function (basePath, message, callback) {
+    var baseDomain = message.basedomain,
+        domain = message.url;
+
     var walker = walk.walk(path.join(basePath, 'page', baseDomain)),
         cacheKey = basePath + baseDomain + domain,
         result;
@@ -103,13 +105,17 @@ var lookForDomain = function (basePath, baseDomain, domain, callback) {
         next();
     });
 
-    walker.on('errors', function (root, nodeStatsArray, next) {
-        callback(nodeStatsArray);
+    var error = null;
+    walker.on('errors', function (root, nodeStatsArray) {
+        error = new WorkerError(nodeStatsArray, message, null, STATUS_CODES.WRONG_ARGUMENT_ERROR);
     });
 
     walker.on('end', function () {
+        if (error) {
+            return callback(error);
+        }
         if (!result) {
-            return callback('There is no such domain');
+            return callback(new WorkerError('There is no such domain', message, null, STATUS_CODES.NO_SUCH_DOMAIN));
         }
 
         domainCache[cacheKey] = path.join(result, domain);
@@ -374,11 +380,11 @@ module.exports = {
                     if (exists) {
                         return next(null, basedomain);
                     }
-                    lookForDomain(basePath, message.basedomain, message.url, next);
+                    lookForDomain(basePath, message, next);
                 }
             ], function (err, basedomain) {
                 if (err) {
-                    return callback(new WorkerError(err, message, null, STATUS_CODES.WRONG_ARGUMENT_ERROR));
+                    return callback(err);
                 }
                 data.message.basedomain = basedomain;
                 data.message.url = null;

@@ -384,6 +384,9 @@ module.exports = {
                 }
             ], function (err, basedomain) {
                 if (err) {
+                    if (_.isFunction(data.queueShift)) {
+                        data.queueShift();
+                    }
                     return callback(err);
                 }
                 data.message.basedomain = basedomain;

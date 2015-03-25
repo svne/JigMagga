@@ -34,6 +34,7 @@ var viewHelper = require("./view");
 var initViewContainer = function (message, projectName, config) {
     var viewContainer = _.cloneDeep(viewHelper.getHelper(projectName, config));
 
+    viewContainer.workerLocale = message.locale;
     viewContainer.shtml = false;
     viewContainer.IS_WORKER = true;
     viewContainer.domain = message.domain;
@@ -202,11 +203,14 @@ module.exports = function (data, workerConfig, callback) {
         isStaticOld = Boolean(data.message.origMessage.staticOld),
         localConfig = data.config,
         mainLocale = data.config['init-locale'] || data.config.locales[0],
-//        exc = message.exc,
+
         projectName = data.basePath.split('/').reverse()[0],
-        viewContainer = initViewContainer(message, projectName, data.config), // init view container
+
         pageWithoutPath = message.page.replace(/^.*\//, ""),
         domainPagePath;
+
+    data.config.locale = data.message.locale;
+    var viewContainer = initViewContainer(message, projectName, data.config); // init view container
 
     if (isStaticOld) {
         domainPagePath = path.join(projectName, 'page', message.basedomain, 'static-old/');
@@ -214,7 +218,7 @@ module.exports = function (data, workerConfig, callback) {
         domainPagePath = format("%s/page/%s/%s/", projectName, message.basedomain, message.page);
     }
 
-    data.locale = viewContainer.workerLocale = data.message.locale;
+    data.locale =  data.message.locale;
 
     data.isMainLocale = data.locale === mainLocale;
 

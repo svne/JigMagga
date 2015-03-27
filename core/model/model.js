@@ -187,7 +187,6 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
 
         },
         store: function (model) {
-            console.log("MODEL", model);
             var index = "",
                 objectName = "deferred_findOne";
             $.jStorage.set(this.constructor._fullName, model || this.attr());

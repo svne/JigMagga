@@ -9,13 +9,12 @@
  */
 
 var path = require('path');
-var es = require('event-stream');
 var _ = require('lodash');
-
+var hgl = require('highland');
 var stream = require('./streamHelper');
 var helper = require('./helper');
 var messageHelper = require('./message');
-var error = require('../lib/error');
+
 
 
 module.exports = {
@@ -78,7 +77,7 @@ module.exports = {
         };
 
         log('creating source from command line kyes', helper.getMeta(data.message));
-        return es.readArray([data]);
+        return hgl([data]);
     },
 
     /**

@@ -101,7 +101,7 @@ var uploadItem = function (data, callback) {
                 {upload: true, url: data.url, locale: data.locale, page: data.page, uploadsAmount: uploadsAmount};
             log('success', res + ' time: ' + Date.now(), logMetadata);
             log('info', res, logMetadata);
-            router.send('message:uploaded', data.messageKey);
+            router.send('message:uploaded', {key: data.messageKey, message: data.origMessage, locale: data.locale});
         }
         uploadPageTimeDiff.stop();
         callback();

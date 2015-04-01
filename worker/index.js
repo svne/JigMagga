@@ -25,14 +25,14 @@ var _ = require('lodash'),
 var config = require('./config');
 
 
-var amqpWrapper = require('./lib/amqpWrapper'),
-    logger = require('./lib/logger'),
+var logger = require('./lib/logger'),
     ProcessRouter = require('./lib/router'),
     mainStream = require('./lib/mainStream'),
     helper = require('./lib/helper'),
     error = require('./lib/error'),
     messageSource = require('./lib/messageSource'),
     messageStorage = require('./lib/message').storage,
+    sendToWarehouse = require('./lib/kafka')(config.kafka).sendToWarehouse,
     TimeDiff = require('./lib/timeDiff');
 
 // obtain application arguments by parsing command line
@@ -62,18 +62,17 @@ if (program.queue) {
     var queuePool = new ProcessRouter(amqpProcess);
 }
 
-var uploaderRouter,
-    uploader;
+var uploaderRouter;
 
 var workerErrorHandler = error.getWorkerErrorHandler(log, queuePool, messageStorage, program);
 
 var uploaderRoutes = {
-    'message:uploaded': function (key) {
-
+    'message:uploaded': function (data) {
+        var key = data.key;
         messageStorage.upload(key);
 
         generatorStream.emit('message:uploaded', key);
-
+        sendToWarehouse('upload:message', data.message);
         log('message uploaded %s', key);
     },
     error: workerErrorHandler
@@ -82,12 +81,11 @@ var uploaderRoutes = {
 
 // Creates an uploader child process,
 // creates a router for them
-helper.createChildProcesses(args, function (err, result) {
+helper.createSubProcess(__dirname + '/uploader/index.js', args, function (err, uploader) {
     if (err) {
         throw new Error(err);
     }
 
-    uploader = result.uploader;
     uploaderRouter = new ProcessRouter(uploader);
 
     // add pipe handler a function that should be executed on pipe
@@ -116,9 +114,11 @@ helper.createChildProcesses(args, function (err, result) {
 
     main.on('send:message', function (message) {
         log('send to generator', message);
+        sendToWarehouse('new:message', message);
     });
 
-    main.on('error:message', workerErrorHandler);
+    main.on('error:message', _.compose(workerErrorHandler, sendToWarehouse('error:message')));
+
     var exitHandler = error.getExitHandler(log, [uploader, amqpProcess]);
 
     process.on('SIGTERM', exitHandler);

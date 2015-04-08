@@ -11,7 +11,7 @@ var messageHelper = require('../../../lib/message');
 
 describe('message', function () {
 
-    describe('#createMessage', function () {
+    describe('#extendMessage', function () {
         var messageData = {
             basedomain: 'foo',
             page: 'menu',
@@ -27,7 +27,7 @@ describe('message', function () {
                 }
             };
 
-            var result = messageHelper.createMessage(messageData, options);
+            var result = messageHelper.extendMessage(messageData, options);
 
             expect(result.params).to.include.keys('cityId', 'q', 'exc');
         });
@@ -36,7 +36,7 @@ describe('message', function () {
             var options = {};
             messageData.cityId = 234;
 
-            var result = messageHelper.createMessage(messageData, options);
+            var result = messageHelper.extendMessage(messageData, options);
 
             expect(result.params).to.have.property('cityId', 234);
 
@@ -44,10 +44,10 @@ describe('message', function () {
     });
 
 
-    describe('#getMessageParser', function () {
+    describe('#assignMessageMethods', function () {
         var stream;
         beforeEach(function () {
-            stream = messageHelper.getMessageParser();
+            stream = messageHelper.assignMessageMethods();
         });
 
         afterEach(function () {

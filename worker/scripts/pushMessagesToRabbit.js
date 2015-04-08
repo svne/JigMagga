@@ -83,7 +83,7 @@ var publishMessages = function (queue, callback) {
             setTimeout(function () {
                 queue.publish(message, amqpPublishOptions);
                 next();
-            }, 100);
+            }, 50);
 
         }, cb);
     }, callback);

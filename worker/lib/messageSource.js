@@ -15,6 +15,7 @@ var _ = require('lodash');
 var stream = require('./streamHelper');
 var helper = require('./helper');
 var messageHelper = require('./message');
+var error = require('../lib/error');
 
 
 module.exports = {
@@ -25,23 +26,22 @@ module.exports = {
      * and pipe to the messageParser
      * 
      * @param  {object} program
-     * @param  {Functon} log     - function that could be used for logging
-     * @param {object} queuePool
+     * @param  {Function} log
+     * @param {ProcessRouter} queuePool
      * @return {Readable}
      */
     getQueueSource: function (program, log, queuePool) {
-        if (!queuePool.amqpQueue || !_.isFunction(queuePool.amqpQueue.getStream)) {
-            throw new Error('There is no amqpQueue in queuePool');
-        }
+        var queueStream = messageHelper.assignMessageMethods(queuePool);
 
-        var queueStream = queuePool.amqpQueue.getStream();
-        queueStream.on('ready', function (queue) {
-            log('help', '%s queue stream is ready', queue);
+        queuePool.addRoutes({
+            'message:amqpQueue': function (message) {
+                queueStream.write(message);
+            }
         });
 
+        queuePool.send('get:stream', 'amqpQueue');
 
-        return queueStream
-            .pipe(messageHelper.getMessageParser(queuePool, program.live));
+        return queueStream;
     },
 
     /**
@@ -61,12 +61,11 @@ module.exports = {
         var values = {};
 
         if (program.values) {
-            values = JSON.parse(program.values);
-        } else {
-            //grab all keys that ended on Id from arguments to the message
-            values = _.pick(program, function (value, key) {
-                return (new RegExp('.*Id$', 'ig')).test(key);
-            });
+            try {
+                values = JSON.parse(program.values);
+            } catch (e) {
+                throw new Error('Wrong format of values parameter. Should be JSON');
+            }
         }
         data.message = _.assign(data.message, values);
         data.key = messageHelper.createMessageKey(data.message);

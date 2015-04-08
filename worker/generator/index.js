@@ -10,56 +10,34 @@ var EventEmitter = require('events').EventEmitter,
     fsExtra = require('fs-extra'),
     util = require('util'),
     fs = require('fs'),
+    async = require('async'),
     _ = require('lodash'),
     path = require('path'),
     es = require('event-stream');
 
-var log = require('../lib/logger')('generator', {component: 'generator', processId: process.pid}),
+var args = require('../parseArguments')(process.argv);
+
+var log = require('../lib/logger')('generator', {basedomain: args.basedomain}, args),
     archiver = require('../lib/archiver'),
     helper = require('../lib/helper'),
     stream = require('../lib/streamHelper'),
     ydGetText = require('jmUtil').ydGettext,
     generateConfig = require('./lib/generateConfig'),
     generator = require('./lib/generator'),
-    ProcessRouter = require('../lib/router'),
-    error = require('../lib/error'),
+    WorkerError = require('../lib/error').WorkerError,
     TimeDiff = require('../lib/timeDiff');
 
 var timeDiff = new TimeDiff(log);
+var config = require('../config');
 
-if (process.env.NODE_ENV === 'live') {
-    require('longjohn');
-}
-
-var WorkerError = error.WorkerError;
 
 //init process router
-var router = new ProcessRouter(process);
 log('started, pid', process.pid);
-
-var config = require('../config');
 
 var messageStream = stream.duplex();
 
-router.addRoutes({
-    /**
-     * write to message stream the message that comes from generator
-     * @param  {Object} data
-     */
-    'new:message': function (data) {
-        messageStream.write(data);
-    },
-
-    'message:uploaded': function (key) {
-        log('deleting api cache for message with key %s', key);
-        generator.deleteCachedCall(key);
-    }
-});
-
 var handleError = function (text, data) {
-    log('error', text, {error: true});
-
-    return router.send('error', new WorkerError(text, data.message.origMessage, data.key));
+    messageStream.emit('err', new WorkerError(text, data.message.origMessage, data.key));
 };
 /**
  * merge all configs and create viewContainer
@@ -69,27 +47,34 @@ var handleError = function (text, data) {
  */
 var configStream = es.through(function (data) {
     var that = this;
-    var callback = function (err, res) {
+
+    generateConfig(data, config, function (err, res) {
         if (err) {
             handleError(err.stack || err, data);
             return;
         }
+
         that.emit('data', res);
-    };
-    generateConfig(data, config, callback);
+    });
 });
 
 var emitter = new EventEmitter();
 emitter.on('call:parsing', function (name, config) {
     log('Parsing call for jig %s config: %j', name, config, {api:true});
 });
-emitter.on('call:success', function (requestId, time, fromCache) {
+emitter.on('call:success', function (requestId, time, fromCache, page, url) {
     log('Api call success for %s', requestId, {api: true});
 
     if (!fromCache) {
-        log('time diff for %s in msec: %d', requestId, time, {timediff: true, diff: time, prefix: 'rest:call'});
-    }
-});
+        var logOptions = {
+            timediff: true,
+            diff: time,
+            prefix: 'rest:call',
+            page: page,
+            url: url
+        };
+        log('info','time diff for %s', requestId, logOptions);
+    }});
 
 emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
     log('Config %d of %d for %s', readyConfigsLength, configsLength, url, {api: true});
@@ -104,16 +89,18 @@ emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
  */
 var apiStream = es.through(function (data) {
     var that = this;
-    log('[*] send api request', helper.getMeta(data.message));
+    log('info', '[*] send api request', helper.getMeta(data.message));
     log('help', 'generating new message time %d', Date.now(), helper.getMeta(data.message));
     // Take first snapshot
     // var apiMessageKey = generator.createApiMessageKey(data.key);
     var apiCallTimeDiff = timeDiff.create('apiCall:message:' + data.message.page);
 
     data.config.apiMessageKey = data.key;
+
     generator.apiCalls([data.config], emitter, function (err, res) {
 
         if (err) {
+
             var errorText = format('error in apiCall %s', util.inspect(err));
             return handleError(errorText, data);
         }
@@ -121,6 +108,7 @@ var apiStream = es.through(function (data) {
         apiCallTimeDiff.stop();
         return that.emit('data', data);
     });
+
 });
 
 var lastLocale = {};
@@ -134,6 +122,7 @@ var loadLocale = es.through(function (data) {
     var that = this,
         domain = data.message.domain,
         locale = data.message.locale;
+
     if (lastLocale[domain + locale]) {
         log('got from cache', {loadLocale: true, source: 'cache'});
         return that.emit('data', data);
@@ -146,7 +135,44 @@ var loadLocale = es.through(function (data) {
 
 });
 
-var saveZipToDisck = function (uploadList, data) {
+/**
+ * @name Metadata
+ * @type {{
+ *     bucketName: {String},
+ *     origMessage: {Object},
+ *     url: {String},
+ *     page: {String},
+ *     locale: {String},
+ *     messageKey: {String}
+ * }}
+ */
+
+
+/**
+ *
+ * @param {Object} message
+ * @param {String} key
+ * @param {String} bucketName
+ * @param {Array.<UploadItem>} uploadPages
+ */
+var sendToWorker = function (message, key, bucketName, uploadPages) {
+
+    var metaData = {
+        bucketName: bucketName,
+        url: message.url,
+        page: message.page,
+        locale: message.locale,
+        origMessage: message.origMessage,
+        messageKey: key
+    };
+
+    messageStream.emit('new:uploadList', metaData, uploadPages);
+    messageStream.emit('api:done', key);
+    uploadPages = null;
+
+};
+
+var saveZipToDisk = function (uploadList, data) {
     var archiveStream = archiver.bulkArchive(uploadList);
     var result = {
         message: data.message,
@@ -164,12 +190,11 @@ var saveZipToDisck = function (uploadList, data) {
             .on('finish', function () {
                 log('[!] saved to %s', zipPath);
                 result.zipPath = zipPath;
-                router.send('new:zip', result);
+                messageStream.emit('new:zip', result);
+                messageStream.emit('api:done', data.key);
             });
     });
 };
-process.send({ready: true});
-
 
 messageStream
     .pipe(configStream)
@@ -177,67 +202,54 @@ messageStream
     .pipe(loadLocale)
     .on('data', function (data) {
         var saveDiskPath = path.join(data.basePath, '..'),
-            knox = config.main.knox,
-            json,
-            uploadPages;
+            knox = _.clone(config.main.knox),
+            json;
 
         var generatePageTimeDiff = timeDiff.create('generate:page:' + data.message.page);
 
+
         knox.S3_BUCKET = data.bucketName;
-        try {
 
-            ydGetText.setLocale(data.message.locale);
-            generator.init(knox, ydGetText, saveDiskPath);
-            // generate json and html files
-            json = _.map(data.apiCallResult, generator.generateJsonPage);
-            uploadPages = _.map(data.apiCallResult, function (config) {
-                log('Processing page url: %s pagePath: %s', config.uploadUrl, config.pagePath);
-                return generator.generatePage(config);
-            });
-        } catch (err) {
-            return handleError(err.stack || err, data);
-        }
+        ydGetText.setLocale(data.message.locale);
+        generator.init(knox, ydGetText, saveDiskPath);
+        // generate json and html files
 
-        var result = {
-                bucketName: data.bucketName,
-                message: data.message,
-                key: data.key || undefined
-            },
-            jsonLength = json.length,
-            htmlLength = uploadPages.length;
+        json = _.map(data.apiCallResult, generator.generateJsonPage);
+
+        async.mapSeries(data.apiCallResult, function (config, next) {
+            log('Processing page url: %s pagePath: %s', config.uploadUrl, config.pagePath);
+            generator.generatePage(config, next);
+        }, function (err, uploadPages) {
+            if (err) {
+                return  handleError(err.stack || err, data);
+            }
+
+            var jsonLength = json.length,
+                htmlLength = uploadPages.length;
 
 
-        //create list of files to upload
-        // result.uploadList = html.concat(_.flatten(json, true));
-        for (var i = 0; i < jsonLength; i++) {
-            uploadPages = uploadPages.concat(json[i]);
-        }
-        json = [];
+            //create list of files to upload
+            for (var i = 0; i < jsonLength; i++) {
+                uploadPages = uploadPages.concat(json[i]);
+            }
+            json = [];
 
-        log('upload list length %d', uploadPages.length);
-        generatePageTimeDiff.stop();
-        //if html files amount is less then 200 send them to the worker
-        if (htmlLength < 200) {
-            result.uploadList = uploadPages;
-            router.send('pipe', result);
-            return;
-        } else {
+            log('info', 'upload list length %d', uploadPages.length,  helper.getMeta(data.message));
+            generatePageTimeDiff.stop();
             //if the amount is more then 200 create an archive write it to disk and
             //send to the worker the archive link
 
+            if (htmlLength > 250) {
+                return saveZipToDisk(uploadPages, data);
+            }
+            //if html files amount is less then 200 send them to the worker
 
-            saveZipToDisck(uploadPages, data);
-        }
+            sendToWorker(data.message, data.key, data.bucketName, uploadPages);
+        });
     });
 
-process.on('uncaughtException', error.getErrorHandler(log, function (err) {
-    router.send('error', err);
-}));
+messageStream.on('message:uploaded', function (key) {
+    log('deleting api cache for message with key %s', key);
+});
 
-if (config.main.memwatch) {
-    var memwatch = require('memwatch');
-
-    memwatch.on('leak', function (info) {
-        log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
-    });
-}
+module.exports = messageStream;

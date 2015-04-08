@@ -1,6 +1,7 @@
 "use strict";
 var fs = require("fs"),
     path = require('path'),
+    _ = require('lodash'),
     sass = require('node-sass'),
     ssInclude = new (require("ssi"));
 
@@ -143,7 +144,24 @@ module.exports = function (grunt) {
                             config: "generator.domain",
                             type: "list",
                             choices: function (answers) {
-                                var result = walker.getAllPagesInDomains(answers['generator.namespace']);
+                                var result = walker.getAllFirstLevelDomains(answers['generator.namespace']);
+                                // print out all domains and domains/pages in the current namespace/page (all with a conf-file inside)
+                                result.unshift({name: "default", value: "default"});
+                                return result;
+                            },
+                            message: "In which domain this jig should be rendered?",
+                            filter: function (value) {
+                                return value;
+                            },
+                            when: function (answers) {
+                                return answers['generator.template'] === 'jig';
+                            }
+                        },{
+                            config: "generator.domain",
+                            type: "list",
+                            choices: function (answers) {
+                                var result = walker.getAllPagesInDomains(answers['generator.namespace'],
+                                    answers['generator.domain']);
                                 // print out all domains and domains/pages in the current namespace/page (all with a conf-file inside)
                                 result.unshift({name: "No page", value: "none"});
                                 return result;
@@ -161,7 +179,7 @@ module.exports = function (grunt) {
                             type: "list",
                             choices: function (answers) {
                                 // print out all domains in the current namespace/page
-                                var result = walker.getAllDomains(answers['generator.namespace']);
+                                var result = walker.getAllFirstLevelDomains(answers['generator.namespace']);
 
                                 result.unshift('default');
                                 return result;
@@ -172,6 +190,32 @@ module.exports = function (grunt) {
                             },
                             when: function (answers) {
                                 return answers['generator.template'] === 'page';
+                            }
+                        },
+                        {
+                            config: "generator.domain",
+                            type: "list",
+                            choices: function (answers) {
+                                // print out all domains in the current namespace/page
+                                var result = walker.getAllDomains(answers['generator.namespace'],
+                                    answers['generator.domain']);
+
+
+                                return result;
+                            },
+                            message: "This domain contains subdomains should we use some of them?",
+                            filter: function (value) {
+                                return value;
+                            },
+                            when: function (answers) {
+                                if (answers['generator.template'] !== 'page') {
+                                    return false;
+                                }
+                                var subdomains = walker.getAllDomains(answers['generator.namespace'],
+                                    answers['generator.domain']);
+
+
+                                return subdomains.length > 1;
                             }
                         },
                         {
@@ -268,6 +312,11 @@ module.exports = function (grunt) {
                     open: true,
                     middleware: function (connect, options, middlewares) {
 
+                        var generateDefaultBase = function (cwd, filename) {
+                            var defaultBase = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,5}\//, "/default/"));
+                            return defaultBase.replace(/default(\/.*?)?\/[^\/]*\.[a-z]{2,5}\//, 'default/');
+                        };
+
                         // inject a custom middleware into the array of default middlewares
                         middlewares.unshift(function (req, res, next) {
                             if (req.url === "/") {
@@ -309,8 +358,9 @@ module.exports = function (grunt) {
                                 var cwd = options.base[0] + "/",
                                     filename = req.url,
                                     filenameSHTML = path.join(cwd, filename.replace(/\.html/, ".shtml")),
-                                    defaultBase = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,5}\//, "/default/")),
-                                    defaultBaseSHTML = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,5}\//, "/default/").replace(/\.html/, ".shtml"));
+                                    defaultBase = generateDefaultBase(cwd, filename),
+                                    defaultBaseSHTML = generateDefaultBase(cwd, filename).replace(/\.html/, ".shtml");
+                                console.log( "----",defaultBase)
                                 if (fs.existsSync(filename)) {
                                     console.log('found as filename', filename);
                                     res.end(ssInclude.parse(filename, fs.readFileSync(filename, {
@@ -355,7 +405,7 @@ module.exports = function (grunt) {
         },
         funcunit: {
             options: {
-                timeout: 150000,
+                timeout: 90000,
                 httpBase: "http://localhost:8000"
             },
             all: ['**/funcunit.html', '!bower_components/**', '!steal/**']
@@ -395,7 +445,7 @@ module.exports = function (grunt) {
         grunt.config("connect.server.options.open", false);
         grunt.config("funcunit-webdriver", grunt.config("funcunit"));
         if (grunt.option("webdriver")) {
-            task = "funcunit-webdriver"
+            task = "funcunit-webdriver";
         }
         if (namespace) {
             // run a test for single jig

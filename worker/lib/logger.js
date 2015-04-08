@@ -4,12 +4,50 @@ var _ = require('lodash');
 var winston = require('winston');
 var config = require('../config');
 
-require('winston-loggly');
+require('winston-posix-syslog');
+/**
+ * capitalize first letter
+ * @param {String} word
+ * @return {String}
+ */
+var capitalFirst = function (word) {
+    return  word.charAt(0).toUpperCase() + word.substr(1, word.length);
+};
 //extend default winston log levels with custom
 var logLevels = _.assign(winston.config.cli.levels, config.main.logger.customLevels);
 
 //extend default winston colors with custom
 var colors = _.assign(winston.config.cli.colors, config.main.logger.colors);
+
+var loggers = {};
+
+var getLogger = function (component, config) {
+    if (loggers[component]) {
+        return loggers[component];
+    }
+
+    var logger = new (winston.Logger)({
+        levels: logLevels,
+        transports: [
+            new (winston.transports.Console)(config.console)
+        ]
+    });
+
+    if (config.transports && _.isObject(config.transports)) {
+        _.each(config.transports, function (options, transportName) {
+            var className = capitalFirst(transportName);
+
+            if (winston.transports[className]) {
+                console.log('add', className);
+                logger.add(winston.transports[className], options);
+            }
+        });
+    }
+
+    loggers[component] = logger;
+
+    return logger;
+};
 
 /**
  * returns a log function for current component
@@ -17,47 +55,46 @@ var colors = _.assign(winston.config.cli.colors, config.main.logger.colors);
  *
  * @param  {string} component
  * @param  {object} metadata
+ * @param  {object} processArguments
  * @return {function}
  */
-module.exports = function (component, metadata) {
+module.exports = function (component, metadata, processArguments) {
     metadata = metadata || {};
+    processArguments = processArguments || {};
+    metadata.component = component;
 
-    var filename = path.join(__dirname, '../..',  config.main.logger.folder, 'error_' + process.pid + '.log');
-    var options = config.main.logger.file;
-    options.filename = filename;
-    options.level = 'error';
+    if (processArguments.tag) {
+        metadata.tag = processArguments.tag;
+    }
+
     if (_.contains(process.argv, '-v') || _.contains(process.argv, '--verbose')) {
-        config.main.logger.console.level = 'info';
+        config.main.logger.console.level = config.main.logger.defaultLogLevel;
     }
 
-    var logger = new (winston.Logger)({
-        levels: logLevels,
-        transports: [
-            new (winston.transports.Console)(config.main.logger.console)
-        ]
-    });
-
-    if (config.main.logger.loggly) {
-        logger.add(winston.transports.Loggly, config.main.logger.loggly);
-    }
+    var logger = getLogger(component, config.main.logger);
 
     winston.addColors(colors);
 
     /**
      * first argument could be one of the log levels
      * like:
-     *  info,
-     *  fail
-     *  success,
-     *  warn,
-     *  error,
-     *  debug
-     *  alert
+     *   silly
+     *   input
+     *   verbose
+     *   prompt
+     *   debug
+     *   info
+     *   data
+     *   help
+     *   warn
+     *   error
+     *   success
+     *   fail
      *
      * if the first argument is not one of those string it used like log message.
-     * log level in this case is 'info'
+     * log level in this case is 'verbose'
      * @example
-     * log('info', 'foo bar');
+     * log('verbose', 'foo bar');
      * is the same as
      * log('foo bar');
      *

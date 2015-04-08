@@ -78,10 +78,9 @@ var strategyCheckers = {
         },
         action: function (slot, jigSelectr, config) {
 
-            this.list[slot.parent] = this.list[slot.parent] || [];
             slot.invoke = prepender.invoke;
 
-            this.list[slot.parent].unshift(config[jigSelectr]);
+            return config[jigSelectr];
         },
         list: {}
     },
@@ -114,11 +113,18 @@ var strategyCheckers = {
 var mapJigsWithStrategy= function (config, page) {
 
     var result = [];
+    var appendToEmptyList = {};
+
     _.each(config, function (jig, className) {
         if (_.isObject(jig.slot) && jig.controller) {
 
             _.some(strategyCheckers, function (checker, checkerName) {
                 if (checker.check(jig.slot, page)) {
+                    if (checkerName === 'appendToEmpty'){
+                        appendToEmptyList[jig.slot.parent] =  appendToEmptyList[jig.slot.parent] || [];
+
+                        appendToEmptyList[jig.slot.parent].unshift(checker.action(jig.slot, className, config));
+                    }
                     checker.action(jig.slot, className, config);
                     jig.slot.strategy = checkerName;
                     jig.jigClassName = className;
@@ -134,9 +140,9 @@ var mapJigsWithStrategy= function (config, page) {
         }
     });
 
-    if (_.keys(strategyCheckers.appendToEmpty.list).length) {
-        var appendToEmptyList = _.flatten(_.values(strategyCheckers.appendToEmpty.list));
-        result = result.concat(appendToEmptyList);
+    if (_.keys(appendToEmptyList).length) {
+        appendToEmptyList = _.flatten(_.values(appendToEmptyList));
+        result = appendToEmptyList.concat(result);
     }
 
     return result;
@@ -174,6 +180,7 @@ var createSection = function (jig) {
  */
 exports.executeJigSlotLogic = function (config, page) {
     var jigs = mapJigsWithStrategy(config, page);
+
     jigs.forEach(function (jig) {
         var section = createSection(jig);
 

@@ -113,7 +113,12 @@ var extractFilePath = function (buildOptions, callback) {
         if (!descriptor.from) {
             throw new Error('there is no from field in media source descriptor');
         }
-        descriptor.from = descriptor.from.replace('<%= domain %>', buildOptions.domain);
+
+        var domain = _.last(buildOptions.domain.split('/'));
+        descriptor.from = descriptor.from
+            .replace('<%= domain %>', domain)
+            .replace('<%= domainPath %>', buildOptions.domain);
+
         exactFilePath = path.join(buildOptions.namespacePath, descriptor.from);
 
         var next = function (err, result) {
@@ -237,30 +242,43 @@ module.exports = {
             }
 
             async.map(data.build.package.mediaFiles, function (file, next) {
-                fs.stat(file.from, function (err, stat) {
-                    if (err) {
-                        return next(err);
-                    }
-                    file.size = stat.size;
-                    next(null, file);
-                });
+                if (fs.existsSync(file.from)) {
+                    fs.stat(file.from, function (err, stat) {
+                        if (err) {
+                            return next(err);
+                        }
+                        file.size = stat.size;
+                        next(null, file);
+                    });
+                } else if(file.require){
+                    next(new Error('meida file is absent but it is required'));
+                } else{
+                    console.log('meida file is absent but it is not required');
+                    next(null, null);
+                }
             }, function (err, files) {
                 if (err) {
                     return console.log(err);
                 }
+                // filter all files that non exits
+                files = files.filter(function(file){
+                    return file !== null;
+                });
+                if(files.length){
+                    var fileGroups = createFileGroupsBySize(files, 9500000);
 
-                var fileGroups = createFileGroupsBySize(files, 9500000);
+                    async.each(fileGroups, function (fileGroup, cb) {
+                        console.log('starting to upload new fileGroup with size', fileGroup.size);
+                        helper.uploadArchive(fileGroup.files, data.build, function (err, res) {
+                            if (err) {
+                                return cb(err);
+                            }
+                            console.log(res);
+                            cb();
+                        });
+                    }, onUpload);
+                }
 
-                async.each(fileGroups, function (fileGroup, cb) {
-                    console.log('starting to upload new fileGroup with size', fileGroup.size);
-                    helper.uploadArchive(fileGroup.files, data.build, function (err, res) {
-                        if (err) {
-                            return cb(err);
-                        }
-                        console.log(res);
-                        cb();
-                    });
-                }, onUpload);
             });
         });
     }

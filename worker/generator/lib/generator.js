@@ -12,21 +12,18 @@ var EventEmitter = require('events').EventEmitter;
 var fs = require('fs');
 var async = require('async');
 var util = require('util');
+var deepExtend = require('deep-extend');
 var path = require('path');
 var ejs = require("ejs");
-var mustache = require('mustache');
-var deepExtend = require("deep-extend");
+var Handlebars = require('handlebars');
 var viewHelper = require("./view.js");
 var restHelper = require("./rest.js");
 var placeholderHelper = require("./placeholders.js");
 var slots = require('./slots');
-var http = require('http-get');
 var _ = require('lodash');
-var Uploader = require('jmUtil').ydUploader;
-var zlib = require('zlib');
+var Q = require('q');
 var md5 = require('MD5');
 var gt;
-var pageCounter = 0;
 var knoxConfig;
 var saveDiskPath;
 
@@ -77,8 +74,107 @@ var getExcludedPredefinedVariables = function (jigs) {
     return _.filter(_.keys(apiCallsWithJigs), function (apiCallName) {
         var jigs = apiCallsWithJigs[apiCallName];
         return _.every(jigs, function (jig) {
-            return jig.render === false;
+            return jig.render === false && jig.includeController !== true;
         });
+    });
+};
+
+
+var removePropertyByPath = function (itemPath, object) {
+    var last = itemPath.pop();
+
+    var i = itemPath.length;
+    var parent = object;
+    while (i--) {
+        var currentItem = itemPath[i];
+        if (!parent) {
+            return null;
+        }
+        if (_.isPlainObject(parent) && !parent[currentItem]) {
+            return null;
+        }
+        if (_.isArray(parent) && !parent.length) {
+            return null;
+        }
+
+        if (_.isPlainObject(parent)) {
+            parent = parent[currentItem];
+        } else if (_.isArray(parent)) {
+            var j = parent.length;
+            while (j--) {
+                parent[j] = parent[j][currentItem];
+            }
+        }
+    }
+
+    if (_.isPlainObject(parent)) {
+        parent[last] = undefined;
+    } else if (_.isArray(parent)) {
+        var k = parent.length;
+        while (k--) {
+            parent[k][last] = undefined;
+        }
+    }
+
+    return object;
+};
+
+
+var getExcludedPredefinedFields = function (jigs) {
+    var apiCallJigs = _.filter(_.keys(jigs), function (jigName) {
+        return jigs[jigName].apicalls ;
+    });
+
+    var apiCallsWithExcludedFields = {};
+
+    _.each(apiCallJigs, function (jigName) {
+        var jig = jigs[jigName];
+        _.each(jig.apicalls, function (apiCall, apiCallName) {
+            if (!apiCallsWithExcludedFields[apiCallName]) {
+                apiCallsWithExcludedFields[apiCallName] = [];
+            }
+
+            if (!apiCall.excludeFromPredefined) {
+                return;
+            }
+
+            apiCallsWithExcludedFields[apiCallName].push(apiCall.excludeFromPredefined);
+        });
+    });
+
+    _.each(apiCallsWithExcludedFields, function (listOfFields, name) {
+        var intersection = _.intersection.apply(null, listOfFields);
+        if (!intersection.length) {
+            delete apiCallsWithExcludedFields[name];
+            return;
+        }
+        apiCallsWithExcludedFields[name] = intersection;
+    });
+
+    return apiCallsWithExcludedFields;
+};
+
+var excludePredefinedFields = function (predefinedVar, excludedFields) {
+    var removeFromObject = function (item, fields) {
+        var i = fields.length;
+        while (i--) {
+            var field = fields[i];
+            if (item.hasOwnProperty(field)) {
+                item[field] = undefined;
+            } else {
+                removePropertyByPath(field.split('.'), item);
+            }
+        }
+
+        return item;
+    };
+
+    if (!_.isArray(predefinedVar)) {
+        return removeFromObject(predefinedVar, excludedFields);
+    }
+
+    return predefinedVar.map(function (item) {
+        return removeFromObject(item, excludedFields);
     });
 };
 
@@ -155,6 +251,129 @@ exports.init = function (knoxConf, gettext, diskSavePath) {
 exports.clearApiCache = function () {
     restHelper.clearCache();
 };
+
+var predefinedModules = {};
+var templates = {};
+
+var getPredefinedModule = function (namespace, module) {
+    var modulePath = path.join('../../..', namespace, 'library', module);
+
+    if (predefinedModules[modulePath]) {
+         return predefinedModules[modulePath];
+    }
+
+    predefinedModules[modulePath]= require(modulePath);
+    return predefinedModules[modulePath];
+};
+
+var readFile = Q.denodeify(fs.readFile);
+
+var getTemplate = function (templatePath, callback) {
+    if (templates[templatePath]) {
+        return templates[templatePath].done(function (content) {
+            callback(null, content);
+        });
+    }
+
+    templates[templatePath] = readFile(templatePath, 'utf-8');
+
+    templates[templatePath].fail(function (err) {
+            callback(err);
+        })
+        .done(function (content) {
+            callback(null, content);
+        });
+
+};
+
+var generateJigs = function (config, viewContainer, callback) {
+
+    async.eachSeries(Object.keys(config.jigs), function (jigClass, next) {
+        if (config.jigs[jigClass].disabled || config.jigs[jigClass].prerender === false) {
+            return next();
+        }
+        // get the jig class to be filled with ejs template
+        var jig = config.jigs[jigClass];
+        var jigRegex
+        if (typeof jig === "string") {
+            jig = {"controller": jig};
+        }
+        // this jig needs to be loaded on page call, so we do nothing here
+        if (!jig.controller) {
+            return next();
+        }
+
+        // get optional parameters from config
+        if (jig.options !== undefined) {
+            for (var option in jig.options) {
+                viewContainer[option] = jig.options[option];
+            }
+        }
+        if (jigClass.substr(0, 1) === ".") {
+            jigRegex = new RegExp("<((section)\\s[^>]*class=['\"][^'\"]*\\b" + jigClass.substr(1) + "\\b[^'\"]*['\"][^>]*)>.*?<\\/section>", "im");
+        } else {
+            jigRegex = new RegExp("<(\\b" + jigClass + "\\b[^>]*)>[\\s\\S]*?<\\/(\\b" + jigClass + "\\b)>", "m");
+        }
+        // add ejs template to html template
+        var ejsTemplateFile = jig.template || jig.controller.replace(/\./g, "/").toLowerCase() + "/views/init.ejs";
+        if (typeof ejsTemplateFile === "object") {
+            ejsTemplateFile = ejsTemplateFile[config.locale];
+        }
+        if (!ejsTemplateFile) {
+            return next();
+        }
+        getTemplate(ejsTemplateFile, function (err, ejsTemplate) {
+            if (err) {
+                return next(err);
+            }
+            ejsTemplate = ejsTemplate.replace(/<%==/g, "<%-").replace(/___v1ew.push\(/g, "buf.push(");
+
+            gt.setLocale(viewContainer.locale);
+            viewContainer._ = gt._.bind(gt);
+            if (ejsTemplateFile.match("\.mustache$")) {
+                _.each(viewContainer, function (value, name) {
+                    if (_.isFunction(value)) {
+                        Handlebars.registerHelper(name, value);
+                    }
+                });
+                ejsTemplate = Handlebars.compile(ejsTemplate)(viewContainer);
+            } else if (ejsTemplateFile.match("\.ejs")) {
+
+                ejsTemplate = ejs.render(ejsTemplate, viewContainer);
+            }
+            config.template = config.template.replace(jigRegex, '<$1>' + ejsTemplate + '</$2>');
+
+            next();
+        });
+    }, function (err) {
+        if (err) {
+            return callback(err);
+        }
+        callback(null, config);
+    });
+
+};
+/**
+ * @name UploadItem
+ * @type {{
+ *     path: String,
+ *     content: String,
+ *     url: String,
+ *     time: Number
+ * }}
+ */
+
+/**
+ * @callback GeneratePageCallback
+ * @param {Error}
+ * @param {UploadItem}
+ */
+
+/**
+ *
+ * @param origConfig
+ * @param {GeneratePageCallback} callback
+ */
 exports.generatePage = function (origConfig, callback) {
     origConfig = childPageUploadUrl(origConfig);
 
@@ -163,8 +382,8 @@ exports.generatePage = function (origConfig, callback) {
         namespaceCapital = capitaliseFirstLetter(config.namespace),
 
         filename,
-        viewContainer = config["viewContainer"],
-        url = config["uploadUrl"],
+        viewContainer = config.viewContainer,
+        url = config.uploadUrl,
         html = "",
         predefinedVarString;
 
@@ -180,133 +399,115 @@ exports.generatePage = function (origConfig, callback) {
         });
         config.predefined["child-page-path"] = config["child-page-path"];
     }
-    if (viewContainer["shtml"]) {
-        viewContainer.filename = fs.realpathSync(config["pagePath"].replace(/\/$/, "") + ".shtml");
-        config["pagePath"] = config["pagePath"].replace(/\/[^\/]*$/, "");
-    }
+
     // TODO: Needed for pages?
 
-    config["template"] = ejs.render(config["template"], viewContainer);
-    viewContainer[namespaceCapital] = {config: config, predefined: config["predefined"]};
+    config.template = ejs.render(config.template, viewContainer);
+    viewContainer[namespaceCapital] = {config: config, predefined: config.predefined};
     viewContainer._ = global._ = gt._;
     viewContainer._n = gt._n;
-    for (var key in config) {
-        if (key === "predefined") continue;
-        if (viewContainer[key]) continue;
-        viewContainer[key] = viewHelper.deployAttr(config[key]);
-    }
-    for (var key in config["predefined"]) {
-        viewContainer[key] = viewHelper.deployAttr(config["predefined"][key]);
-    }
+    //for (var key in config) {
+    //    if (key === "predefined") continue;
+    //    if (viewContainer[key]) continue;
+    //    viewContainer[key] = viewHelper.deployAttr(config[key]);
+    //}
+    //for (var key in config["predefined"]) {
+    //    viewContainer[key] = viewHelper.deployAttr(config["predefined"][key]);
+    //}
 
-    config["template"] = slots.executeJigSlotLogic(config.jigs, config["template"]);
+    viewContainer = _.assign(viewContainer, config.predefined);
+    viewHelper.deployAttr();
+    config.template = slots.executeJigSlotLogic(config.jigs, config.template);
 
-    for (var jigClass in config.jigs) {
-        if (config.jigs.hasOwnProperty(jigClass) && config.jigs[jigClass] && !config.jigs[jigClass].disabled && config.jigs[jigClass].prerender !== false) {
-            // get the jig class to be filled with ejs template
-            var jig = config.jigs[jigClass];
-            var jigRegex
-            if (typeof jig === "string") {
-                jig = {"controller": jig};
-            }
-            if (!jig.controller) {
-                continue;
-            }
-            // this jig needs to be loaded on page call, so we do nothing here
-            if (jig.prerender === false)  continue;
 
-            // get optional parameters from config
-            if (jig.options != undefined) {
-                for (var option in jig.options) {
-                    viewContainer[option] = jig.options[option];
+    generateJigs(config, viewContainer, function (err, config) {
+        var script = '<script id="' + namespace + '-application-data" type="text/javascript">' +
+            ' window.' + namespaceCapital + ' = window.' + namespaceCapital + ' || {};' +
+            ' window.' + namespaceCapital + '.predefined = window.' + namespaceCapital + '.predefined || {};' + "\n";
+        var excludedPredefinedVar = getExcludedPredefinedVariables(config.jigs);
+        var excludedPredefinedFields = getExcludedPredefinedFields(config.jigs);
+
+
+        for (var predefinedVar in config.predefined) {
+
+
+            if (config.predefined.hasOwnProperty(predefinedVar) && config.predefined[predefinedVar] !== undefined) {
+                if (predefinedVar === "attr" || _.contains(excludedPredefinedVar, predefinedVar)) continue;
+                if (typeof config.predefined[predefinedVar] === 'function') continue;
+                var predefinedItem = config.predefined[predefinedVar];
+                if (excludedPredefinedFields[predefinedVar]) {
+                    predefinedItem = excludePredefinedFields(predefinedItem, excludedPredefinedFields[predefinedVar]);
                 }
+
+                predefinedVarString = JSON.stringify(predefinedItem);
+                predefinedVarString = predefinedVarString.replace(/\$&/g, '');
+                predefinedVarString = predefinedVarString.replace(/<script.*?>/ig, '');
+                predefinedVarString = predefinedVarString.replace(/<style.*?>/ig, '');
+                script += namespaceCapital + '.predefined["' + predefinedVar + '"] = ' + predefinedVarString + ";\n";
             }
-            if (jigClass.substr(0, 1) === ".") {
-                jigRegex = new RegExp("<((section)\\s[^>]*class=['\"][^'\"]*\\b" + jigClass.substr(1) + "\\b[^'\"]*['\"][^>]*)>.*?<\\/section>", "im");
-            } else {
-                jigRegex = new RegExp("<(\\b" + jigClass + "\\b[^>]*)>[\\s\\S]*?<\\/(\\b" + jigClass + "\\b)>", "m");
-            }
-            // add ejs template to html template
-            var ejsTemplateFile = jig.template || jig.controller.replace(/\./g, "/").toLowerCase() + "/views/init.ejs";
-            if (typeof ejsTemplateFile === "object") {
-                ejsTemplateFile = ejsTemplateFile[config.locale];
-            }
-            if (!ejsTemplateFile) {
-                continue;
-            }
-            var ejsTemplate = fs.readFileSync(ejsTemplateFile, "utf-8");
-            ejsTemplate = ejsTemplate.replace(/<%==/g, "<%-").replace(/___v1ew.push\(/g, "buf.push(");
-            if (ejsTemplateFile.match("\.mustache$")) {
-                ejsTemplate = mustache.to_html(ejsTemplate, viewContainer);
-            } else if (ejsTemplateFile.match("\.ejs")) {
-                ejsTemplate = ejs.render(ejsTemplate, viewContainer);
-            }
-            config["template"] = config["template"].replace(jigRegex, '<$1>' + ejsTemplate + '</$2>');
         }
-    }
 
-    var script = '<script id="' + namespace + '-application-data" type="text/javascript">' +
-        ' window.' + namespaceCapital + ' = window.' + namespaceCapital + ' || {};' +
-        ' window.' + namespaceCapital + '.predefined = window.' + namespaceCapital + '.predefined || {};' + "\n";
-    var excludedPredefinedVar = getExcludedPredefinedVariables(config.jigs);
-
-    for (var predefinedVar in config["predefined"]) {
-        if (config["predefined"].hasOwnProperty(predefinedVar)) {
-            if (predefinedVar == "attr" || _.contains(excludedPredefinedVar, predefinedVar)) continue;
-            if (typeof config["predefined"][predefinedVar] == 'function') continue;
-            predefinedVarString = JSON.stringify(config["predefined"][predefinedVar]);
-            predefinedVarString = predefinedVarString.replace(/\$&/g, '');
-            predefinedVarString = predefinedVarString.replace(/<script.*?>/ig, '');
-            predefinedVarString = predefinedVarString.replace(/<style.*?>/ig, '');
-            script += namespaceCapital + '.predefined["' + predefinedVar + '"] = ' + predefinedVarString + ";\n";
-        }
-    }
-
-    script += namespaceCapital + '.predefined["child-page-path"] = ' + JSON.stringify(config["child-page-path"]) + ";\n";
-    viewContainer.this = viewContainer;
-    delete viewContainer.this.this;
-    // load all predefined modules like filtervalues
-    var neededData = [];
-    for (var predefinedModule in config.predefinedModules) {
-        if (config.predefinedModules.hasOwnProperty(predefinedModule)) {
-            if (config.predefinedModules[predefinedModule].module) {
-                for (var call in config.predefinedModules[predefinedModule].apicalls) {
-                    if (viewContainer[call] && typeof viewContainer[call] === 'object') {
-                        neededData[call] = viewContainer[call];
+        script += namespaceCapital + '.predefined["child-page-path"] = ' + JSON.stringify(config["child-page-path"]) + ";\n";
+        viewContainer.this = viewContainer;
+        delete viewContainer.this.this;
+        // load all predefined modules like filtervalues
+        var neededData = [];
+        for (var predefinedModule in config.predefinedModules) {
+            if (config.predefinedModules.hasOwnProperty(predefinedModule)) {
+                if (config.predefinedModules[predefinedModule].module) {
+                    for (var call in config.predefinedModules[predefinedModule].apicalls) {
+                        if (viewContainer[call] && typeof viewContainer[call] === 'object') {
+                            neededData[call] = viewContainer[call];
+                        }
                     }
+                    var PredefinedModule = getPredefinedModule(config.namespace, config.predefinedModules[predefinedModule].module);
+
+                    var predefinedHelper = new PredefinedModule();
+                    script += namespaceCapital + ".predefined." + predefinedModule + ' = ' + JSON.stringify(
+                        predefinedHelper.init(neededData)
+                    ) + ";\n";
+                    predefinedHelper = null;
                 }
-                var modulePath = path.join('../../..', config.namespace, 'library', config.predefinedModules[predefinedModule].module);
-                var predefinedHelper = new (require(modulePath))();
-                script += namespaceCapital + ".predefined." + predefinedModule + ' = ' + JSON.stringify(
-                    predefinedHelper.init(neededData)
-                ) + ";\n";
-                predefinedHelper = null;
             }
         }
-    }
 
-    script += '</script>';
-    script += generateProductionScriptTags(namespace, config.browsers, config.scriptName);
-    var style = generateProductionStyleTags(config.browsers, config.scriptName);
+        script += '</script>';
+        script += generateProductionScriptTags(namespace, config.browsers, config.scriptName);
+        var style = generateProductionStyleTags(config.browsers, config.scriptName);
 
-    var scriptTagRegExp = new RegExp('<script[^>]+id="' + namespace + '-application-script"[^>]*><\\/script>');
-    var styleTagRegExp = new RegExp('<link[^>]+id="' + namespace + '-application-style"[^>]*>');
+        var scriptTagRegExp = new RegExp('<script[^>]+id="' + namespace + '-application-script"[^>]*><\\/script>');
+        var styleTagRegExp = new RegExp('<link[^>]+id="' + namespace + '-application-style"[^>]*>');
 
-    //var finalHtml = config["template"].replace(/<script[^>]+id="yd-application-script"[^>]*><\/script>/, script);
-    var finalHtml = config["template"].replace(scriptTagRegExp, script).replace(styleTagRegExp, style);
-    url += ".html";
-    filename = config["upload-worker"] ?
-        saveDiskPath + "/production." + url.replace(/\//g, "_") :
-        path.join(config["pagePath"], "production." + url.replace(/\//g, "_"));
+        //var finalHtml = config["template"].replace(/<script[^>]+id="yd-application-script"[^>]*><\/script>/, script);
+        var finalHtml = config.template.replace(scriptTagRegExp, script).replace(styleTagRegExp, style);
+        url += ".html";
+        var urlWithoutSlashes = url.replace(/^\//, '').replace(/\//g, "_");
+        filename = config["upload-worker"] ?
+            saveDiskPath + "/production." + urlWithoutSlashes :
+            path.join(config.pagePath, "production." + urlWithoutSlashes);
 
 
-    return {
-        path: filename,
-        content: finalHtml,
-        url: url,
-        time: config.apiCallTime
-    };
+
+        callback(null, {
+            path: filename,
+            content: finalHtml,
+            url: url,
+            time: config.apiCallTime
+        });
+    });
+
+
 };
+
+
+
+
+
+/**
+ *
+ * @param config
+ * @return {Array.<UploadItem>}
+ */
 exports.generateJsonPage = function (config) {
     var viewContainer = config["viewContainer"],
         mainUrl = (viewContainer["parentUrl"] || viewContainer["url"]) + config["jsonUrlPostfix"],
@@ -319,7 +520,13 @@ exports.generateJsonPage = function (config) {
                 copyResult = JSON.parse(JSON.stringify(result));
             if (options.remove) {
                 _.each(options.remove, function (key) {
-                    if (key in result) delete result[key];
+                    var keys = key.split('.');
+                    if (keys.length === 1 && result[key]) {
+                        result[key] = undefined;
+                        return;
+                    }
+
+                    removePropertyByPath(keys, result);
                 });
             }
             if (options.pick) {
@@ -330,7 +537,7 @@ exports.generateJsonPage = function (config) {
             }
             if (options.to) {
                 toUrl = placeholderHelper.simpleReplace(options.to.replace("{url}", mainUrl), copyResult);
-                results[index] = "//" + knoxConfig.S3_BUCKET + "/" + toUrl;
+                results[index] = "/" + toUrl;
                 if (alreadyInArray.indexOf(toUrl) === -1) {
                     toUpload.push([toUrl, result]);
                     alreadyInArray.push(toUrl);
@@ -353,9 +560,9 @@ exports.generateJsonPage = function (config) {
                                 if (!_.isEmpty(result[key])) {
                                     extResult = extResult || {};
                                     extResult[key] = result[key];
-                                    result[key] = "//" + knoxConfig.S3_BUCKET + "/" + childUrl;
+                                    result[key] = "/" + childUrl;
                                     if (extract.remove) {
-                                        delete result[key];
+                                        result[key] = undefined;
                                     }
                                 } else if (extract.nullIfEmpty) {
                                     result[key] = null;
@@ -373,7 +580,7 @@ exports.generateJsonPage = function (config) {
                         if (extract.key in result) {
                             if (!_.isEmpty(result[extract.key])) {
                                 extResult = result[extract.key];
-                                result[extract.key] = "//" + knoxConfig.S3_BUCKET + "/" + childUrl;
+                                result[extract.key] = "/" + childUrl;
                                 if (extract.remove) {
                                     delete result[extract.key];
                                 }
@@ -389,7 +596,7 @@ exports.generateJsonPage = function (config) {
                 });
             }
         });
-    }
+    };
     _.each(config.jigs, function (jig, jigClass) {
         _.each(jig.apicalls, function (apiCall, apiCallName) {
             if (!apiCall.cache) {
@@ -416,8 +623,8 @@ exports.generateJsonPage = function (config) {
 
     return toUpload.map(function (upload) {
         var filename = config["upload-worker"] ?
-            saveDiskPath + "/production." + upload[0].replace(/\//g, "_") :
-            config.pagePath + "production." + upload[0].replace(/\//g, "_");
+        saveDiskPath + "/production." + upload[0].replace(/\//g, "_") :
+        config.pagePath + "production." + upload[0].replace(/\//g, "_");
 
         return {
             path: filename,
@@ -427,6 +634,7 @@ exports.generateJsonPage = function (config) {
         };
     });
 };
+
 
 
 
@@ -444,6 +652,73 @@ exports.createApiMessageKey = function (messageKey) {
 exports.deleteCachedCall = function (apiMessageKey) {
     restHelper.deleteCachedCall(apiMessageKey);
 };
+
+var addJigsToApiCall = function (callbackContainer, config, emitter, apiconfig, callback) {
+    var callList = [];
+    for (var jigClass in config.jigs) {
+
+        // get the jig class to be filled with ejs template
+        var jig = config.jigs[jigClass];
+        if (typeof jig === "string") {
+            jig = {"controller": jig};
+        }
+        // this jig needs to be loaded on page call, so we do nothing here
+        if ((jig.prerender === false && !jig.slot) || jig.disabled) {
+            delete config.jigs[jigClass];
+            continue;
+        }
+        // adding all predefined variables to gather from api
+        for (var apicall in jig.apicalls) {
+            emitter.emit('call:parsing', apicall, jig.apicalls[apicall]);
+            if (jig.apicalls.hasOwnProperty(apicall)) {
+                if (jig.apicalls[apicall].predefined) {
+                    callList.push({
+                        apicall: apicall,
+                        jig: jig
+                    });
+
+                }
+            }
+        }
+    }
+
+    async.each(callList, function (call, next) {
+        restHelper.addCallAsync(call.apicall, call.jig, config.predefined, apiconfig, function (err, res) {
+            if (err) {
+                return next(err);
+            }
+            callbackContainer.push(res);
+            next(null);
+        });
+    }, callback);
+};
+
+var addPredefinedModulesToApiCall = function (callbackContainer, config, apiconfig, callback) {
+
+    var callList = [];
+    for (var predefinedModule in config.predefinedModules) {
+        for (var call in predefinedModule.apicalls) {
+            if (predefinedModule.apicalls.hasOwnProperty(call)) {
+                if (predefinedModule.apicalls[call].predefined) {
+                    callList.push(call);
+                    //callbackContainer.push(restHelper.addCall(call, config.predefinedModule, config.predefined, apiconfig));
+                }
+            }
+        }
+    }
+
+    async.each(callList, function (call, next) {
+        restHelper.addCallAsync(call, config.predefinedModule, config.predefined, apiconfig, function (err, res) {
+            if (err) {
+                return next(err);
+            }
+
+            callbackContainer.push(res);
+            next(null);
+        });
+    }, callback);
+};
+
 
 var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlaceholders) {
     var config = configs.shift(),
@@ -467,7 +742,6 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
 
     readyConfigs = readyConfigs || [];
     if (config["predefined"] && !dontCheckPlaceholders) {
-        // console.log("Getting Placeholders");
         configPlaceholders = placeholderHelper.getConfigPlaceholders(config["jigs"], config["predefined"]);
         if (configPlaceholders) {
             if (configPlaceholders.pageNum) {
@@ -502,117 +776,118 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
     }
 
 
-    for (var jigClass in config.jigs) {
-
-        // get the jig class to be filled with ejs template
-        var jig = config.jigs[jigClass];
-        if (typeof jig === "string") {
-            jig = {"controller": jig};
+    async.series([
+        function (next) {
+            addJigsToApiCall(callbackContainer, config, emitter, apiconfig, next);
+        },
+        function (next) {
+            addPredefinedModulesToApiCall(callbackContainer, config, apiconfig, next);
         }
-        // this jig needs to be loaded on page call, so we do nothing here
-        if ((jig.prerender === false && !jig.slot) || jig.disabled) {
-            delete config.jigs[jigClass];
-            continue;
+    ], function (err) {
+        if (err) {
+            return callback(err);
         }
-        // adding all predefined variables to gather from api
-        for (var apicall in jig.apicalls) {
-            emitter.emit('call:parsing', apicall, jig.apicalls[apicall]);
-            if (jig.apicalls.hasOwnProperty(apicall)) {
-                if (jig.apicalls[apicall].predefined == true) {
-                    callbackContainer.push(restHelper.addCall(apicall, jig, config.predefined, apiconfig));
-                }
-            }
-        }
-    }
+
+        // work through all calls and wait for all to finish
+        async.map(callbackContainer, restHelper.doCall, function (error, results) {
+
+            var failedCalls = [],
+                nextConfig;
+            var parseResult = function (err, res) {
+                for (var key in res) {
+                    if (res.hasOwnProperty(key)) {
+                        var item = res[key];
+                        if (item.success == false) {
+                            var reason = ''
+                            if (item.resultCode) {
+                                reason += ' status code: ' + item.resultCode;
+                            }
+                            if (item.message) {
+                                reason += ' error message: ' + item.message;
+                            }
 
 
-    // add all predefined modules
-    for (var predefinedModule in config.predefinedModules) {
-        for (var call in predefinedModule.apicalls) {
-            if (predefinedModule.apicalls.hasOwnProperty(call)) {
-                if (predefinedModule.apicalls[call].predefined) {
-                    callbackContainer.push(restHelper.addCall(call, config.predefinedModule, config.predefined, apiconfig));
-                }
-            }
-        }
-    }
-    // work through all calls and wait for all to finish
-    // console.log("Make all API calls for jigs");
-    async.map(callbackContainer, restHelper.doCall, function (err, results) {
+                            failedCalls.push("Error in rest call: " + item.path + " " + JSON.stringify(item.query) + reason);
 
-        var failedCalls = [],
-            nextConfig;
-        try {
-            for (var key in results) {
-                if (results.hasOwnProperty(key)) {
-                    var item = results[key];
-                    if (item.success == false) {
-                        failedCalls.push("Error in rest call: " + item.path + " " + JSON.stringify(item.query) + " status code: " + item.resultCode);
-                    } else {
-                        config["predefined"][item.viewParam] = item.result;
-                        emitter.emit('call:success', item.requestId, item.time, item.fromCache);
+                        } else {
+                            config["predefined"][item.viewParam] = item.result;
+                            emitter.emit('call:success', item.requestId, item.time,
+                                item.fromCache, config.viewContainer.page, config.viewContainer.url);
+                        }
                     }
                 }
-            }
-            config.apiCallTime = Date.now();
+                config.apiCallTime = Date.now();
 
 
-            if (failedCalls.length) {
-                callback({message: "Doing nothing further for " + config["viewContainer"]["url"] + "\n(" + failedCalls.join(";\n") + ")"});
-                return;
-            }
-            if (!config["predefined"].pageNum || config["predefined"].pageNum === 1) {
-                if (config.hasOwnProperty("child-pages") && config["child-pages"]) {
-                    for (var childPage in config["child-pages"]) {
-                        // automated child pages
-                        if (config["child-pages"][childPage]["child-page-path"]) {
-                            nextConfig = deepExtend({}, config, config["child-pages"][childPage]);
-                            // For now child-child-pages are not possible
-                            delete nextConfig["child-pages"];
-                            if (nextConfig.triggerGt) {
-                                var triggerValue = placeholderHelper.getParamByString(nextConfig.triggerGt.field.replace(/[{}]/g, ""), config["predefined"]);
-                                if (triggerValue !== undefined && triggerValue <= nextConfig.triggerGt.value) {
-                                    nextConfig = undefined;
+                if (failedCalls.length) {
+                    callback({message: "Doing nothing further for " + config["viewContainer"]["url"] + "\n(" + failedCalls.join(";\n") + ")"});
+                    return;
+                }
+                if (!config["predefined"].pageNum || config["predefined"].pageNum === 1) {
+                    if (config.hasOwnProperty("child-pages") && config["child-pages"]) {
+                        for (var childPage in config["child-pages"]) {
+                            // automated child pages
+                            if (config["child-pages"][childPage]["child-page-path"]) {
+                                nextConfig = deepExtend({}, config, config["child-pages"][childPage]);
+                                // For now child-child-pages are not possible
+                                delete nextConfig["child-pages"];
+                                if (nextConfig.triggerGt) {
+                                    var triggerValue = placeholderHelper.getParamByString(nextConfig.triggerGt.field.replace(/[{}]/g, ""), config["predefined"]);
+                                    if (triggerValue !== undefined && triggerValue <= nextConfig.triggerGt.value) {
+                                        nextConfig = undefined;
+                                    } else {
+                                        configs.unshift(nextConfig);
+                                    }
                                 } else {
                                     configs.unshift(nextConfig);
                                 }
-                            } else {
+                            }
+                        }
+                    }
+                    if (config["pagination-dependency"]) {
+                        var dataLength = placeholderHelper.getParamByString(config["pagination-dependency"].replace(/[{}]/g, ""), config.predefined);
+                        if (dataLength) {
+                            var maxPage = dataLength / config.predefined.pageLimit + 1;
+
+                            if (config["pagination-dependency-max"] && config["pagination-dependency-max"] + 1 < maxPage) {
+                                maxPage = config["pagination-dependency-max"] + 1;
+                            }
+
+                            for (var i = 2; i < maxPage; i++) {
+                                nextConfig = deepExtend({}, config);
+
+                                try {
+                                    nextConfig.jigs = placeholderHelper.deepReplace(nextConfig.jigs, "{pageNum}", i);
+                                } catch (e) {
+                                }
+                                nextConfig["pagination-number"] = i;
+                                nextConfig.predefined.pageNum = i;
+                                nextConfig["child-page-path"] = nextConfig["child-page-path"] || [];
+                                nextConfig["child-page-path"].push({url: i});
+                                nextConfig["pagination-dependency"] = false;
                                 configs.unshift(nextConfig);
                             }
                         }
                     }
                 }
-                if (config["pagination-dependency"]) {
-                    var dataLength = placeholderHelper.getParamByString(config["pagination-dependency"].replace(/[{}]/g, ""), config["predefined"]);
-                    if (dataLength) {
-                        for (var i = 2; i < dataLength / config["predefined"].pageLimit + 1; i++) {
-                            nextConfig = deepExtend({}, config);
-                            nextConfig.jigs = placeholderHelper.deepReplace(nextConfig.jigs, "{pageNum}", i);
-                            nextConfig["pagination-number"] = i;
-                            nextConfig["predefined"].pageNum = i;
-                            nextConfig["child-page-path"] = nextConfig["child-page-path"] || [];
-                            //nextConfig["child-page-path"].push({name: gt._("yd-core-page", i), url: i});
-                            nextConfig["child-page-path"].push({url: i});
-                            nextConfig["pagination-dependency"] = false;
-                            configs.unshift(nextConfig);
-                        }
-                    }
+                readyConfigs.push(config);
+                emitter.emit('config:ready', readyConfigs.length, configs.length, config["viewContainer"]["url"]);
+                if (configs.length === 0) {
+                    callback(null, readyConfigs);
+                } else {
+                    apiCalls(configs, emitter, callback, readyConfigs);
                 }
+            };
+            try {
+                parseResult(error, results);
             }
-            readyConfigs.push(config);
-            emitter.emit('config:ready', readyConfigs.length, configs.length, config["viewContainer"]["url"]);
-//            console.log("Config", readyConfigs.length, "von", + 1, config["viewContainer"]["url"]);
-            if (configs.length === 0) {
-                callback(null, readyConfigs);
-            } else {
-                apiCalls(configs, emitter, callback, readyConfigs);
+            catch (e) {
+                callback({message: "failed to parse configs: " + e, err: e});
             }
-        }
-        catch (err) {
-            console.log(err, err.stack);
-            callback({message: "failed to parse configs: " + err, err: err});
-        }
+
+        });
 
     });
+
 };
 exports.apiCalls = apiCalls;

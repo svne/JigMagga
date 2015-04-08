@@ -8,6 +8,11 @@ var _ = require('lodash'),
     spawn = require('child_process').spawn;
 
 
+var METADATA_CHUNK_IDENTIFIER = '@@:::@@';
+
+//TODO: move to domain config
+var IGNORED_URLS = ['unknown-977514', 'test-blizzeria-hamburg-rotherbaum'];
+
 module.exports = {
     /**
      * check correctness of URL
@@ -18,7 +23,7 @@ module.exports = {
     isUrlCorrect: function (url) {
         var regexp = new RegExp('[^a-zA-Z0-9-_//]+', 'i');
 
-        return !regexp.test(url);
+        return !regexp.test(url) && !_.contains(IGNORED_URLS, url);
     },
 
     /**
@@ -34,10 +39,11 @@ module.exports = {
         var amqpQueue = config.queueBaseName;
         var amqpErrorQueue = config.queueErrorBaseName;
 
+        var domain = (program.basedomain) ? program.basedomain.split('/')[0] : '';
 
-        if (program.basedomain) {
-            amqpQueue += '.' + program.basedomain;
-            amqpErrorQueue = amqpErrorQueue.replace('error', program.basedomain + '.error');
+        if (domain) {
+            amqpQueue += '.' + domain;
+            amqpErrorQueue = amqpErrorQueue.replace('error', domain + '.error');
         }
 
         if (program.errorqueue) {
@@ -62,12 +68,12 @@ module.exports = {
         var queues = {
             amqpQueue: amqpQueue,
             amqpErrorQueue: amqpErrorQueue,
-            amqpDoneQueue: 'pages.generate.done'
+            amqpDoneQueue: (program.live) ? 'pages.generate.deploy.done' : 'pages.generate.done'
         };
 
         if (program.deployuncached) {
-            var defaultName = config.queueBaseName + '.' + program.basedomain + prefixes['default'];
-            queues.amqpDeployQueue = (_.isString(program.deployuncached)) ? program.deployuncached :  defaultName;
+            var defaultName = 'pages.generate.deploy';
+            queues.amqpDeployQueue = _.isString(program.deployuncached) ? program.deployuncached : defaultName;
         }
 
         return queues;
@@ -93,12 +99,17 @@ module.exports = {
         var options = {stdio: [0, 1, 2, 'pipe', 'ipc']},
             child,
             waitTime;
-        if (args[0] !== 'debug') {
+        if (args[0] !== 'debug' && args[0] !== 'prof') {
             args.unshift(modulePath);
-        } else {
+        } else if (args[0] === 'debug') {
             args[0] = modulePath;
             args.unshift('--debug-brk');
+        } else if (args[0] === 'prof') {
+            args[0] = modulePath;
+            args.unshift('--prof');
         }
+
+        args.unshift('--stack-size=64000');
 
         child = spawn(process.execPath, args, options);
         if (!_.isFunction(callback)) {
@@ -175,9 +186,9 @@ module.exports = {
         }
         var that = this;
         async.parallel({
-            generator: function (next) {
-                that.createSubProcess(__dirname + '/../generator/index.js', _.cloneDeep(args), next);
-            },
+            //generator: function (next) {
+            //    that.createSubProcess(__dirname + '/../generator/index.js', _.cloneDeep(args), next);
+            //},
             uploader: function (next) {
                 that.createSubProcess(__dirname + '/../uploader/index.js', _.cloneDeep(args), next);
             }
@@ -194,7 +205,9 @@ module.exports = {
      * @return {string}
      */
     generateBucketName: function (data, program, config) {
-        var baseDomain = data.message.basedomain;
+        var domainNames = data.message.basedomain.split('/');
+
+        var baseDomain = domainNames.length === 1 ? domainNames[0] : domainNames.reverse()[0];
         var buckets = config.buckets;
         if (config.S3_BUCKET) {
             return config.S3_BUCKET;
@@ -217,11 +230,12 @@ module.exports = {
      * or should not have both of them
      *
      * @param  {object}  message
+     * @param  {object}  comfig
      * @return {Boolean}
      */
     isMessageFormatCorrect: function (message, config) {
-        return Boolean((message.basedomain && !this.isDomainInSkipList(message.basedomain, config.main.skipDomains)) &&
-                    ((message.url && message.page) || (!message.url && !message.page)));
+        return Boolean((message && message.basedomain &&
+            !this.isDomainInSkipList(message.basedomain, config.main.skipDomains)));
     },
 
     /**
@@ -282,5 +296,33 @@ module.exports = {
      */
     getRedisKey: function (name, pid) {
         return name + ':' + pid;
+    },
+
+    /**
+     *
+     * @param {Metadata} metadata
+     * @param {Array.<UploadItem>} archive
+     */
+    stringifyPipeMessage: function (metadata, archive) {
+        metadata = JSON.stringify(metadata) + METADATA_CHUNK_IDENTIFIER;
+
+        archive = JSON.stringify(archive);
+
+        return Buffer.concat([new Buffer(metadata), new Buffer(archive)]);
+    },
+
+    /**
+     *
+     * @param {Buffer} message
+     * @return {{metadata: Metadata, pages: Array.<UploadItem>}}
+     */
+    parsePipeMessage: function (message) {
+        message = Buffer.isBuffer(message) ? message.toString() : message;
+
+        message = message.split(METADATA_CHUNK_IDENTIFIER);
+        return {
+            metadata: JSON.parse(message[0]),
+            pages: JSON.parse(message[1])
+        };
     }
 };

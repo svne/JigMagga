@@ -57,7 +57,7 @@ var ProcessRouter = function (processInstance, pipeFdNumber) {
         var routeHandler = that.routes[data.command];
 
         if (!_.isFunction(routeHandler)) {
-            return that.routes.error.call(that, 'there is no handler for command: ' + data.command);
+            return;
         }
 
         routeHandler.call(that, data.data);
@@ -85,7 +85,7 @@ ProcessRouter.prototype._createPipeHandler = function (handler) {
             return;
         }
         composedBuffer = Buffer.concat(bufferList);
-        var data = removeIdentifier(composedBuffer).toString();
+        var data = removeIdentifier(composedBuffer).toString('utf-8');
         data = data.split(LAST_CHUNK_IDENTIFIER);
         composedBuffer = null;
         bufferList = [];
@@ -118,8 +118,12 @@ ProcessRouter.prototype.addRoutes = function (routes) {
  */
 ProcessRouter.prototype.send = function (command, data) {
     if (command === 'pipe') {
-        data = _.isString(data) ? data : JSON.stringify(data);
-        data = Buffer.concat([new Buffer(data), LAST_CHUNK_IDENTIFIER_BUFFER]);
+        if (!Buffer.isBuffer(data)) {
+            data = _.isString(data) ? data : JSON.stringify(data);
+            data = new Buffer(data);
+        }
+
+        data = Buffer.concat([data, LAST_CHUNK_IDENTIFIER_BUFFER]);
         return this.pipe.write(data);
     }
     var message = {
@@ -128,6 +132,11 @@ ProcessRouter.prototype.send = function (command, data) {
     };
 
     this.processInstance.send(message);
+};
+
+
+ProcessRouter.prototype.ready = function () {
+    this.processInstance.send({ready: true});
 };
 
 module.exports = ProcessRouter;

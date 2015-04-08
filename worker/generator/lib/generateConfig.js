@@ -4,7 +4,6 @@ var path = require('path');
 var _ = require('lodash');
 var async = require('async');
 var format = require('util').format;
-var deepExtend = require('deep-extend');
 
 var viewHelper = require("./view");
 
@@ -29,6 +28,7 @@ var viewHelper = require("./view");
  *
  * @param  {WorkerMessage} message
  * @param  {string} projectName
+ * @param {Object} config
  * @return {object}
  */
 var initViewContainer = function (message, projectName, config) {
@@ -168,24 +168,7 @@ var generatePredefined = function (data) {
     return predefined;
 };
 
-/**
- * extend config with domain-pages if them exist in the config
- *
- * @param  {object} config
- * @param  {string} basedomain
- * @return {object}
- */
-var extendWithDomainPage = function (config, basedomain) {
-    var result = {};
 
-    if (!config['domain-pages'] || !config['domain-pages'][basedomain]) {
-        return config;
-    }
-
-    result = deepExtend(result, config, config['domain-pages'][basedomain]);
-    delete result['domain-pages'][basedomain];
-    return result;
-};
 
 /**
  * extend config with child-pages if them exists
@@ -203,7 +186,7 @@ var extendWithChildPage = function (config, childpage) {
         throw new Error('Unknown child page: ' +  childpage);
     }
 
-    return deepExtend({}, config, config['child-pages'][childpage]);
+    return _.merge(config, config['child-pages'][childpage]);
 };
 
 /**
@@ -231,9 +214,10 @@ module.exports = function (data, workerConfig, callback) {
         domainPagePath = format("%s/page/%s/%s/", projectName, message.basedomain, message.page);
     }
 
-    data.locale = viewContainer['workerLocale'] = data.message.locale;
+    data.locale = viewContainer.workerLocale = data.message.locale;
 
     data.isMainLocale = data.locale === mainLocale;
+
 
     async.waterfall([
         obtainTemplate.bind(null, message, data.basePath),
@@ -247,7 +231,7 @@ module.exports = function (data, workerConfig, callback) {
             viewContainer.filename = path.join(result.path, pageWithoutPath + '.html');
 
             if (message.version) {
-                return next();
+                return next(null, null);
             }
             fs.readFile(path.join(data.basePath, 'version.json'), next);
         },
@@ -263,7 +247,7 @@ module.exports = function (data, workerConfig, callback) {
                 locale: data.locale,
                 jsonUrlPostfix: data.isMainLocale ? "" : "/" + data.locale
             });
-            localConfig = extendWithDomainPage(localConfig, message.basedomain);
+            //localConfig = extendWithDomainPage(localConfig, message.basedomain);
 
             localConfig.predefined = generatePredefined(data);
 

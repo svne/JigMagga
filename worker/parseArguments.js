@@ -2,16 +2,17 @@
 
 var program = require('commander');
 
+var args = null;
+
 module.exports = function (processArgs) {
-    return program
-        .option('-c, --cityId <n>', 'define location by cityId', Number)
-        .option('-s, --regionId <n>', 'define location by regionId', Number)
-        .option('-o, --districtId <n>', 'define location by districtId', Number)
-        .option('-l, --linkId <n>', 'define internlinkpage by linkId', Number)
+
+    if (args) {
+        return args;
+    }
+
+    args = program
         .option('-j, --values [values]', 'specify values as JSON')
         .option('-v, --verbose', 'whether to print to output all log information')
-        .option('-r, --restaurantId <n>', 'define restaurant by restaurantId', Number)
-        .option('-R, --satelliteId <n>', 'define restaurant by satelliteId', Number)
         .option('-b, --versionnumber [value]', 'specify build version as float')
         .option('-q, --queue', 'start program to listen on queue')
         .option('-e, --errorqueue', 'use error queue')
@@ -33,5 +34,10 @@ module.exports = function (processArgs) {
         .option('-f, --fixtures', 'use fixtures from project folder instead of making an api call')
         .option('-w, --write', 'write to disk the archive with generated files instead of upload them, path should be provided')
         .option('-B, --bucket [value]', 'will override the config bucket and upload to this bucket you parse as value')
+        .option('-P, --prefetch <n>', 'amount of prefetched messages from queue, makes sens only wirh -q', Number)
+        .option('--longjohn', 'enable longjohn module for stack traces')
+        .option('--tag [value]', 'allows to filter logs from current worker')
         .parse(processArgs);
+
+    return args;
 };

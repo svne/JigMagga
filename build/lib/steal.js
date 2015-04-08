@@ -151,7 +151,7 @@ module.exports = {
                 } else if (fs.existsSync(defaultPathJSFile)) {
                     item.build.pageJSPath = defaultPathJSFile;
                 } else {
-                    throw Error("No js file for page found");
+                    throw Error("No js file for page found " + domainPathJSFile);
                 }
                 cb(null, item);
             }, function (err, result) {

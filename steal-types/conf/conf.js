@@ -560,8 +560,6 @@
          */
         mergeConfigs = function (parseconfig, configs) {
 
-            configs.push(parseconfig);
-
             var config = {
                     includes: []
                 },
@@ -659,7 +657,10 @@
                     }
                 }
             };
-            setConfigs(path.replace(/\/[^\/]*\.[a-z]{2,3}\//, "/default/"));
+            var defaultPath = path.replace(/\/[^\/]*\.[a-z]{2,3}\/(?:[^\/]*\.[a-z]{2,3}\/)*/, "/default/");
+            //if it is the satellite path replace second domain name and priority folder
+            defaultPath = defaultPath.replace(/\/default(\/.*?)?\/[^\/]*\.[a-z]{2,5}\//, "/default/");
+            setConfigs(defaultPath);
             setConfigs(path);
             setConfigs("/" + namespace.toLowerCase() + "/page/" + getDomain());
             return configs;
@@ -859,6 +860,7 @@
             if (!mergedConfig.domain) {
                 mergedConfig.domain = domain;
             }
+            mergedConfig.groupedDomain = domain;
 
             // set local
             mergedConfig.locale = steal.config("init-locale") || steal.config().env === 'development' && !steal.config("isBuild") && readCookie("locale") || mergedConfig["init-locale"] || (mergedConfig.locales && mergedConfig.locales[0]) || "default";

@@ -1,6 +1,7 @@
 'use strict';
 
 var es = require('event-stream');
+var hgl = require('highland');
 var _ = require('lodash');
 
 
@@ -63,22 +64,22 @@ module.exports = {
      * @param  {Function} callback
      */
     accumulate: function (callback) {
-        var buffer = new Buffer(0);
+        var buffers = [];
 
         return es.through(function write(data) {
             if (!Buffer.isBuffer(data)) {
                 data = _.isString(data) ? data : JSON.stringify(data);
                 data = new Buffer(data);
             }
-            buffer = Buffer.concat([buffer, data]);
+            buffers.push(data);
         }, function end() {
+            var result = Buffer.concat(buffers);
+            buffers = [];
             var that = this;
-            function next() {
-                that.emit('end');
-                buffer = new Buffer(0);
-            }
 
-            callback.call(that, null, buffer, next);
+            callback.call(that, null, result, function () {
+                that.emit('end');
+            });
         });
     },
     /**
@@ -103,5 +104,26 @@ module.exports = {
         };
 
         return tryCatch;
+    },
+    
+    asyncThrough: function (fn, source) {
+        source = source || hgl;
+
+        return source.consume(function (err, data, push, next) {
+            if (err) {
+                // pass errors along the stream and consume next value
+                push(err);
+                next();
+            }
+            else if (data !== hgl.nil) {
+                // pass nil (end event) along the stream
+                //push(null, data);
+                fn(data, push, next);
+            }
+        });
+    },
+    map: function (fn, source) {
+        source = source || hgl;
+        return source.flatMap(hgl.wrapCallback(fn));
     }
 };

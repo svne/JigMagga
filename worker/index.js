@@ -32,7 +32,8 @@ var logger = require('./lib/logger'),
     error = require('./lib/error'),
     messageSource = require('./lib/messageSource'),
     messageStorage = require('./lib/message').storage,
-    sendToWarehouse = require('./lib/kafka')(config.kafka).sendToWarehouse,
+    warehouseFormatter = require('./lib/warehouseFormatter'),
+    sendToWarehouse = require('./lib/kafka')(config.kafka).sendToWarehouse(warehouseFormatter.statusCheckerFormatter),
     TimeDiff = require('./lib/timeDiff');
 
 // obtain application arguments by parsing command line
@@ -117,7 +118,10 @@ helper.createSubProcess(__dirname + '/uploader/index.js', args, function (err, u
         sendToWarehouse('new:message', message);
     });
 
-    main.on('error:message', _.compose(workerErrorHandler, sendToWarehouse('error:message')));
+    main.on('error:message', _.compose(workerErrorHandler, function (err) {
+        sendToWarehouse('error:message', err);
+        return err;
+    }));
 
     var exitHandler = error.getExitHandler(log, [uploader, amqpProcess]);
 

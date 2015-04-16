@@ -123,7 +123,7 @@ module.exports = function (component, metadata, processArguments) {
         var meta = args.pop();
 
         if (_.isPlainObject(meta)) {
-            meta = _.assign(meta, metadata);
+            meta = _.assign({}, meta, metadata);
             args.push(meta);
         } else {
             args.push(meta);

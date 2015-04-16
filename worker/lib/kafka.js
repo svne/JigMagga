@@ -39,27 +39,40 @@ module.exports = function (config) {
         connectionError = true;
     });
 
+    var stringifyMessage = function (status, message) {
+        return JSON.stringify({origin:config.origin, status: status, message: message});
+    };
 
 
     return {
-        sendToWarehouse: _.curry(function (status, message, callback) {
+        sendToWarehouse: _.curry(function (formatter, status, message, callback) {
+            formatter = formatter || function bareMessage(msg, cb) {
+                return cb(null, msg);
+            };
             callback = callback || function () {};
 
             if (connectionError) {
                 return;
             }
-            var data = JSON.stringify({status: status, message: message});
+            formatter(message, function (err, formattedMessage) {
+                if (err) {
+                    return callback(err);
+                }
+                var data;
 
-            producer.send([
-                {topic: config.topics.warehouse, messages: data}
-            ], callback);
+                if (_.isArray(formattedMessage)) {
+                    data = formattedMessage.map(function (item) {
+                        return stringifyMessage(status, item);
+                    });
+                } else {
+                    data = stringifyMessage(status, formattedMessage);
+                }
 
-            //if there is no callback return message to allow to use this
-            //function in compose
-            if (!callback) {
-                return message;
-            }
-        }, 2)
+                producer.send([
+                    {topic: config.topics.warehouse, messages: data}
+                ], callback);
+            });
+        }, 3)
     };
 
 

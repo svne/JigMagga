@@ -3,9 +3,7 @@
 /nbproject/project.xml
 /.idea/
 atlassian-ide-plugin.xml
-/.DS_Store
-/page/.DS_Store
-/page/default/.DS_Store
+.DS_Store
 /worker/temp/
 scripts/server/logger/loggerFiles/*
 scripts/server/logger/.loggerFiles/*

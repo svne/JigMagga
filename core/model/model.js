@@ -145,10 +145,10 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
         }
     });
     can.extend(can.List.prototype, {
-        store: function () {
+        store: function (model) {
             var index = "",
                 objectName = "deferred_findAll";
-            $.jStorage.set(this.constructor._fullName, this.serialize());
+            $.jStorage.set(this.constructor._fullName, model || this.serialize());
             can.Model[objectName] = can.Model[objectName] || {};
             can.Model[objectName][this.constructor._fullName] = can.Model[objectName][this.constructor._fullName] || {};
             can.Model[objectName][this.constructor._fullName].currentIndex = index;
@@ -186,10 +186,10 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
         init: function () {
 
         },
-        store: function () {
+        store: function (model) {
             var index = "",
                 objectName = "deferred_findOne";
-            $.jStorage.set(this.constructor._fullName, this.attr());
+            $.jStorage.set(this.constructor._fullName, model || this.attr());
             can.Model[objectName] = can.Model[objectName] || {};
             can.Model[objectName][this.constructor._fullName] = can.Model[objectName][this.constructor._fullName] || {};
             can.Model[objectName][this.constructor._fullName].currentIndex = index;

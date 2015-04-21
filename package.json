@@ -35,6 +35,9 @@
       "url": "http://www.gnu.org/licenses/lgpl.html"
     }
   ],
+  "bin": {
+    "worker": "worker/index.js"
+  },
   "main": "home",
   "scripts": {
     "integration": "NODE_ENV=test mocha --recursive -t 2000000 -R spec ./worker/test/integration",
@@ -84,7 +87,7 @@
     "headless": "^1.0.0",
     "highland": "^2.4.0",
     "http-get": "~0.5.10",
-    "jmUtil": "git+https://github.com/yourdelivery/JigMaggerUtilities.git",
+    "jmUtil": "yourdelivery/JigMaggerUtilities",
     "jsdom": "~0.11.1",
     "konphyg": "~1.4.0",
     "lodash": "~2.4.1",
@@ -101,7 +104,7 @@
     "selenium-standalone": "^2.43.1-5",
     "sleep": "~1.1.8",
     "ssi": "~0.1.5",
-    "steal": "git+https://github.com/bitovi/steal-build.git",
+    "steal": "bitovi/steal-build",
     "stream-transform": "0.0.2",
     "tape": "^3.0.3",
     "uglify-js": "~2.4.15",

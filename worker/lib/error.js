@@ -7,13 +7,14 @@ var STATUS_CODES = exports.STATUS_CODES = {
     UPLOAD_ERROR: 100,
     API_ERROR: 200,
     WRONG_ARGUMENT_ERROR: 300,
+    NO_SUCH_DOMAIN: 350,
     UNRECOGNIZED_ERROR: 900
 };
 
 var WorkerError = function (message, originalMessage, messageKey, status) {
     this.name = 'WorkerError';  
 
-    this.originalMessage = originalMessage;
+    this.originalMessage = originalMessage || {};
     this.messageKey = messageKey;
     this.message = message;
 
@@ -100,7 +101,13 @@ exports.getWorkerErrorHandler = function (log, queuePool, messageStorage, progra
         originalMessage.errorTimestamp = Date.now();
 
         if (program.queue) {
-            queuePool.send('publish:amqpErrorQueue', originalMessage);
+            // as far as there are a huge amount of satellite uncache events for which we o not
+            // have domain in config we have to be prevented from big amount of errors in the queue
+            //
+            // !!!! Should be removed after refactoring satellite system.
+            if (err.status !== STATUS_CODES.NO_SUCH_DOMAIN) {
+                queuePool.send('publish:amqpErrorQueue', originalMessage);
+            }
 
             if (!program.live && err.status !== STATUS_CODES.UPLOAD_ERROR) {
                 messageStorage.done(err.messageKey);

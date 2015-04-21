@@ -79,11 +79,13 @@ var domainCache = {};
  *
  *
  * @param {string} basePath
- * @param {string} baseDomain
- * @param {string} domain
+ * @param {object} message
  * @param {function} callback
  */
-var lookForDomain = function (basePath, baseDomain, domain, callback) {
+var lookForDomain = function (basePath, message, callback) {
+    var baseDomain = message.basedomain,
+        domain = message.url;
+
     var walker = walk.walk(path.join(basePath, 'page', baseDomain)),
         cacheKey = basePath + baseDomain + domain,
         result;
@@ -103,13 +105,17 @@ var lookForDomain = function (basePath, baseDomain, domain, callback) {
         next();
     });
 
-    walker.on('errors', function (root, nodeStatsArray, next) {
-        callback(nodeStatsArray);
+    var error = null;
+    walker.on('errors', function (root, nodeStatsArray) {
+        error = new WorkerError(nodeStatsArray, message, null, STATUS_CODES.WRONG_ARGUMENT_ERROR);
     });
 
     walker.on('end', function () {
+        if (error) {
+            return callback(error);
+        }
         if (!result) {
-            return callback('There is no such domain');
+            return callback(new WorkerError('There is no such domain', message, null, STATUS_CODES.NO_SUCH_DOMAIN));
         }
 
         domainCache[cacheKey] = path.join(result, domain);
@@ -229,6 +235,13 @@ module.exports = {
         });
     },
 
+    /**
+     * Return the stream that obtain a message and if this message does not have
+     * page or locale inside it greps all existing pages and locales from config
+     * and split the message on several. One for each page or locale
+     *
+     * @return {Transform}
+     */
     pageLocaleSplitter: function () {
         function isExternal (link) {
             return link.indexOf('http://') === 0 ||
@@ -332,9 +345,20 @@ module.exports = {
         });
     },
 
+    /**
+     * return stream that checks whether the basedomain is available and if not
+     *
+     *
+     * @param basePath
+     * @return {Transform}
+     */
     checkBaseDomain: function (basePath) {
         return streamHelper.map(function (data, callback) {
             var message = data.message;
+
+            if (!message) {
+                return callback(new WorkerError('wrong message format', message, null, STATUS_CODES.WRONG_ARGUMENT_ERROR));
+            }
 
             if (message.url && message.page ||
                 !message.url && !message.page ||
@@ -356,11 +380,14 @@ module.exports = {
                     if (exists) {
                         return next(null, basedomain);
                     }
-                    lookForDomain(basePath, message.basedomain, message.url, next);
+                    lookForDomain(basePath, message, next);
                 }
             ], function (err, basedomain) {
                 if (err) {
-                    return callback(new WorkerError(err, message, null, STATUS_CODES.WRONG_ARGUMENT_ERROR));
+                    if (_.isFunction(data.queueShift)) {
+                        data.queueShift();
+                    }
+                    return callback(err);
                 }
                 data.message.basedomain = basedomain;
                 data.message.url = null;

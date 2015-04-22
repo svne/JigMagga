@@ -4,6 +4,43 @@ var program = require('commander');
 
 var args = null;
 
+/**
+ * @name WorkerArguments
+ * @type {object}
+ * @property {string} values
+ * @property {string} verbose
+ * @property {string} versionnumber
+ * @property {boolean} queue
+ * @property {boolean} errorqueue
+ * @property {boolean} errorerrorqueue
+ * @property {boolean} staticold
+ * @property {string} basedomain
+ * @property {string} page
+ * @property {string} childpage
+ * @property {boolean} live
+ * @property {boolean} liveuncached
+ * @property {string} deployuncached
+ * @property {string} url
+ * @property {boolean} highprio
+ * @property {boolean} mediumprio
+ * @property {boolean} lowprio
+ * @property {string} postfix
+ * @property {string} locale
+ * @property {string} namespace
+ * @property {boolean} fixtures
+ * @property {boolean} write
+ * @property {string} bucket
+ * @property {number} prefetch
+ * @property {boolean} longjohn
+ * @property {string} tag
+ */
+
+
+/**
+ * returns parsed worker arguments from
+ * @param {object} processArgs
+ * @return {WorkerArguments}
+ */
 module.exports = function (processArgs) {
 
     if (args) {

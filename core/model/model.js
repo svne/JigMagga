@@ -122,12 +122,12 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             if (can.Model.deferred_findOne
                 && can.Model.deferred_findOne[this._fullName]) {
                 delete (can.Model.deferred_findOne[this._fullName]
-                    );
+                );
             }
             if (can.Model.deferred_findAll
                 && can.Model.deferred_findAll[this._fullName]) {
                 delete (can.Model.deferred_findAll[this._fullName]
-                    );
+                );
             }
             if ($.jStorage.get(this._fullName)) {
                 $.jStorage.deleteKey(this._fullName);
@@ -142,6 +142,30 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                 }
             }
             return model;
+        },
+        ajax2: function (options, success, error) {
+            if (typeof options !== "string") {
+                var def = can.Deferred(),
+                    modelName = this._fullName.replace(/_/g, "-");
+                if (!self.mapper) {
+                    steal(steal.config(steal.config("namespace")).models["§" + modelName].mapper, function (mapper) {
+                        self.mapper = mapper;
+                        def.resolve(options, success, error);
+                    });
+                } else {
+                    def.resolve(options, success, error);
+                }
+
+                def.done(function (options, success, error) {
+                    can.ajax({
+                        url: options.url,
+                        data: options.data,
+                        dataType: options.dataType,
+                        success: function(data){ success(data, self.mapper) },
+                        error: error
+                    });
+                });
+            }
         }
     });
     can.extend(can.List.prototype, {

@@ -143,7 +143,7 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             }
             return model;
         },
-        ajax2: function (options, success, error) {
+        ajaxRequest: function (options, success, error) {
             if (typeof options !== "string") {
                 var def = can.Deferred(),
                     modelName = this._fullName.replace(/_/g, "-");
@@ -158,8 +158,10 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
 
                 def.done(function (options, success, error) {
                     can.ajax({
+                        type: options.type || "GET",
+                        cache: options.cache || true,
                         url: options.url,
-                        data: options.data,
+                        data: options.data || null,
                         dataType: options.dataType,
                         success: function(data){ success(data, self.mapper) },
                         error: error

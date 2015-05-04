@@ -69,6 +69,7 @@ module.exports = {
             }
         }
         data.message = _.assign(data.message, values);
+        console.log('[message]', data.message);
         data.key = messageHelper.createMessageKey(data.message);
 
         data.queueShift = function () {

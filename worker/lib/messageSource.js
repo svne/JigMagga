@@ -61,6 +61,7 @@ module.exports = {
         var values = {};
 
         if (program.values) {
+            console.log('[program.values]', program.values);
             try {
                 values = JSON.parse(program.values);
             } catch (e) {

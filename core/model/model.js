@@ -146,10 +146,12 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
         ajaxRequest: function (options, success, error) {
             if (typeof options !== "string") {
                 var def = can.Deferred(),
-                    modelName = this._fullName.replace(/_/g, "-");
+                    modelName = this._fullName.replace(/_/g, "-"),
+                    self = this;
                 if (!self.mapper) {
-                    steal(steal.config(steal.config("namespace")).models["§" + modelName].mapper, function (mapper) {
+                    steal(steal.config(steal.config("namespace")).jigs["models"]["§" + modelName].mapper, function (mapper) {
                         self.mapper = mapper;
+                        self.mapper.mapperName = modelName + "Mapper";
                         def.resolve(options, success, error);
                     });
                 } else {

@@ -35,7 +35,7 @@ module.exports = {
 
         queuePool.addRoutes({
             'message:amqpQueue': function (message) {
-                log('info', '[message from amqp]', message.message || {});
+                log('info', '[message from amqp]', _.merge({}, message.message, {incoming: true}));
                 queueStream.write(message);
             }
         });

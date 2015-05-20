@@ -8,14 +8,22 @@ var configMerge = require('jmUtil').configMerge,
     helper = require('./helper');
 
 var args = parseArgs(process.argv);
-
+var STATUSES = {
+    new: 0,
+    upload: 1,
+    error: 3
+};
 var basePath = (args.namespace) ? path.join(process.cwd(), args.namespace, 'page') : process.cwd();
 
-var getMessage = _.curry(function (message, bucket, url) {
+var getMessage = _.curry(function (message, bucket, status, url) {
     return {
-        basedomain: message.basedomain,
-        bucket: bucket,
-        url: url.replace('{url}', message.url)
+        messageType: 'PageAlteredEvent',
+        data: {
+            domain: message.basedomain,
+            bucket: bucket,
+            status: STATUSES[status],
+            url: url.replace('{url}', message.url)
+        }
     };
 });
 
@@ -25,7 +33,7 @@ module.exports = {
      * @param {WorkerMessage} message
      * @param {Function} callback
      */
-    statusCheckerFormatter: function (message, callback) {
+    statusCheckerFormatter: function (status, message, callback) {
         message = message.originalMessage || message;
 
         if (!message.basedomain || !message.page) {
@@ -43,9 +51,9 @@ module.exports = {
                 result;
 
             if (message.locale) {
-                result = getMessage(message, bucket, urls[message.locale]);
+                result = getMessage(message, bucket, status, urls[message.locale]);
             } else {
-                result = _.values(urls).map(getMessage(message, bucket));
+                result = _.values(urls).map(getMessage(message, bucket, status));
             }
 
             callback(null, result);

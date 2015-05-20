@@ -73,7 +73,7 @@ var uploaderRoutes = {
         messageStorage.upload(key);
 
         generatorStream.emit('message:uploaded', key);
-        sendToWarehouse('upload:message', data.message);
+        sendToWarehouse('upload', data.message);
         log('message uploaded %s', key);
     },
     error: workerErrorHandler
@@ -115,11 +115,11 @@ helper.createSubProcess(__dirname + '/uploader/index.js', args, function (err, u
 
     main.on('send:message', function (message) {
         log('send to generator', message);
-        sendToWarehouse('new:message', message);
+        sendToWarehouse('new', message);
     });
 
     main.on('error:message', _.compose(workerErrorHandler, function (err) {
-        sendToWarehouse('error:message', err);
+        sendToWarehouse('error', err);
         return err;
     }));
 

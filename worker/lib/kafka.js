@@ -1,48 +1,33 @@
 'use strict';
 
-var kafka = require('kafka-node'),
+var Brod = require('brod-caster'),
+    Protobuf = require('node-protobuf'),
+    fs = require('fs'),
     _ = require('lodash');
 
+var envelopeProto = new Protobuf(fs.readFileSync(__dirname + '/../messages/envelope.desc')),
+    messagesProto = new Protobuf(fs.readFileSync(__dirname + '/../messages/page.desc'));
 
 var producer;
 
 /**
  *
- * @param {{connectionString: string, clientId: string}} config
+ * @param {{connectionString: string, clientId: string, zkOptions: object, topics: object}} config
  * @return {exports.Producer}
  */
 module.exports = function (config) {
     config = config || {};
+
+    config.adaptor = config.adaptor || {};
+    config.adaptor.envelope = envelopeProto;
+    config.adaptor.messages = messagesProto;
 
     if (producer) {
         return producer;
     }
     var connectionError = null;
 
-    var client = new kafka.Client(config.connectionString, config.clientId);
-    producer = new kafka.Producer(client);
-
-    producer.on('ready', function () {
-        var topicNames = _.values(config.topics);
-
-        producer.createTopics(topicNames, true, function (err, data) {
-            if (err) {
-                throw err;
-            }
-
-            console.log('Topic created', data);
-        });
-    });
-
-    producer.on('error', function (err) {
-        console.log('Kafka connection error', err);
-        connectionError = true;
-    });
-
-    var stringifyMessage = function (status, message) {
-        return JSON.stringify({origin:config.origin, status: status, message: message});
-    };
-
+    var brod = new Brod(config);
 
     return {
         sendToWarehouse: _.curry(function (formatter, status, message, callback) {
@@ -54,23 +39,12 @@ module.exports = function (config) {
             if (connectionError) {
                 return;
             }
-            formatter(message, function (err, formattedMessage) {
+            formatter(status, message, function (err, formattedMessage) {
                 if (err) {
                     return callback(err);
                 }
-                var data;
 
-                if (_.isArray(formattedMessage)) {
-                    data = formattedMessage.map(function (item) {
-                        return stringifyMessage(status, item);
-                    });
-                } else {
-                    data = stringifyMessage(status, formattedMessage);
-                }
-
-                producer.send([
-                    {topic: config.topics.warehouse, messages: data}
-                ], callback);
+                brod.send(config.origin, status, formattedMessage, callback);
             });
         }, 3)
     };

@@ -13,7 +13,7 @@ var EventEmitter = require('events').EventEmitter,
     async = require('async'),
     _ = require('lodash'),
     path = require('path'),
-    hgl = require('highland');
+    es = require('event-stream');
 
 var args = require('../parseArguments')(process.argv);
 
@@ -32,10 +32,7 @@ var config = require('../config');
 
 var messageStream = stream.duplex();
 
-var handleError = function (error) {
-    var text = error.text,
-        data = error.data;
-
+var handleError = function (text, data) {
     messageStream.emit('err', new WorkerError(text, data.message.origMessage, data.key));
 };
 
@@ -68,14 +65,16 @@ emitter.on('config:ready', function (readyConfigsLength, configsLength, url) {
  * @param  {Function} next
  * @return {stream}
  */
-var configStream = stream.map(function (data, callback) {
+var configStream = es.through(function (data) {
+    var that = this;
+
     generateConfig(data, config, function (err, res) {
         if (err) {
-            callback({text: err.stack || err, data: data});
+            handleError(err.stack || err, data);
             return;
         }
 
-        callback(null, res);
+        that.emit('data', res);
     });
 });
 
@@ -87,7 +86,8 @@ var configStream = stream.map(function (data, callback) {
  * @param  {object}   data
  * @param  {Function} next
  */
-var apiStream = stream.asyncThrough(function (data, push, callback) {
+var apiStream = es.through(function (data) {
+    var that = this;
     log('info', '[*] send api request', helper.getMeta(data.message));
     log('help', 'generating new message time %d', Date.now(), helper.getMeta(data.message));
     // Take first snapshot
@@ -101,21 +101,20 @@ var apiStream = stream.asyncThrough(function (data, push, callback) {
         if (err) {
 
             var errorText = format('error in apiCall %s', util.inspect(err));
-            push({text: errorText, data: data});
-            return callback();
+            return handleError(errorText, data);
         }
         data.apiCallResult = res;
         apiCallTimeDiff.stop();
-        push(null, data);
-        return callback();
+        return that.emit('data', data);
     });
 
 });
 
-var generateStream = stream.map(function (data, callback) {
+var generateStream = es.through(function (data) {
     var saveDiskPath = path.join(data.basePath, '..'),
         knox = _.clone(config.main.knox),
-        json;
+        json,
+        that = this;
 
     var generatePageTimeDiff = timeDiff.create('generate:page:' + data.message.page);
 
@@ -128,7 +127,7 @@ var generateStream = stream.map(function (data, callback) {
     json = _.map(data.apiCallResult, generator.generateJsonPage);
 
     if (data.config.uploadOnlyJson) {
-        return callback(null, {data: data, json: json, html: []});
+        return this.emit('data', {data: data, json: json, html: []});
     }
 
     async.mapSeries(data.apiCallResult, function (config, next) {
@@ -136,12 +135,12 @@ var generateStream = stream.map(function (data, callback) {
         generator.generatePage(config, next);
     }, function (err, html) {
         if (err) {
-           return callback({text: err.stack || err, data: data});
+            return  handleError(err.stack || err, data);
         }
 
         generatePageTimeDiff.stop();
 
-        return callback(null, {data: data, json: json, html: html});
+        that.emit('data', {data: data, json: json, html: html});
     });
 
 });
@@ -153,18 +152,19 @@ var lastLocale = {};
  *
  * @param  {object}   data
  */
-var loadLocale = stream.map(function (data, callback) {
-    var domain = data.message.domain,
+var loadLocale = es.through(function (data) {
+    var that = this,
+        domain = data.message.domain,
         locale = data.message.locale;
 
     if (lastLocale[domain + locale]) {
         log('got from cache', {loadLocale: true, source: 'cache'});
-        return callback(null, data);
+        return that.emit('data', data);
     }
     ydGetText.locale(data.basePath, domain, locale, function () {
         log('loaded locale', {loadLocale: true, source: 'load'});
         lastLocale[domain + locale] = true;
-        return callback(null, data);
+        that.emit('data', data);
     });
 
 });
@@ -231,13 +231,10 @@ var saveZipToDisk = function (uploadList, data) {
 };
 
 messageStream
-    .pipe(hgl.pipeline(
-        configStream,
-        apiStream,
-        loadLocale,
-        generateStream,
-        hgl.errors(handleError)
-    ))
+    .pipe(configStream)
+    .pipe(apiStream)
+    .pipe(loadLocale)
+    .pipe(generateStream)
     .on('data', function (result) {
 
         var data = result.data,

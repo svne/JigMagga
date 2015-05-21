@@ -96,7 +96,6 @@
     "longjohn": "~0.2.4",
     "mime": "~1.2.11",
     "mustache": "~0.8.2",
-    "node-protobuf": "^1.2.3",
     "node-sass": "~0.9.3",
     "phridge": "^1.0.6",
     "q": "~1.0.1",

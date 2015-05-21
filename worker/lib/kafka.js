@@ -1,14 +1,11 @@
 'use strict';
 
 var Brod = require('brod-caster'),
-    Protobuf = require('node-protobuf'),
-    fs = require('fs'),
     _ = require('lodash');
 
-var envelopeProto = new Protobuf(fs.readFileSync(__dirname + '/../messages/envelope.desc')),
-    messagesProto = new Protobuf(fs.readFileSync(__dirname + '/../messages/page.desc'));
+var envelopeProto = __dirname + '/../messages/envelope.desc',
+    messagesProto = __dirname + '/../messages/messages.desc';
 
-var producer;
 
 /**
  *
@@ -22,9 +19,7 @@ module.exports = function (config) {
     config.adaptor.envelope = envelopeProto;
     config.adaptor.messages = messagesProto;
 
-    if (producer) {
-        return producer;
-    }
+
     var connectionError = null;
 
     var brod = new Brod(config);
@@ -43,7 +38,6 @@ module.exports = function (config) {
                 if (err) {
                     return callback(err);
                 }
-
                 brod.send(config.origin, status, formattedMessage, callback);
             });
         }, 3)

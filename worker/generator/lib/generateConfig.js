@@ -187,7 +187,7 @@ var extendWithChildPage = function (config, childpage) {
         throw new Error('Unknown child page: ' +  childpage);
     }
 
-    return _.merge({}, config, config['child-pages'][childpage]);
+    return _.merge(_.cloneDeep(config), config['child-pages'][childpage]);
 };
 
 /**

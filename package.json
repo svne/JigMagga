@@ -73,7 +73,7 @@
     "amqplib": "~0.2.1",
     "archiver": "~0.11.0",
     "async": "~0.9.0",
-    "brod-caster": "git+ssh://git@github.com:yourdelivery/brod-caster",
+    "brod-caster": "^1.0.0",
     "can-compile": "~0.7.0",
     "cheerio": "~0.17.0",
     "clean-css": "~2.2.12",

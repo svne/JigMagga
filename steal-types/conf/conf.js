@@ -862,6 +862,10 @@
             }
             mergedConfig.groupedDomain = domain;
 
+            if (!mergedConfig.buildPath) {
+                mergedConfig.buildPath = getPath();
+            }
+
             // set local
             mergedConfig.locale = steal.config("init-locale") || steal.config().env === 'development' && !steal.config("isBuild") && readCookie("locale") || mergedConfig["init-locale"] || (mergedConfig.locales && mergedConfig.locales[0]) || "default";
 

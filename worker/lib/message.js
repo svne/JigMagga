@@ -1,7 +1,6 @@
 'use strict';
 
-var es = require('event-stream'),
-    fs = require('fs'),
+var fs = require('fs'),
     path = require('path'),
     walk = require('walk'),
     md5 = require('MD5'),
@@ -209,7 +208,7 @@ module.exports = {
          * @param {{content: Buffer, properties: {contentType: string}}} data
          * @return {{message: object, key: string, queueShift: function}}
          */
-        return es.through(function (data) {
+        return streamHelper.asyncThrough(function (data, push, callback) {
             var message = data.message,
                 key = data.key;
 
@@ -231,7 +230,8 @@ module.exports = {
 
                 generator.deleteCachedCall(data.key);
             };
-            this.emit('data', data);
+            push(null, data);
+            callback();
         });
     },
 

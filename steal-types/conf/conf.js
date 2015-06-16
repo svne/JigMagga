@@ -76,7 +76,7 @@
                 init = function (e) {
                     if (e.type == 'readystatechange' && doc.readyState != 'complete') return;
                     (e.type == 'load' ? win : doc
-                        )[rem](pre + e.type, init, false);
+                    )[rem](pre + e.type, init, false);
                     if (!done && (done = true
                         )) fn.call(win, e.type || e);
                 },
@@ -460,8 +460,10 @@
             if (config.jigs) {
                 var jigsKeys = Object.keys(config.jigs);
                 for (var i = 0; i < jigsKeys.length; i++) {
-                    executeJigSlotLogic(jigsKeys[i], config.jigs[jigsKeys[i]]);
-                    prepareJig(config, jigsKeys[i], config.jigs[jigsKeys[i]]);
+                    if (jigsKeys[i][0]!=="§") {
+                        executeJigSlotLogic(jigsKeys[i], config.jigs[jigsKeys[i]]);
+                        prepareJig(config, jigsKeys[i], config.jigs[jigsKeys[i]]);
+                    }
                 }
             }
 
@@ -486,7 +488,7 @@
                 if (!steal.config("isBuild") && steal.config("domain") !== "default") {
                     steal(config.localePath, function () {
                         steal.apply(steal, config.includes);
-                   });
+                    });
                 } else {
                     steal.apply(steal, config.includes);
                 }

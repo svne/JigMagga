@@ -1,7 +1,6 @@
 steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
     "use strict";
     can.extend(can.Model, {
-
         cacheDeferred: function (methodName, params, success, error, reset, data) {
             var current, index = can.param(params),
                 objectName = "deferred_" + methodName,
@@ -143,34 +142,61 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             }
             return model;
         },
-        ajaxRequest: function (options, success, error) {
-            if (typeof options !== "string") {
-                var def = can.Deferred(),
-                    modelName = this._fullName.replace(/_/g, "-"),
-                    self = this;
-                if (!self.mapper) {
-                    steal(steal.config(steal.config("namespace")).jigs["models"]["§" + modelName].mapper, function (mapper) {
-                        self.mapper = mapper;
-                        self.mapper.mapperName = modelName + "Mapper";
-                        def.resolve(options, success, error);
+        ajaxRequest: function(settings){
+            var self = this,
+                mapper,
+                result;
+            mapper = self.mapper(settings);
+            if (mapper) {
+                result = can.Deferred();
+                can.ajax(settings)
+                    .then(function(response){
+                        result.resolve(mapper(response));
+                    })
+                    .fail(function(){
+                        result.reject(arguments);
                     });
-                } else {
-                    def.resolve(options, success, error);
-                }
-
-                def.done(function (options, success, error) {
-                    can.ajax({
-                        type: options.type || "GET",
-                        cache: options.cache || true,
-                        url: options.url,
-                        data: options.data || null,
-                        dataType: options.dataType,
-                        success: function(data){ success(data, self.mapper) },
-                        error: error
-                    });
-                });
             }
+            else {
+                result = can.ajax(settings);
+            }
+            return result;
+        },
+        mapper: function () {
+            // default mapper;
+            return function(data){
+                return data;
+            };
         }
+//            function (options, success, error) {
+//            if (typeof options !== "string") {
+//                var def = can.Deferred(),
+//                    modelName = this._fullName.replace(/_/g, "-"),
+//                    self = this;
+//                if (!self.mapper) {
+////                    steal(steal.config(steal.config("namespace")).jigs["models"]["§" + modelName].mapper, function (mapper) {
+//                    steal(steal.config(steal.config("namespace")).models["§" + modelName].mapper, function (mapper) {
+//                        self.mapper = mapper;
+//                        self.mapper.mapperName = modelName + "Mapper";
+//                        def.resolve(options, success, error);
+//                    });
+//                } else {
+//                    def.resolve(options, success, error);
+//                }
+//
+//                def.done(function (options, success, error) {
+//                    can.ajax({
+//                        type: options.type || "GET",
+//                        cache: options.cache || true,
+//                        url: options.url,
+//                        data: options.data || null,
+//                        dataType: options.dataType,
+//                        success: function(data){ success(data, self.mapper) },
+//                        error: error
+//                    });
+//                });
+//            }
+//        }
     });
     can.extend(can.List.prototype, {
         store: function (model) {
@@ -321,7 +347,7 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                     a = a[comparator];
                     b = b[comparator];
                     return a === b ? 0 : (a < b ? -1 : 1
-                        );
+                    );
                 }],
                 res = [].sort.apply(this, args);
             !silent && can.trigger(this, "reset");
@@ -414,7 +440,7 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                 len = _reference.length;
                 if (len > 15 &&  /// length of http://a/a.json
                     (_reference.indexOf('http') === 0
-                        ) && _reference.indexOf('.json') === len - 5) {
+                    ) && _reference.indexOf('.json') === len - 5) {
                     result = {isOk: true, result: _reference};
                 }
             }
@@ -441,10 +467,10 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             self['__deffered' + attributeName + '__'] = deferred;
 
             succesCalls = self['__deffered_succes' + attributeName + '__'] = (typeof success === 'function'
-                ) ? [success] : [];
+            ) ? [success] : [];
             deferred.done(succesCalls);
             errorCalls = self['__deffered_succes' + attributeName + '__'] = (typeof error === 'function'
-                ) ? [error] : [];
+            ) ? [error] : [];
             deferred.fail(errorCalls);
             return deferred;
         },
@@ -527,6 +553,6 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             }
         }
     });
-    
+
     return can;
 });

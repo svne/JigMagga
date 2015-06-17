@@ -1,10 +1,17 @@
 'use strict';
-var path = require('path');
 var _ = require('lodash');
-var winston = require('winston');
 var config = require('../config');
+var bunyan = require('bunyan');
+var gelfStream = require('gelf-stream');
 
-require('winston-posix-syslog');
+var logLevels = [
+    'fatal',
+    'error',
+    'warn',
+    'info',
+    'debug',
+    'trace'
+];
 /**
  * capitalize first letter
  * @param {String} word
@@ -14,10 +21,10 @@ var capitalFirst = function (word) {
     return  word.charAt(0).toUpperCase() + word.substr(1, word.length);
 };
 //extend default winston log levels with custom
-var logLevels = _.assign(winston.config.cli.levels, config.main.logger.customLevels);
+//var logLevels = _.assign(winston.config.cli.levels, config.main.logger.customLevels);
 
 //extend default winston colors with custom
-var colors = _.assign(winston.config.cli.colors, config.main.logger.colors);
+//var colors = _.assign(winston.config.cli.colors, config.main.logger.colors);
 
 var loggers = {};
 
@@ -26,27 +33,25 @@ var getLogger = function (component, config) {
         return loggers[component];
     }
 
-    var logger = new (winston.Logger)({
-        levels: logLevels,
-        transports: [
-            new (winston.transports.Console)(config.console)
-        ]
-    });
-
-    if (config.transports && _.isObject(config.transports)) {
-        _.each(config.transports, function (options, transportName) {
-            var className = capitalFirst(transportName);
-
-            if (winston.transports[className]) {
-                console.log('add', className);
-                logger.add(winston.transports[className], options);
-            }
+    var logStreams = [];
+    if (config.streams && config.streams.stdout) {
+        logStreams.push({
+            level: config.defaultLogLevel,
+            stream: process.stdout
         });
     }
 
-    loggers[component] = logger;
+    if (config.streams && config.streams.gelf) {
+        logStreams.push({
+            type: 'raw',
+            stream: gelfStream.forBunyan(config.streams.gelf.host, config.streams.gelf.port),
+            level: config.defaultLogLevel
+        });
+    }
 
-    return logger;
+    loggers[component] = bunyan.createLogger({name: config.name, streams: logStreams});
+
+    return loggers[component];
 };
 
 /**
@@ -68,28 +73,20 @@ module.exports = function (component, metadata, processArguments) {
     }
 
     if (_.contains(process.argv, '-v') || _.contains(process.argv, '--verbose')) {
-        config.main.logger.console.level = config.main.logger.defaultLogLevel;
+        config.main.logger.defaultLogLevel = config.main.logger.verboseLogLevel;
     }
 
-    var logger = getLogger(component, config.main.logger);
-
-    winston.addColors(colors);
+    var logger = getLogger(component, config.main.logger).child(metadata);
 
     /**
      * first argument could be one of the log levels
      * like:
-     *   silly
-     *   input
-     *   verbose
-     *   prompt
+     *   trace
      *   debug
      *   info
-     *   data
-     *   help
      *   warn
      *   error
-     *   success
-     *   fail
+     *   fatal
      *
      * if the first argument is not one of those string it used like log message.
      * log level in this case is 'verbose'
@@ -120,21 +117,17 @@ module.exports = function (component, metadata, processArguments) {
             return;
         }
         var args = _.toArray(arguments);
-        var meta = args.pop();
+        var head = args.shift();
+        var logLevel;
 
-        if (_.isPlainObject(meta)) {
-            meta = _.assign({}, meta, metadata);
-            args.push(meta);
+        if (!_.contains(logLevels, head)) {
+            logLevel = config.main.logger.verboseLogLevel;
+            args.unshift(head);
         } else {
-            args.push(meta);
-            args.push(metadata);
+            logLevel = head;
         }
 
-        if (!_.contains(_.keys(logLevels), args[0])) {
-            args.unshift(config.main.logger.defaultLogLevel);
-        }
-
-        logger.log.apply(logger, args);
+        logger[logLevel].apply(logger, args);
     };
 
 };

@@ -99,7 +99,6 @@ var uploadItem = function (data, callback) {
             uploadsAmount += 1;
             var logMetadata =
                 {upload: true, url: data.url, locale: data.locale, page: data.page, uploadsAmount: uploadsAmount};
-            log('success', res + ' time: ' + Date.now(), logMetadata);
             log('info', res, logMetadata);
             router.send('message:uploaded', {key: data.messageKey, message: data.origMessage, locale: data.locale});
         }
@@ -107,7 +106,7 @@ var uploadItem = function (data, callback) {
         callback();
     };
 
-    log('info', 'start uploading new file', helper.getMeta(data));
+    log('start uploading new file', helper.getMeta(data));
 
     var url = (data.url === '/') ? 'index' : data.url;
 

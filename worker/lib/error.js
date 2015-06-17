@@ -88,7 +88,7 @@ exports.getWorkerErrorHandler = function (log, queuePool, messageStorage, progra
         err.originalMessage.error = true;
         err.originalMessage.status = err.status;
 
-        log('error', errorMessage, err.originalMessage, err.stack, {});
+        log('error', errorMessage, err.originalMessage, err.stack);
 
         if (!program.queue) {
             return;

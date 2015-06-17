@@ -173,7 +173,7 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                 // Explicitly takeoff success and error handlers from settings and hook them
                 // to result promise. That will prevent calling of them after can.ajax call.
                 if (settings && settings.success) {
-                    result.then(settings.success);
+                    result.done(settings.success);
                     delete settings.success;
                 }
                 if (settings && settings.error) {
@@ -181,13 +181,16 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                     delete settings.error;
                 }
                 // perform ajax call
-                can.ajax(settings)
-                    .then(function(response){
+                can.ajax(settings).then(
+                    // Success
+                    function(response){
                         result.resolve(mapper(response));
-                    })
-                    .fail(function(){
+                    },
+                    // Error
+                    function(){
                         result.reject(arguments);
-                    });
+                    }
+                );
             }
             else {
                 //if no mapper found, then only do the ajax request

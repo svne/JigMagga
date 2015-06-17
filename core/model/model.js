@@ -1,6 +1,19 @@
 steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
     "use strict";
     can.extend(can.Model, {
+        init: function(){
+            var self = this,
+                modelName,
+                modelConfig;
+            // Convert name of the model eg. Yd.Models.Location -> §yd-models-locations
+            modelName = "§" +self.fullName.toLowerCase().replace(/\./g, "-");
+            modelConfig = steal.config(steal.config("namespace")).jigs[modelName];
+            if (modelConfig) {
+                steal(modelConfig.mapper, function (mapper) {
+                    can.extend(self.mapper,mapper);
+                });
+            }
+        },
         cacheDeferred: function (methodName, params, success, error, reset, data) {
             var current, index = can.param(params),
                 objectName = "deferred_" + methodName,
@@ -142,13 +155,32 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             }
             return model;
         },
+        /**
+         * This is a wrapper of `can.ajax()` call, with possibility to specify mapper function.
+         *
+         * @param settings - Settings of the ajax request put `mapper: "mapperName"` to this object to choose the
+         * mapper transform function. If now `mapper` is specified then 'default' will be used as a key.
+         *
+         * @returns {Deferred} can.Deferred with result
+         */
         ajaxRequest: function(settings){
             var self = this,
                 mapper,
                 result;
-            mapper = self.mapper(settings);
+            mapper = self.getMapper(settings);
             if (mapper) {
                 result = can.Deferred();
+                // Explicitly takeoff success and error handlers from settings and hook them
+                // to result promise. That will prevent calling of them after can.ajax call.
+                if (settings && settings.success) {
+                    result.then(settings.success);
+                    delete settings.success;
+                }
+                if (settings && settings.error) {
+                    result.fail(settings.error);
+                    delete settings.error;
+                }
+                // perform ajax call
                 can.ajax(settings)
                     .then(function(response){
                         result.resolve(mapper(response));
@@ -158,45 +190,31 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                     });
             }
             else {
+                //if no mapper found, then only do the ajax request
                 result = can.ajax(settings);
             }
             return result;
         },
-        mapper: function () {
-            // default mapper;
-            return function(data){
+        getMapper: function (settings) {
+            var self = this,
+                mapperKey = 'default';
+            if (settings && settings.mapper) {
+                mapperKey = settings.mapper;
+            }
+            if (typeof self.mapper[mapperKey] !== 'function') {
+                if (typeof self.mapper[mapperKey] === 'undefined') {
+                    throw Error('The specified mapper key ['+mapperKey+'] is not in mapper object of the model '+self.fullName);
+                }
+                throw Error('The specified mapper key ['+mapperKey+'] is not of function type in the model '+self.fullName);
+            }
+            return self.mapper[mapperKey];
+        },
+        mapper:  {
+            // default mapper
+            default: function(data){
                 return data;
-            };
+            }
         }
-//            function (options, success, error) {
-//            if (typeof options !== "string") {
-//                var def = can.Deferred(),
-//                    modelName = this._fullName.replace(/_/g, "-"),
-//                    self = this;
-//                if (!self.mapper) {
-////                    steal(steal.config(steal.config("namespace")).jigs["models"]["§" + modelName].mapper, function (mapper) {
-//                    steal(steal.config(steal.config("namespace")).models["§" + modelName].mapper, function (mapper) {
-//                        self.mapper = mapper;
-//                        self.mapper.mapperName = modelName + "Mapper";
-//                        def.resolve(options, success, error);
-//                    });
-//                } else {
-//                    def.resolve(options, success, error);
-//                }
-//
-//                def.done(function (options, success, error) {
-//                    can.ajax({
-//                        type: options.type || "GET",
-//                        cache: options.cache || true,
-//                        url: options.url,
-//                        data: options.data || null,
-//                        dataType: options.dataType,
-//                        success: function(data){ success(data, self.mapper) },
-//                        error: error
-//                    });
-//                });
-//            }
-//        }
     });
     can.extend(can.List.prototype, {
         store: function (model) {

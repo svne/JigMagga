@@ -591,14 +591,48 @@
             var counter = 0,
                 doneResult = [],
                 factory = function (path, callback) {
+                    var isDomain = function (name) {
+                        var regex = /^([a-zA-Z0-9]+\.)?[a-zA-Z0-9][a-zA-Z0-9-]+\.[a-zA-Z]{2,6}?$/i;
+                        return regex.test(name);
+                    };
+
+
                     if (steal.config("isBuild") && !steal.config("isTest")) {
                         var fs = require("fs");
-                        try {
-                            var content = fs.readFileSync(steal.config("root") + path, {encoding: "utf8"});
-                        } catch (e) {
-                            console.warn("No .conf file:", steal.config("root") + path);
-                        }
-                        callback(content);
+                        fs.readFile(steal.config("root") + path, {encoding: "utf8"}, function (err, content) {
+                            if (err) {
+                                if (err.code !== 'ENOENT') {
+                                    console.warn("No .conf file:", steal.config("root") + path);
+                                    return callback();
+                                }
+                                var request = require("request");
+                                var url = "http://config-store-api.service.ens-staging.dcs.takeaway.com:8080/api/config";
+
+                                var configName = path.split('/').reverse()[0].replace(/\.conf/, '');
+                                if (!isDomain(configName)) {
+                                    console.warn("No .conf file:", steal.config("root") + path);
+                                    return callback();
+                                }
+
+                                return request.get(url, {json: true, qs: {url: configName}}, function (err, res) {
+                                    if (err) {
+                                        console.warn(err);
+                                        return callback();
+                                    }
+                                    if (!res.body[0]) {
+                                        console.warn('no config in DB for domain ' + configName);
+                                        return callback();
+                                    }
+                                    console.warn("CONFIG is taken form db:", configName);
+                                    callback(JSON.stringify(res.body[0].config));
+                                });
+                            }
+
+
+
+                            callback(content);
+                        });
+
                     } else {
 
                         steal.request({
@@ -621,6 +655,7 @@
                             if (typeof result === "string") {
                                 doneResult[i] = JSON.parse(result);
                             }
+                            console.log(configs[i], counter, configs.length)
                             if (counter === configs.length) {
                                 done(doneResult);
                             }

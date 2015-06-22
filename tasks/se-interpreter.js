@@ -15,7 +15,7 @@ module.exports = function (grunt) {
             // Explicit path to directory with json files.
             path: path,
             // browser
-            browser: grunt.option("browser") || "firefox",
+            browser: grunt.option("browser") || "chrome",
             // options for webdriver
             driverOptions: {
                 hostname: grunt.option("ip") || '127.0.0.1',

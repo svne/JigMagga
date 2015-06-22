@@ -4,13 +4,41 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
         init: function(){
             var self = this,
                 modelName,
-                modelConfig;
+                modelConfig,
+                namespace;
             // Convert name of the model eg. Yd.Models.Location -> §yd-models-locations
             modelName = "§" +self.fullName.toLowerCase().replace(/\./g, "-");
-            modelConfig = steal.config(steal.config("namespace")).jigs[modelName];
-            if (modelConfig) {
-                steal(modelConfig.mapper, function (mapper) {
-                    can.extend(self.mapper,mapper);
+            namespace = steal.config("namespace");
+            // We process only models from the namespace
+            if (self.fullName.indexOf(namespace+'.Models') === 0) {
+                modelConfig = steal.config(namespace).jigs[modelName];
+                if (modelConfig) {
+                    self._config = modelConfig;
+                }
+                else {
+                    console.warn('No config for the model '+self.fullName+' found. '
+                    +' Put jig with the name ['+modelName+'] to the .conf file of the page.'
+                    +' Processing default configuration from the model');
+                }
+                self._processConfig(self._config);
+            }
+        },
+        _mapper:  {
+            // default mapper
+            default: function(data){
+                return data;
+            }
+        },
+        _processConfig: function(config){
+            var self = this;
+            if (typeof config === 'undefined') {
+                throw new Error('Config for the model '+self.fullName+' is not set');
+            }
+            // if we have mapper in config, extend default mapper
+            if (config.mapper) {
+                steal(config.mapper, function (mapper) {
+                    var self = this;
+                    can.extend(self._mapper,mapper);
                 });
             }
         },
@@ -167,7 +195,7 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             var self = this,
                 mapper,
                 result;
-            mapper = self.getMapper(settings);
+            mapper = self._getMapper(settings);
             if (mapper) {
                 result = can.Deferred();
                 // Explicitly takeoff success and error handlers from settings and hook them
@@ -198,25 +226,19 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             }
             return result;
         },
-        getMapper: function (settings) {
+        _getMapper: function (settings) {
             var self = this,
                 mapperKey = 'default';
             if (settings && settings.mapper) {
                 mapperKey = settings.mapper;
             }
-            if (typeof self.mapper[mapperKey] !== 'function') {
-                if (typeof self.mapper[mapperKey] === 'undefined') {
+            if (typeof self._mapper[mapperKey] !== 'function') {
+                if (typeof self._mapper[mapperKey] === 'undefined') {
                     throw Error('The specified mapper key ['+mapperKey+'] is not in mapper object of the model '+self.fullName);
                 }
                 throw Error('The specified mapper key ['+mapperKey+'] is not of function type in the model '+self.fullName);
             }
-            return self.mapper[mapperKey];
-        },
-        mapper:  {
-            // default mapper
-            default: function(data){
-                return data;
-            }
+            return self._mapper[mapperKey];
         }
     });
     can.extend(can.List.prototype, {

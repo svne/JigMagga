@@ -1,0 +1,220 @@
+TAP version 13
+# Test: Test: /home/jaroslav/repos/ydSelenium/Suites/lieferando_live/001_Login_AllPages.json
+ok 1 {"type":"store","text":"https://www.lieferando.de","variable":"domain"}
+ok 2 {"type":"store","text":"Selenium","variable":"prename"}
+ok 3 {"type":"store","text":"Tester","variable":"name"}
+ok 4 {"type":"store","text":"selenium@ydqa.de","variable":"email"}
+ok 5 {"type":"store","text":"testen","variable":"password"}
+ok 6 {"type":"store","text":"Selenium Tester","variable":"fullname"}
+ok 7 {"type":"store","text":"Teststreet","variable":"street"}
+ok 8 {"type":"store","text":"13","variable":"streetnumber"}
+ok 9 {"type":"store","text":"016018188841","variable":"phone"}
+ok 10 {"type":"store","text":"01070 Test-Gebiet-1","variable":"location"}
+ok 11 {"type":"store","text":"Selenium GmbH","variable":"company"}
+ok 12 {"type":"store","text":"13th Floor","variable":"floor"}
+ok 13 {"type":"store","text":"This is a test order by Selenium. DO NOT prepare or charge!","variable":"comment"}
+ok 14 {"type":"storeEval","script":"return Math.floor(Math.random()*1111111)","variable":"random"}
+ok 15 {"type":"get","url":"${domain}"}
+ok 16 {"type":"assertEval","script":"$.jStorage.flush()","value":"null"}
+ok 17 {"type":"refresh"}
+ok 18 {"type":"print","text":"MESSAGE: Page loaded!"}
+ok 19 {"type":"clickElement","locator":{"type":"css selector","value":"a.yd-jig-header-login-button"}}
+ok 20 {"type":"setElementText","locator":{"type":"css selector","value":"input[type=\"email\"]"},"text":"${email}"}
+ok 21 {"type":"setElementText","locator":{"type":"css selector","value":"input[type=\"password\"]"},"text":"${password}"}
+ok 22 {"type":"clickElement","locator":{"type":"css selector","value":"button.yd-btn-s.yd-btn-interact"}}
+ok 23 {"type":"print","text":"MESSAGE: User logged in!"}
+ok 24 {"type":"clickElement","locator":{"type":"css selector","value":"div.yd-jig-header-dropdown.yd-jig-header-dropdown-user"}}
+ok 25 {"type":"waitForElementPresent","locator":{"type":"css selector","value":"a.yd-jig-header-logout-link"}}
+ok 26 {"type":"clickElement","locator":{"type":"css selector","value":"a.yd-jig-header-logout-link"}}
+ok 27 {"type":"print","text":"MESSAGE: User logged out!"}
+ok 28 {"type":"setElementText","locator":{"type":"css selector","value":"#yd-jig-plz-search"},"text":"01070"}
+ok 29 {"type":"waitForElementPresent","locator":{"type":"css selector","value":"#ui-id-5"}}
+ok 30 {"type":"clickElement","locator":{"type":"css selector","value":"#ui-id-5"}}
+ok 31 {"type":"print","text":"MESSAGE: Testarea opened!"}
+ok 32 {"type":"clickElement","locator":{"type":"css selector","value":"a.yd-jig-header-login-button"}}
+ok 33 {"type":"setElementText","locator":{"type":"css selector","value":"input[type=\"email\"]"},"text":"${email}"}
+ok 34 {"type":"setElementText","locator":{"type":"css selector","value":"input[type=\"password\"]"},"text":"${password}"}
+ok 35 {"type":"clickElement","locator":{"type":"css selector","value":"button.yd-btn-s.yd-btn-interact"}}
+ok 36 {"type":"print","text":"MESSAGE: User logged in!"}
+ok 37 {"type":"clickElement","locator":{"type":"css selector","value":"div.yd-jig-header-dropdown.yd-jig-header-dropdown-user"}}
+ok 38 {"type":"waitForElementPresent","locator":{"type":"css selector","value":"a.yd-jig-header-logout-link"}}
+ok 39 {"type":"clickElement","locator":{"type":"css selector","value":"a.yd-jig-header-logout-link"}}
+ok 40 {"type":"print","text":"MESSAGE: User logged out!"}
+ok 41 {"type":"clickElement","locator":{"type":"link text","value":"QA Restaurant SELENIUM"}}
+ok 42 {"type":"print","text":"MESSAGE: QA Resto opened!"}
+ok 43 {"type":"clickElement","locator":{"type":"link text","value":"Menüs"}}
+ok 44 {"type":"clickElement","locator":{"type":"xpath","value":"//div[@class='yd-content']/div/div/div[1]/section[1]/div[2]/div/div[2]/div[2]/a"}}
+ok 45 {"type":"waitForElementPresent","locator":{"type":"css selector","value":"section.yd-jig-additions.yd_jig_additions > div.yd-jig-lightbox-content"}}
+ok 46 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[1]/div[2]/ul/li[9]/button"}}
+ok 47 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 48 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[2]/div[2]/ul/li[5]/button"}}
+ok 49 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 50 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[3]/div[2]/ul/li[1]/button"}}
+ok 51 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 52 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[3]/div[2]/ul/li[1]/button"}}
+ok 53 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 54 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[3]/div[2]/ul/li[8]/button"}}
+ok 55 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 56 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[3]/div[2]/ul/li[8]/button"}}
+ok 57 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 58 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[3]/div[2]/ul/li[8]/button"}}
+ok 59 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 60 {"type":"sendKeysToElement","locator":{"type":"css selector","value":"textarea.yd-jig-additions-comment"},"text":"This is a meal comment! Get some food!"}
+ok 61 {"type":"clickElement","locator":{"type":"css selector","value":"textarea.yd-jig-additions-comment"}}
+ok 62 {"type":"verifyElementValue","locator":{"type":"css selector","value":"textarea.yd-jig-additions-comment"},"value":"This is a meal comment! Get some food!"}
+ok 63 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[2]/div[2]/button"}}
+ok 64 {"type":"print","text":"MESSAGE: Meal added to cart!"}
+ok 65 {"type":"waitForElementPresent","locator":{"type":"css selector","value":"a.yd-btn-l.yd-btn-order"}}
+ok 66 {"type":"clickElement","locator":{"type":"css selector","value":"a.yd-btn-l.yd-btn-order"}}
+ok 67 {"type":"print","text":"MESSAGE: Go to checkout!"}
+ok 68 {"type":"clickElement","locator":{"type":"css selector","value":"a.yd-jig-header-login-button"}}
+ok 69 {"type":"setElementText","locator":{"type":"css selector","value":"input[type=\"email\"]"},"text":"${email}"}
+ok 70 {"type":"setElementText","locator":{"type":"css selector","value":"input[type=\"password\"]"},"text":"${password}"}
+ok 71 {"type":"clickElement","locator":{"type":"css selector","value":"button.yd-btn-s.yd-btn-interact"}}
+ok 72 {"type":"print","text":"MESSAGE: User logged in!"}
+ok 73 {"type":"clickElement","locator":{"type":"css selector","value":"div.yd-jig-header-dropdown.yd-jig-header-dropdown-user"}}
+ok 74 {"type":"waitForElementPresent","locator":{"type":"css selector","value":"a.yd-jig-header-logout-link"}}
+ok 75 {"type":"clickElement","locator":{"type":"css selector","value":"a.yd-jig-header-logout-link"}}
+ok 76 {"type":"print","text":"MESSAGE: User logged out!"}
+ok 77 {"type":"setElementText","locator":{"type":"css selector","value":"input[name=\"prename\"]"},"text":"${prename}"}
+ok 78 {"type":"setElementText","locator":{"type":"css selector","value":"input[name=\"name\"]"},"text":"${name}"}
+ok 79 {"type":"setElementText","locator":{"type":"css selector","value":"input[name=\"street\"]"},"text":"${street}"}
+ok 80 {"type":"setElementText","locator":{"type":"css selector","value":"input[name=\"number\"]"},"text":"${streetnumber}"}
+not ok 81 Timeout appears 300000 | {"type":"setElementText","locator":{"type":"css selector","value":"input[name=\"tel\"]"},"text":"${phone}"}
+  ---
+    operator: ok
+    expected: true
+    actual:   false
+    at: log (/home/jaroslav/repos/JigMagga/tasks/se-interpreter.js:38:26)
+  ...
+# Test: Test: /home/jaroslav/repos/ydSelenium/Suites/lieferando_live/002_Payment_Cash_NoDiscount.json
+ok 82 {"type":"store","text":"https://www.lieferando.de","variable":"domain"}
+ok 83 {"type":"store","text":"Selenium","variable":"prename"}
+ok 84 {"type":"store","text":"Tester","variable":"name"}
+ok 85 {"type":"store","text":"selenium@ydqa.de","variable":"email"}
+ok 86 {"type":"store","text":"testen","variable":"password"}
+ok 87 {"type":"store","text":"Selenium Tester","variable":"fullname"}
+ok 88 {"type":"store","text":"Teststreet","variable":"street"}
+ok 89 {"type":"store","text":"13","variable":"streetnumber"}
+ok 90 {"type":"store","text":"016018188841","variable":"phone"}
+ok 91 {"type":"store","text":"01070 Test-Gebiet-1","variable":"location"}
+ok 92 {"type":"store","text":"Selenium GmbH","variable":"company"}
+ok 93 {"type":"store","text":"13th Floor","variable":"floor"}
+ok 94 {"type":"store","text":"This is a test order by Selenium. DO NOT prepare or charge!","variable":"comment"}
+ok 95 {"type":"storeEval","script":"return Math.floor(Math.random()*1111111)","variable":"random"}
+ok 96 {"type":"get","url":"${domain}"}
+ok 97 {"type":"assertEval","script":"$.jStorage.flush()","value":"null"}
+ok 98 {"type":"refresh"}
+ok 99 {"type":"print","text":"MESSAGE: Page loaded!"}
+ok 100 {"type":"clickElement","locator":{"type":"css selector","value":"a.yd-jig-header-login-button"}}
+ok 101 {"type":"setElementText","locator":{"type":"css selector","value":"input[type=\"email\"]"},"text":"${email}"}
+ok 102 {"type":"setElementText","locator":{"type":"css selector","value":"input[type=\"password\"]"},"text":"${password}"}
+ok 103 {"type":"clickElement","locator":{"type":"css selector","value":"button.yd-btn-s.yd-btn-interact"}}
+ok 104 {"type":"print","text":"MESSAGE: User logged in!"}
+ok 105 {"type":"waitForElementPresent","locator":{"type":"css selector","value":"div.yd-jig-header-dropdown.yd-jig-header-dropdown-user"}}
+ok 106 {"type":"clickElement","locator":{"type":"css selector","value":"#yd-jig-plz-dashboard-search"}}
+ok 107 {"type":"setElementText","locator":{"type":"css selector","value":"#yd-jig-plz-dashboard-search"},"text":"01070"}
+ok 108 {"type":"waitForElementPresent","locator":{"type":"css selector","value":"#ui-id-5"}}
+ok 109 {"type":"clickElement","locator":{"type":"css selector","value":"#ui-id-5"}}
+ok 110 {"type":"print","text":"MESSAGE: Testarea opened!"}
+ok 111 {"type":"clickElement","locator":{"type":"link text","value":"QA Restaurant SELENIUM"}}
+ok 112 {"type":"print","text":"MESSAGE: QA Resto opened!"}
+ok 113 {"type":"clickElement","locator":{"type":"link text","value":"Menüs"}}
+ok 114 {"type":"clickElement","locator":{"type":"xpath","value":"//div[@class='yd-content']/div/div/div[1]/section[1]/div[2]/div/div[2]/div[2]/a"}}
+ok 115 {"type":"waitForElementPresent","locator":{"type":"css selector","value":"section.yd-jig-additions.yd_jig_additions > div.yd-jig-lightbox-content"}}
+ok 116 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[1]/div[2]/ul/li[9]/button"}}
+ok 117 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 118 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[2]/div[2]/ul/li[5]/button"}}
+ok 119 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 120 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[3]/div[2]/ul/li[1]/button"}}
+ok 121 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 122 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[3]/div[2]/ul/li[1]/button"}}
+ok 123 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 124 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[3]/div[2]/ul/li[8]/button"}}
+ok 125 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 126 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[3]/div[2]/ul/li[8]/button"}}
+ok 127 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 128 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[3]/div[2]/ul/li[8]/button"}}
+ok 129 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 130 {"type":"sendKeysToElement","locator":{"type":"css selector","value":"textarea.yd-jig-additions-comment"},"text":"This is a meal comment! Get some food!"}
+ok 131 {"type":"clickElement","locator":{"type":"css selector","value":"textarea.yd-jig-additions-comment"}}
+ok 132 {"type":"verifyElementValue","locator":{"type":"css selector","value":"textarea.yd-jig-additions-comment"},"value":"This is a meal comment! Get some food!"}
+ok 133 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[2]/div[2]/button"}}
+ok 134 {"type":"print","text":"MESSAGE: Meal added to cart!"}
+ok 135 {"type":"waitForElementPresent","locator":{"type":"css selector","value":"a.yd-btn-l.yd-btn-order"}}
+ok 136 {"type":"clickElement","locator":{"type":"css selector","value":"a.yd-btn-l.yd-btn-order"}}
+ok 137 {"type":"print","text":"MESSAGE: Go to checkout!"}
+ok 138 {"type":"clickElement","locator":{"type":"css selector","value":"div.yd-jig-partnerdiscountselect-choice.yd-jig-discount-without.yd-discount-without"}}
+ok 139 {"type":"setElementText","locator":{"type":"css selector","value":"input[name=\"tel\"]"},"text":"${phone}"}
+ok 140 {"type":"setElementText","locator":{"type":"css selector","value":"input[name=\"name\"]"},"text":"${name}"}
+ok 141 {"type":"setElementText","locator":{"type":"css selector","value":"input[name=\"street\"]"},"text":"${street}"}
+ok 142 {"type":"setElementText","locator":{"type":"css selector","value":"input[name=\"number\"]"},"text":"${streetnumber}"}
+ok 143 {"type":"setElementText","locator":{"type":"css selector","value":"input[name=\"tel\"]"},"text":"${phone}"}
+not ok 144 Timeout appears 300000 | {"type":"setElementText","locator":{"type":"css selector","value":"input[name=\"email\"]"},"text":"${email}"}
+  ---
+    operator: ok
+    expected: true
+    actual:   false
+    at: log (/home/jaroslav/repos/JigMagga/tasks/se-interpreter.js:38:26)
+  ...
+# Test: Test: /home/jaroslav/repos/ydSelenium/Suites/lieferando_live/003_Payment_Cash_PartnerDiscount.json
+ok 145 {"type":"store","text":"https://www.lieferando.de","variable":"domain"}
+ok 146 {"type":"store","text":"Selenium","variable":"prename"}
+ok 147 {"type":"store","text":"Tester","variable":"name"}
+ok 148 {"type":"store","text":"selenium@ydqa.de","variable":"email"}
+ok 149 {"type":"store","text":"testen","variable":"password"}
+ok 150 {"type":"store","text":"Selenium Tester","variable":"fullname"}
+ok 151 {"type":"store","text":"Teststreet","variable":"street"}
+ok 152 {"type":"store","text":"13","variable":"streetnumber"}
+ok 153 {"type":"store","text":"016018188841","variable":"phone"}
+ok 154 {"type":"store","text":"01070 Test-Gebiet-1","variable":"location"}
+ok 155 {"type":"store","text":"Selenium GmbH","variable":"company"}
+ok 156 {"type":"store","text":"13th Floor","variable":"floor"}
+ok 157 {"type":"store","text":"This is a test order by Selenium. DO NOT prepare or charge!","variable":"comment"}
+ok 158 {"type":"storeEval","script":"return Math.floor(Math.random()*1111111)","variable":"random"}
+ok 159 {"type":"get","url":"${domain}"}
+ok 160 {"type":"assertEval","script":"$.jStorage.flush()","value":"null"}
+ok 161 {"type":"refresh"}
+ok 162 {"type":"print","text":"MESSAGE: Page loaded!"}
+ok 163 {"type":"clickElement","locator":{"type":"css selector","value":"a.yd-jig-header-login-button"}}
+ok 164 {"type":"setElementText","locator":{"type":"css selector","value":"input[type=\"email\"]"},"text":"${email}"}
+ok 165 {"type":"setElementText","locator":{"type":"css selector","value":"input[type=\"password\"]"},"text":"${password}"}
+ok 166 {"type":"clickElement","locator":{"type":"css selector","value":"button.yd-btn-s.yd-btn-interact"}}
+ok 167 {"type":"print","text":"MESSAGE: User logged in!"}
+ok 168 {"type":"waitForElementPresent","locator":{"type":"css selector","value":"div.yd-jig-header-dropdown.yd-jig-header-dropdown-user"}}
+ok 169 {"type":"clickElement","locator":{"type":"css selector","value":"#yd-jig-plz-dashboard-search"}}
+ok 170 {"type":"setElementText","locator":{"type":"css selector","value":"#yd-jig-plz-dashboard-search"},"text":"01070"}
+ok 171 {"type":"waitForElementPresent","locator":{"type":"css selector","value":"#ui-id-5"}}
+ok 172 {"type":"clickElement","locator":{"type":"css selector","value":"#ui-id-5"}}
+ok 173 {"type":"print","text":"MESSAGE: Testarea opened!"}
+ok 174 {"type":"clickElement","locator":{"type":"link text","value":"QA Restaurant SELENIUM"}}
+ok 175 {"type":"print","text":"MESSAGE: QA Resto opened!"}
+ok 176 {"type":"clickElement","locator":{"type":"link text","value":"Menüs"}}
+ok 177 {"type":"clickElement","locator":{"type":"xpath","value":"//div[@class='yd-content']/div/div/div[1]/section[1]/div[2]/div/div[2]/div[2]/a"}}
+ok 178 {"type":"waitForElementPresent","locator":{"type":"css selector","value":"section.yd-jig-additions.yd_jig_additions > div.yd-jig-lightbox-content"}}
+ok 179 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[1]/div[2]/ul/li[9]/button"}}
+ok 180 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 181 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[2]/div[2]/ul/li[5]/button"}}
+ok 182 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 183 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[3]/div[2]/ul/li[1]/button"}}
+ok 184 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 185 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[3]/div[2]/ul/li[1]/button"}}
+ok 186 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 187 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[3]/div[2]/ul/li[8]/button"}}
+ok 188 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 189 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[3]/div[2]/ul/li[8]/button"}}
+ok 190 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 191 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[1]/div[3]/div[2]/ul/li[8]/button"}}
+ok 192 {"type":"print","text":"MESSAGE: Addition added!"}
+ok 193 {"type":"sendKeysToElement","locator":{"type":"css selector","value":"textarea.yd-jig-additions-comment"},"text":"This is a meal comment! Get some food!"}
+ok 194 {"type":"clickElement","locator":{"type":"css selector","value":"textarea.yd-jig-additions-comment"}}
+ok 195 {"type":"verifyElementValue","locator":{"type":"css selector","value":"textarea.yd-jig-additions-comment"},"value":"This is a meal comment! Get some food!"}
+ok 196 {"type":"clickElement","locator":{"type":"xpath","value":"//section[7]/div[1]/div[2]/div[2]/div[2]/button"}}
+ok 197 {"type":"print","text":"MESSAGE: Meal added to cart!"}
+ok 198 {"type":"waitForElementPresent","locator":{"type":"css selector","value":"a.yd-btn-l.yd-btn-order"}}
+ok 199 {"type":"clickElement","locator":{"type":"css selector","value":"a.yd-btn-l.yd-btn-order"}}
+ok 200 {"type":"print","text":"MESSAGE: Go to checkout!"}
+ok 201 {"type":"waitForElementPresent","locator":{"type":"css selector","value":"div.yd-jig-partnerdiscountselect-choice.yd-jig-partnerdiscount-discount.yd-discount-normal"}}
+ok 202 {"type":"clickElement","locator":{"type":"css selector","value":"div.yd-jig-partnerdiscountselect-choice.yd-jig-partnerdiscount-discount.yd-discount-normal"}}
+ok 203 {"type":"print","text":"MESSAGE: Partner discount selected!"}
+ok 204 {"type":"setElementText","locator":{"type":"css selector","value":"input[name=\"email\"]"},"text":"${email}"}

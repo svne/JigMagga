@@ -123,6 +123,14 @@ var lookForDomain = function (basePath, message, callback) {
     });
 };
 
+var reformatUrlIfNotExists = function (message) {
+    var result = _.clone(message);
+
+    result.basedomain = _.first(message.basedomain.split('/'));
+    result.url = _.last(message.basedomain.split('/'));
+    return result;
+};
+
 module.exports = {
 
     /**
@@ -221,8 +229,13 @@ module.exports = {
                 //if message has origin field and it is a string it means that it was created
                 //by some service(backend, api or salesforce) and we have to publish it to done queue in order
                 //to notify them about page generation
+
                 if (_.isString(message.origin)) {
-                    queuePool.send('publish:amqpDoneQueue', message);
+                    if (!message.url && message.basedomain.indexOf('/') >= 0) {
+                        queuePool.send('publish:amqpDoneQueue', reformatUrlIfNotExists(message));
+                    } else {
+                        queuePool.send('publish:amqpDoneQueue', message);
+                    }
                 }
 
                 //if worker is in "two-bucket-deploy" mode publish message for page that was generated

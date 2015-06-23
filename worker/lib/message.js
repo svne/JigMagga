@@ -230,12 +230,13 @@ module.exports = {
                 //by some service(backend, api or salesforce) and we have to publish it to done queue in order
                 //to notify them about page generation
 
+                console.log('[DONE]', message);
                 if (_.isString(message.origin)) {
-                    if (!message.url && message.basedomain.indexOf('/') >= 0) {
-                        queuePool.send('publish:amqpDoneQueue', reformatUrlIfNotExists(message));
-                    } else {
-                        queuePool.send('publish:amqpDoneQueue', message);
-                    }
+                    var doneMessage = (!message.url && message.basedomain.indexOf('/') >= 0) ?
+                        reformatUrlIfNotExists(message) : message;
+
+                    console.log('[doneMessage -->]', doneMessage);
+                    queuePool.send('publish:amqpDoneQueue', doneMessage);
                 }
 
                 //if worker is in "two-bucket-deploy" mode publish message for page that was generated

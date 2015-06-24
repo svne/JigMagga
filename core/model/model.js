@@ -5,7 +5,8 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             var self = this,
                 modelName,
                 modelConfig,
-                namespace;
+                namespace,
+                apicalls;
             // Convert name of the model eg. Yd.Models.Location -> §yd-models-locations
             modelName = "§" +self.fullName.toLowerCase().replace(/\./g, "-");
             namespace = steal.config("namespace");
@@ -13,13 +14,17 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             if (self.fullName.indexOf(namespace+'.Models') === 0) {
                 modelConfig = steal.config(namespace).jigs[modelName];
                 if (modelConfig) {
+                    //can.extend(true, self._config, modelConfig);
                     self._config = modelConfig;
                 }
                 else {
                     console.warn('No config for the model '+self.fullName+' found. '
-                    +' Put jig with the name ['+modelName+'] to the .conf file of the page.'
-                    +' Processing default configuration from the model');
+                        +' Put jig with the name ['+modelName+'] to the .conf file of the page.'
+                        +' Processing default configuration from the model');
                 }
+
+                // save url prefix for ajaxRequests
+                self._config.apiPrefix = steal.config(namespace).api + steal.config(namespace).version;
                 self._processConfig(self._config);
             }
         },
@@ -28,6 +33,12 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             default: function(data){
                 return data;
             }
+        },
+        _config: {
+            // default config of the model
+            "apiPrefix": 'api',
+            "disabled": true,
+            "options": {}
         },
         _processConfig: function(config){
             var self = this;
@@ -41,6 +52,31 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                     can.extend(self._mapper,mapper);
                 });
             }
+        },
+        /**
+         * Functions provides a list of placeholders from the string. Example:
+         * `"/restaurant/{restaurantId}/user/{userId}"` results `["restaurantId", "userId"]`
+         * @param str
+         * @param noErrorOnDups - provide true if you don't want to get error on duplicated
+         * placeholders.
+         * @returns {Array} - array with found placeholders
+         */
+        _getPlaceholders: function (str,noErrorOnDups)
+        {
+            var regex = /\{(\w+)\}/g,
+                result = [],
+                match;
+            noErrorOnDups = noErrorOnDups === true;
+            while ((match = regex.exec(str)) !== null)
+            {
+
+                if (!noErrorOnDups && result.indexOf(match[1]) !==-1) {
+                    throw Error('String '+str+' contains placeholder duplicate.');
+                }
+                result.push(match[1]);
+            }
+
+            return result;
         },
         cacheDeferred: function (methodName, params, success, error, reset, data) {
             var current, index = can.param(params),
@@ -191,11 +227,26 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
          *
          * @returns {Deferred} can.Deferred with result
          */
-        ajaxRequest: function(settings){
+        ajaxRequest: function(requestSettings){
             var self = this,
                 mapper,
-                result;
-            mapper = self._getMapper(settings);
+                result,
+                settings,
+                apicallSettings;
+            // prepare apicall settings
+            apicallSettings = self._getApiCallSettings(requestSettings);
+
+            if (apicallSettings) {
+                settings = can.extend(apicallSettings,requestSettings.params);
+            }
+            else {
+                // for bacward compatibility if no apicallsettings set
+                // we use raw requestSettings
+                settings = requestSettings;
+            }
+
+            // get mapper and make an ajax call
+            mapper = self._getMapper(requestSettings);
             if (mapper) {
                 result = can.Deferred();
                 // Explicitly takeoff success and error handlers from settings and hook them
@@ -223,6 +274,46 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             else {
                 //if no mapper found, then only do the ajax request
                 result = can.ajax(settings);
+            }
+            return result;
+        },
+        _getApiCallSettings: function(settings){
+            var self = this,
+                apicall = settings.apicall,
+                placeholders = settings.placeholders || {},
+                url,
+                apicallConfig,
+                replacements = {},
+                result;
+            if (typeof apicall === 'undefined') {
+                // Before refactoring of the models to use apicall we only warn.
+                console.warn('DEPRICATED."apicall" key is not provided. in .ajaxRequest()'
+                +'For the model '+ self.fullName
+                + ' Please, rewrite this model to use "apicall" settings. ');
+                result = null;
+            }
+            else {
+                apicallConfig = self._config.apicalls[apicall];
+                if (typeof apicallConfig === 'undefined') {
+                    throw Error('Couldn\'t find configuration for the apicall '+ apicall
+                        +' for the model '+ self.fullName+ ' on this page' );
+                }
+                // take params defined in config
+                result = apicallConfig.params || {};
+
+                // building url for the request.
+                url = apicallConfig.path;
+                if (typeof apicall === 'undefined') {
+                    throw Error('Configuration for "'+apicall+'" apicall is not provided for the model '+self.fullName);
+                }
+                self._getPlaceholders(apicallConfig.path).every(function(item){
+                    if (typeof placeholders[item] === 'undefined') {
+                        throw Error('Placeholder for the key "'+item+'"'
+                        +' is not provided in ajaxRequest of model '+ self.fullName);
+                    }
+                    url = url.replace('{'+item+'}',placeholders[item]);
+                });
+                result.url = self._config.apiPrefix + url;
             }
             return result;
         },

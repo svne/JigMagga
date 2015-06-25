@@ -14,8 +14,7 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             if (self.fullName.indexOf(namespace+'.Models') === 0) {
                 modelConfig = steal.config(namespace).jigs[modelName];
                 if (modelConfig) {
-                    //can.extend(true, self._config, modelConfig);
-                    self._config = modelConfig;
+                    can.extend(true, self._config, modelConfig);
                 }
                 else {
                     console.warn('No config for the model '+self.fullName+' found. '
@@ -238,6 +237,12 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
 
             if (apicallSettings) {
                 settings = can.extend(apicallSettings,requestSettings.params);
+                if (requestSettings.success) {
+                    settings.success = requestSettings.success;
+                }
+                if (requestSettings.error) {
+                    settings.error = requestSettings.error;
+                }
             }
             else {
                 // for bacward compatibility if no apicallsettings set
@@ -288,8 +293,8 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             if (typeof apicall === 'undefined') {
                 // Before refactoring of the models to use apicall we only warn.
                 console.warn('DEPRICATED."apicall" key is not provided. in .ajaxRequest()'
-                +'For the model '+ self.fullName
-                + ' Please, rewrite this model to use "apicall" settings. ');
+                    +'For the model '+ self.fullName
+                    + ' Please, rewrite this model to use "apicall" settings. ');
                 result = null;
             }
             else {
@@ -309,7 +314,7 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                 self._getPlaceholders(apicallConfig.path).every(function(item){
                     if (typeof placeholders[item] === 'undefined') {
                         throw Error('Placeholder for the key "'+item+'"'
-                        +' is not provided in ajaxRequest of model '+ self.fullName);
+                            +' is not provided in ajaxRequest of model '+ self.fullName);
                     }
                     url = url.replace('{'+item+'}',placeholders[item]);
                 });

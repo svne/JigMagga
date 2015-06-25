@@ -258,12 +258,13 @@ module.exports = {
                 }
             }, function (err, files) {
                 if (err) {
-                    return console.log(err);
+                    return onUpload(err);
                 }
                 // filter all files that non exits
                 files = files.filter(function(file){
                     return file !== null;
                 });
+
                 if(files.length){
                     var fileGroups = createFileGroupsBySize(files, 9500000);
 
@@ -277,6 +278,8 @@ module.exports = {
                             cb();
                         });
                     }, onUpload);
+                } else {
+                    onUpload(null, null);
                 }
 
             });

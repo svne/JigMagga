@@ -232,7 +232,8 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                 result,
                 settings,
                 apicallSettings;
-            // prepare apicall settings
+
+            // 1. prepare apicall settings
             apicallSettings = self._getApiCallSettings(requestSettings);
 
             if (apicallSettings) {
@@ -250,7 +251,7 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                 settings = requestSettings;
             }
 
-            // get mapper and make an ajax call
+            // 2. get mapper and make an ajax call
             mapper = self._getMapper(requestSettings);
             if (mapper) {
                 result = can.Deferred();

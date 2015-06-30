@@ -840,6 +840,12 @@
         if (!config) {
             error("Config can't be parsed");
         }
+        if (config.process === false) {
+            // if we have process:false it will allow the object inside .conf
+            // to get in stealing file as a variable (but not processed)
+            options.text = 'steal(function() { return ' + options.text + ';});';
+            return success();
+        }
         // ignore this config to load in production
         //options.ignore = true;
         if (!config.includes) {

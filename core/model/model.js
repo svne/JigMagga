@@ -6,7 +6,6 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                 modelName,
                 modelConfig,
                 namespace,
-                apicalls;
             // Convert name of the model eg. Yd.Models.Location -> §yd-models-locations
             modelName = "§" +self.fullName.toLowerCase().replace(/\./g, "-");
             namespace = steal.config("namespace");
@@ -312,8 +311,8 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                 if (typeof apicall === 'undefined') {
                     throw Error('Configuration for "'+apicall+'" apicall is not provided for the model '+self.fullName);
                 }
-                self._getPlaceholders(apicallConfig.path).every(function(item){
-                    if (typeof placeholders[item] === 'undefined') {
+                self._getPlaceholders(apicallConfig.path).forEach(function(item){
+                    if (!Object.prototype.hasOwnProperty.call(placeholders, item)) {
                         throw Error('Placeholder for the key "'+item+'"'
                             +' is not provided in ajaxRequest of model '+ self.fullName);
                     }

@@ -59,8 +59,7 @@
     "mocha": "~1.20.1",
     "newrelic": "~1.10.3",
     "rewire": "~2.1.0",
-    "sinon": "~1.10.3",
-    "grunt-lib-phantomjs": "~0.6.0"
+    "sinon": "~1.10.3"
   },
   "repository": {
     "type": "git",
@@ -99,13 +98,10 @@
     "mongodb": "^2.0.33",
     "mustache": "~0.8.2",
     "node-sass": "~0.9.3",
-    "phridge": "^1.0.6",
     "q": "~1.0.1",
     "qretry": "^0.2.1",
     "readable-stream": "~1.0.27-1",
     "request": "~2.40.0",
-    "se-interpreter": "^1.0.6",
-    "selenium-standalone": "^2.43.1-5",
     "sleep": "~1.1.8",
     "ssi": "~0.1.5",
     "steal": "bitovi/steal-build",

@@ -214,10 +214,10 @@ module.exports = {
         }
 
         if (program.live || program.liveuncached) {
-            return buckets.live[baseDomain] || 'www.' + baseDomain;
+            return buckets && buckets.live && buckets.live[baseDomain] ? buckets.live[baseDomain] : 'www.' + baseDomain;
         }
 
-        return buckets.stage[baseDomain] || 'stage.' + baseDomain;
+        return buckets && buckets.stage && buckets.stage[baseDomain] ? buckets.stage[baseDomain] : 'stage.' + baseDomain;
     },
 
     isDomainInSkipList: function (domain, skipDomains) {
@@ -290,16 +290,6 @@ module.exports = {
             callback(null, files);
         });
 
-    },
-
-    /**
-     * generate a redis key by adding pid to redis
-     * @param {String} name
-     * @param {(String|Number)} pid
-     * @return {string}
-     */
-    getRedisKey: function (name, pid) {
-        return name + ':' + pid;
     },
 
     /**

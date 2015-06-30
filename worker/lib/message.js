@@ -12,7 +12,10 @@ var STATUS_CODES = require('./error').STATUS_CODES;
 var configMerge = require('./configMerge');
 var streamHelper = require('./streamHelper');
 var helper = require('./helper');
+var request = require('request');
 var generator = require('../generator/lib/generator');
+
+var projectConfig = require('../config').main;
 
 var isPageInConfig = function (config, page) {
     return config.pages && config.pages[page];
@@ -73,6 +76,19 @@ var getIdValues = function (message) {
 
 var domainCache = {};
 
+var isDomainInDB = function (url, basedomain, callback) {
+    request.get(projectConfig.configStoreApiEndpoint, {
+        json: true,
+        qs: {url: url}
+    }, function (err, res) {
+        if (err) {
+            return callback(err);
+        }
+
+        callback(null, Boolean(res.body[0]));
+    });
+};
+
 /**
  * look for domain folder based on base domain and exact domain
  *
@@ -114,7 +130,13 @@ var lookForDomain = function (basePath, message, callback) {
             return callback(error);
         }
         if (!result) {
-            return callback(new WorkerError('There is no such domain', message, null, STATUS_CODES.NO_SUCH_DOMAIN));
+            return isDomainInDB(domain, baseDomain, function (err) {
+                if (err) {
+                    return callback(new WorkerError('There is no such domain', message, null, STATUS_CODES.NO_SUCH_DOMAIN));
+                }
+                domainCache[cacheKey] = path.join(baseDomain, 'normal', domain);
+                callback(null, domainCache[cacheKey]);
+            });
         }
 
         domainCache[cacheKey] = path.join(result, domain);

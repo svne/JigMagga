@@ -49,7 +49,6 @@ module.exports = function (processArgs) {
     var env = process.env;
 
     args = program
-        .arguments('<cmd> [env]')
         .option('-j, --values [values]', 'specify values as JSON', env.NODE_WORKER_VALUES)
         .option('-v, --verbose', 'whether to print to output all log information')
         .option('-b, --versionnumber [value]', 'specify build version as float', env.NODE_WORKER_VERSION_NUMBER)

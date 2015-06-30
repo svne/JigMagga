@@ -87,7 +87,7 @@ var addToUploadList = function (item, page) {
 };
 
 
-var uploaderInstance;
+var uploaderInstances = {};
 
 module.exports = {
 
@@ -103,8 +103,8 @@ module.exports = {
         var env = isLive ? 'live': 'stage',
             domain = buildOptions.domain;
 
-        if (uploaderInstance) {
-            return uploaderInstance;
+        if (uploaderInstances[domain]) {
+            return uploaderInstances[domain];
         }
 
         var knoxOptions = config.main.knox;
@@ -125,8 +125,8 @@ module.exports = {
             }
         }
 
-        uploaderInstance = new Uploader(knoxOptions);
-        return uploaderInstance;
+        uploaderInstances[domain] = new Uploader(knoxOptions);
+        return uploaderInstances[domain];
     },
 
 

@@ -5,7 +5,7 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             var self = this,
                 modelName,
                 modelConfig,
-                namespace,
+                namespace;
             // Convert name of the model eg. Yd.Models.Location -> §yd-models-locations
             modelName = "§" +self.fullName.toLowerCase().replace(/\./g, "-");
             namespace = steal.config("namespace");

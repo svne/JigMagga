@@ -1,7 +1,81 @@
 steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
     "use strict";
     can.extend(can.Model, {
+        init: function(){
+            var self = this,
+                modelName,
+                modelConfig,
+                namespace,
+            // Convert name of the model eg. Yd.Models.Location -> §yd-models-locations
+            modelName = "§" +self.fullName.toLowerCase().replace(/\./g, "-");
+            namespace = steal.config("namespace");
+            // We process only models from the namespace
+            if (self.fullName.indexOf(namespace+'.Models') === 0) {
+                modelConfig = steal.config(namespace).jigs[modelName];
+                if (modelConfig) {
+                    can.extend(true, self._config, modelConfig);
+                }
+                else {
+                    console.warn('No config for the model '+self.fullName+' found. '
+                        +' Put jig with the name ['+modelName+'] to the .conf file of the page.'
+                        +' Processing default configuration from the model');
+                }
 
+                // save url prefix for ajaxRequests
+                self._config.apiPrefix = steal.config(namespace).api + steal.config(namespace).version;
+                self._processConfig(self._config);
+            }
+        },
+        _mapper:  {
+            // default mapper
+            default: function(data){
+                return data;
+            }
+        },
+        _config: {
+            // default config of the model
+            "apiPrefix": 'api',
+            "disabled": true,
+            "options": {}
+        },
+        _processConfig: function(config){
+            var self = this;
+            if (typeof config === 'undefined') {
+                throw new Error('Config for the model '+self.fullName+' is not set');
+            }
+            // if we have mapper in config, extend default mapper
+            if (config.mapper) {
+                steal(config.mapper, function (mapper) {
+                    var self = this;
+                    can.extend(self._mapper,mapper);
+                });
+            }
+        },
+        /**
+         * Functions provides a list of placeholders from the string. Example:
+         * `"/restaurant/{restaurantId}/user/{userId}"` results `["restaurantId", "userId"]`
+         * @param str
+         * @param noErrorOnDups - provide true if you don't want to get error on duplicated
+         * placeholders.
+         * @returns {Array} - array with found placeholders
+         */
+        _getPlaceholders: function (str,noErrorOnDups)
+        {
+            var regex = /\{(\w+)\}/g,
+                result = [],
+                match;
+            noErrorOnDups = noErrorOnDups === true;
+            while ((match = regex.exec(str)) !== null)
+            {
+
+                if (!noErrorOnDups && result.indexOf(match[1]) !==-1) {
+                    throw Error('String '+str+' contains placeholder duplicate.');
+                }
+                result.push(match[1]);
+            }
+
+            return result;
+        },
         cacheDeferred: function (methodName, params, success, error, reset, data) {
             var current, index = can.param(params),
                 objectName = "deferred_" + methodName,
@@ -122,12 +196,12 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             if (can.Model.deferred_findOne
                 && can.Model.deferred_findOne[this._fullName]) {
                 delete (can.Model.deferred_findOne[this._fullName]
-                    );
+                );
             }
             if (can.Model.deferred_findAll
                 && can.Model.deferred_findAll[this._fullName]) {
                 delete (can.Model.deferred_findAll[this._fullName]
-                    );
+                );
             }
             if ($.jStorage.get(this._fullName)) {
                 $.jStorage.deleteKey(this._fullName);
@@ -142,6 +216,125 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                 }
             }
             return model;
+        },
+        /**
+         * This is a wrapper of `can.ajax()` call, with possibility to specify mapper function.
+         *
+         * @param settings - Settings of the ajax request put `mapper: "mapperName"` to this object to choose the
+         * mapper transform function. If now `mapper` is specified then 'default' will be used as a key.
+         *
+         * @returns {Deferred} can.Deferred with result
+         */
+        ajaxRequest: function(requestSettings){
+            var self = this,
+                mapper,
+                result,
+                settings,
+                apicallSettings;
+
+            // 1. prepare apicall settings
+            apicallSettings = self._getApiCallSettings(requestSettings);
+
+            if (apicallSettings) {
+                settings = can.extend(apicallSettings,requestSettings.params);
+                if (requestSettings.success) {
+                    settings.success = requestSettings.success;
+                }
+                if (requestSettings.error) {
+                    settings.error = requestSettings.error;
+                }
+            }
+            else {
+                // for bacward compatibility if no apicallsettings set
+                // we use raw requestSettings
+                settings = requestSettings;
+            }
+
+            // 2. get mapper and make an ajax call
+            mapper = self._getMapper(requestSettings);
+            if (mapper) {
+                result = can.Deferred();
+                // Explicitly takeoff success and error handlers from settings and hook them
+                // to result promise. That will prevent calling of them after can.ajax call.
+                if (settings && settings.success) {
+                    result.done(settings.success);
+                    delete settings.success;
+                }
+                if (settings && settings.error) {
+                    result.fail(settings.error);
+                    delete settings.error;
+                }
+                // perform ajax call
+                can.ajax(settings).then(
+                    // Success
+                    function(response){
+                        result.resolve(mapper(response));
+                    },
+                    // Error
+                    function(){
+                        result.reject(arguments);
+                    }
+                );
+            }
+            else {
+                //if no mapper found, then only do the ajax request
+                result = can.ajax(settings);
+            }
+            return result;
+        },
+        _getApiCallSettings: function(settings){
+            var self = this,
+                apicall = settings.apicall,
+                placeholders = settings.placeholders || {},
+                url,
+                apicallConfig,
+                replacements = {},
+                result;
+            if (typeof apicall === 'undefined') {
+                // Before refactoring of the models to use apicall we only warn.
+                console.warn('DEPRICATED."apicall" key is not provided. in .ajaxRequest()'
+                    +'For the model '+ self.fullName
+                    + ' Please, rewrite this model to use "apicall" settings. ');
+                result = null;
+            }
+            else {
+                apicallConfig = self._config.apicalls[apicall];
+                if (typeof apicallConfig === 'undefined') {
+                    throw Error('Couldn\'t find configuration for the apicall '+ apicall
+                        +' for the model '+ self.fullName+ ' on this page' );
+                }
+                // take params defined in config
+                result = apicallConfig.params || {};
+
+                // building url for the request.
+                url = apicallConfig.path;
+                if (typeof apicall === 'undefined') {
+                    throw Error('Configuration for "'+apicall+'" apicall is not provided for the model '+self.fullName);
+                }
+                self._getPlaceholders(apicallConfig.path).forEach(function(item){
+                    if (!Object.prototype.hasOwnProperty.call(placeholders, item)) {
+                        throw Error('Placeholder for the key "'+item+'"'
+                            +' is not provided in ajaxRequest of model '+ self.fullName);
+                    }
+                    url = url.replace('{'+item+'}',placeholders[item]);
+                });
+                result.url = self._config.apiPrefix + url;
+            }
+            return result;
+        },
+        _getMapper: function (settings) {
+            var self = this,
+                mapperKey = 'default';
+            if (settings && settings.mapper) {
+                mapperKey = settings.mapper;
+            }
+            if (typeof self._mapper[mapperKey] !== 'function') {
+                if (typeof self._mapper[mapperKey] === 'undefined') {
+                    throw Error('The specified mapper key ['+mapperKey+'] is not in mapper object of the model '+self.fullName);
+                }
+                throw Error('The specified mapper key ['+mapperKey+'] is not of function type in the model '+self.fullName);
+            }
+            return self._mapper[mapperKey];
         }
     });
     can.extend(can.List.prototype, {
@@ -293,7 +486,7 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                     a = a[comparator];
                     b = b[comparator];
                     return a === b ? 0 : (a < b ? -1 : 1
-                        );
+                    );
                 }],
                 res = [].sort.apply(this, args);
             !silent && can.trigger(this, "reset");
@@ -386,7 +579,7 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                 len = _reference.length;
                 if (len > 15 &&  /// length of http://a/a.json
                     (_reference.indexOf('http') === 0
-                        ) && _reference.indexOf('.json') === len - 5) {
+                    ) && _reference.indexOf('.json') === len - 5) {
                     result = {isOk: true, result: _reference};
                 }
             }
@@ -413,10 +606,10 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             self['__deffered' + attributeName + '__'] = deferred;
 
             succesCalls = self['__deffered_succes' + attributeName + '__'] = (typeof success === 'function'
-                ) ? [success] : [];
+            ) ? [success] : [];
             deferred.done(succesCalls);
             errorCalls = self['__deffered_succes' + attributeName + '__'] = (typeof error === 'function'
-                ) ? [error] : [];
+            ) ? [error] : [];
             deferred.fail(errorCalls);
             return deferred;
         },
@@ -499,6 +692,6 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
             }
         }
     });
-    
+
     return can;
 });

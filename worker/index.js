@@ -34,7 +34,8 @@ var logger = require('./lib/logger'),
     messageStorage = require('./lib/message').storage,
     warehouseFormatter = require('./lib/warehouseFormatter'),
     sendToWarehouse = require('./lib/kafka')(config.kafka).sendToWarehouse(warehouseFormatter.statusCheckerFormatter),
-    TimeDiff = require('./lib/timeDiff');
+    TimeDiff = require('./lib/timeDiff'),
+    healthServer = require('./lib/healthServer');
 
 // obtain application arguments by parsing command line
 var program = parseArguments(process.argv);
@@ -148,4 +149,8 @@ if (config.main.memwatch) {
     memwatch.on('leak', function(info) {
         log('warn', '[MEMORY:LEAK] %j', info, {memoryLeak: true});
     });
+}
+
+if (config.main.healthServer) {
+    healthServer(config.main.healthServer);
 }

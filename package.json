@@ -88,6 +88,7 @@
     "headless": "^1.0.0",
     "highland": "^2.4.0",
     "http-get": "~0.5.10",
+    "http-health-endpoint": "^0.1.2",
     "jmUtil": "yourdelivery/JigMaggerUtilities",
     "jsdom": "~0.11.1",
     "kafka-node": "^0.2.24",

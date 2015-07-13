@@ -80,6 +80,8 @@ module.exports = function (processArgs) {
 
     args = _.merge({}, args, {
         verbose: env.NODE_WORKER_VERBOSE,
+        errorqueue: env.NODE_WORKER_ERROR,
+        errorerrorqueue: env.NODE_WORKER_ERROR_ERROR,
         live: env.NODE_WORKER_LIVE,
         liveuncached: env.NODE_WORKER_LIVE_UNCACHED,
         highprio: env.NODE_WORKER_HIGHPRIO,

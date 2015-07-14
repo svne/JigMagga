@@ -55,9 +55,11 @@ module.exports = {
 
         var prefixes = config.prefixes;
 
-        var priorities = Object.keys(_.pick(program, 'highprio', 'mediumprio', 'lowprio'));
+        var priorities = ['lowprio', 'mediumprio', 'highprio'];
 
-        var priority = _.first(priorities) || 'default';
+        var priority = priorities.reduce(function (current, next) {
+            return program[next] ? next :  current;
+        }, 'default');
 
         amqpQueue += prefixes[priority];
         amqpErrorQueue += prefixes[priority];

@@ -7,7 +7,7 @@ steal("can/model", "can/map/delegate", "jquery/jstorage", function () {
                 modelConfig,
                 namespace;
             // Convert name of the model eg. Yd.Models.Location -> §yd-models-locations
-            modelName = "§" +self.fullName.toLowerCase().replace(/\./g, "-");
+            modelName = "@" +self.fullName.toLowerCase().replace(/\./g, "-");
             namespace = steal.config("namespace");
             // We process only models from the namespace
             if (self.fullName.indexOf(namespace+'.Models') === 0) {

@@ -15,10 +15,10 @@ var hgl = require('highland'),
 /**
  * @name WorkerMessage
  * @type {object}
- * @property {string} locale 
- * @property {string} page 
- * @property {string} basedomain 
- * @property {string} domain 
+ * @property {string} locale
+ * @property {string} page
+ * @property {string} basedomain
+ * @property {string} domain
  */
 
 var isDomain = function (name) {
@@ -82,6 +82,9 @@ module.exports = {
 
         configMerge.getPageConfig(basePath, message.basedomain, message.page, onEnoent, function (err, config) {
             if (err) {
+                if (_.isFunction(data.queueShift)) {
+                    data.queueShift();
+                }
                 return callback(new WorkerError(err.message || err, data.message, data.key));
             }
 

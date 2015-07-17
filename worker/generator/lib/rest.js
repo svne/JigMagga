@@ -160,6 +160,7 @@ exports.addCall = function (apicall, config, paramsFromQueue, apiconfig) {
         path = "",
         placeHolders = placeholderHelper.getConfigPlaceholders(pathObj, paramsFromQueue);
 
+
     if (placeHolders) {
         pathObj = placeholderHelper.replaceConfigPlaceholders(pathObj, placeHolders);
     }

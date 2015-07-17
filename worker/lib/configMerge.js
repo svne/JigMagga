@@ -1,7 +1,6 @@
 'use strict';
 
-var es = require('event-stream'),
-    hgl = require('highland'),
+var hgl = require('highland'),
     WorkerError = require('./error').WorkerError,
     _ = require('lodash'),
     configMerge = require('jmUtil').configMerge,

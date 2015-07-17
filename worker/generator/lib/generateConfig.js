@@ -3,6 +3,7 @@ var fs = require('fs');
 var path = require('path');
 var _ = require('lodash');
 var async = require('async');
+var configMerger = require('jmUtil').configMerge;
 var format = require('util').format;
 
 var viewHelper = require("./view");
@@ -265,7 +266,10 @@ module.exports = function (data, workerConfig, callback) {
             localConfig.predefined = generatePredefined(data);
 
             try {
-                data.config = extendWithChildPage(localConfig, message.childpage);
+                var extend = _.compose(configMerger.extendApiCallsWithModels,
+                    _.partialRight(extendWithChildPage, message.childpage));
+
+                data.config = extend(localConfig);
             } catch (e) {
                 return next(e);
             }

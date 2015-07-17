@@ -54,6 +54,9 @@ function callPageConfigUtil(getProjectConfig) {
 
         jmUtil.configMerge.getPageConfig(data.build.basePath, data.build.domain, data.build.page, onEnoentError,
             function (err, result) {
+                if (err) {
+                    return callback(err);
+                }
                 data.data = result;
                 callback(null, data);
             });

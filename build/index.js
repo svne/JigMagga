@@ -28,6 +28,7 @@ function makeBuild(options, callback) {
     if (options.uploadmedia) {
         var ps = es.pause();
         stream = helper.createStreamWithSettings(options)
+            .pipe(configMerger.getConfig())
             .pipe(media.getMediaSources())
             .pipe(media.extractFilePaths())
             .pipe(ps)

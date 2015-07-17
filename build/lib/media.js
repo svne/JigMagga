@@ -160,6 +160,12 @@ module.exports = {
             var config = configMerge.getProjectConfig(data.build.namespace);
             data.build.package = data.build.package || {};
 
+            if (_.isString(data.data.assetdomain) && data.data.assetdomain.length) {
+                var result = _.cloneDeep(data);
+                result.build.package.mediaSource = [];
+                that.emit('data', result);
+                return;
+            }
 
             if (data.build.uploadmedia === true) {
                 return _.each(config.media, function (source) {

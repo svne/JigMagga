@@ -30,7 +30,7 @@ module.exports = {
      * @return {Readable}
      */
     getQueueSource: function (program, log, queuePool) {
-        var queueStream = hgl.pipeline(messageHelper.assignMessageMethods(queuePool));
+        var queueStream = hgl.pipeline(messageHelper.assignMessageMethods(queuePool, log));
 
         queuePool.addRoutes({
             'message:amqpQueue': function (message) {

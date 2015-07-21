@@ -227,7 +227,7 @@ module.exports = {
      *
      * @return {*}
      */
-    assignMessageMethods: function (queuePool) {
+    assignMessageMethods: function (queuePool, log) {
         /**
          * returns stream that assign queueShift and onDone methods to each message from rabbit
          *
@@ -249,6 +249,8 @@ module.exports = {
                 if (_.isString(message.origin)) {
                     queuePool.send('publish:amqpDoneQueue', message);
                 }
+
+                log('info', '[onDone] message done', message);
 
                 // send to kafka that message was handled
 

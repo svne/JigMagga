@@ -4,7 +4,7 @@
  * module represents methods that allows to create a source
  * Source is a Readable stream that can send to the consumer
  * one or more messages
- * 
+ *
  * @module messageSource
  */
 
@@ -19,11 +19,11 @@ var messageHelper = require('./message');
 
 module.exports = {
     /**
-     * return a stream with messages from amqp queues. 
+     * return a stream with messages from amqp queues.
      * Obtains a queue names using helper.getQueNames create an array
      * of stream for each of queues in the list merge them in one stream
      * and pipe to the messageParser
-     * 
+     *
      * @param  {object} program
      * @param  {Function} log
      * @param {ProcessRouter} queuePool
@@ -45,10 +45,10 @@ module.exports = {
     },
 
     /**
-     * create a message from the application arguments and 
+     * create a message from the application arguments and
      * push it to the readable stream
      *
-     * 
+     *
      * @param  {object} program
      * @param  {Functon} log     - function that could be used for logging
      * @return {Readable}
@@ -84,7 +84,7 @@ module.exports = {
     /**
      * obtains all static-old page create a message from each of them
      * and return a stream with all of those messages
-     * 
+     *
      * @param  {object} program
      * @param  {Function} log
      * @param  {string} basePath

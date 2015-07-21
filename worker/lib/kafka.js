@@ -40,7 +40,25 @@ module.exports = function (config) {
                 }
                 brod.send(config.origin, status, formattedMessage, callback);
             });
-        }, 3)
+        }, 3),
+
+        sendToDoneTopic: function (message, callback) {
+            callback = callback || function () {};
+
+            if (connectionError) {
+                return;
+            }
+
+            message.domain = message.basedomain;
+            if (message.url === null) {
+                delete message.url;
+            }
+
+            brod.send(config.origin, 'done', {
+                messageType: 'com.takeaway.events.htmlworker.MessageProcessed',
+                data: message
+            }, {topic: config.doneTopic}, callback);
+        }
     };
 
 

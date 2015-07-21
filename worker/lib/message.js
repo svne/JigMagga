@@ -15,7 +15,10 @@ var helper = require('./helper');
 var request = require('request');
 var generator = require('../generator/lib/generator');
 
-var projectConfig = require('../config').main;
+var config = require('../config');
+var projectConfig = config.main;
+
+var sendToDoneTopic = require('./kafka')(config.kafka).sendToDoneTopic;
 
 var isPageInConfig = function (config, page) {
     return config.pages && config.pages[page];
@@ -221,6 +224,7 @@ module.exports = {
     /**
      *
      * @param {ProcessRouter} queuePool
+     *
      * @return {*}
      */
     assignMessageMethods: function (queuePool) {
@@ -246,6 +250,9 @@ module.exports = {
                     queuePool.send('publish:amqpDoneQueue', message);
                 }
 
+                // send to kafka that message was handled
+
+                sendToDoneTopic(message);
                 //if worker is in "two-bucket-deploy" mode publish message for page that was generated
                 //to deploy queue
                 queuePool.send('publish:amqpDeployQueue', message);

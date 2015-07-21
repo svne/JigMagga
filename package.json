@@ -45,7 +45,8 @@
     "coverage": " istanbul cover _mocha -- -R spec --recursive ./worker/test/unit",
     "test": "npm run unit && npm run integration",
     "install": "node node_modules/bower/bin/bower install --config.cwd=bower_components --config.directory=.",
-    "prepublish": "node node_modules/bower/bin/bower install steal=git://github.com/bitovi/legacy-steal.git --config.directory=."
+    "prepublish": "node node_modules/bower/bin/bower install steal=git://github.com/bitovi/legacy-steal.git --config.directory=.",
+    "generate:events": "cd ./worker/messages/src && find *proto -exec protoc -o ../messages.desc {} +"
   },
   "devDependencies": {
     "tmp": "0.0.23",
@@ -71,7 +72,7 @@
     "amqplib": "~0.2.1",
     "archiver": "~0.11.0",
     "async": "~0.9.0",
-    "brod-caster": "^1.0.0",
+    "brod-caster": "yourdelivery/brod-caster",
     "bunyan": "^1.4.0",
     "can-compile": "~0.7.0",
     "cheerio": "~0.17.0",

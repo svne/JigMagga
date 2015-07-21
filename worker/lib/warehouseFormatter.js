@@ -17,7 +17,7 @@ var basePath = (args.namespace) ? path.join(process.cwd(), args.namespace, 'page
 
 var getMessage = _.curry(function (message, bucket, status, url) {
     return {
-        messageType: 'PageAlteredEvent',
+        messageType: 'com.takeaway.events.cdn.page.PageAltered',
         data: {
             domain: message.basedomain,
             bucket: bucket,

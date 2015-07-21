@@ -6,7 +6,10 @@ var Brod = require('brod-caster'),
 var envelopeProto = __dirname + '/../messages/envelope.desc',
     messagesProto = __dirname + '/../messages/messages.desc';
 
+var logger = require('./logger'),
+    parseArguments = require('../parseArguments');
 
+var log = logger('worker',  {basedomain: 'test'}, parseArguments(process.argv));
 /**
  *
  * @param {{connectionString: string, clientId: string, zkOptions: object, topics: object}} config
@@ -43,8 +46,11 @@ module.exports = function (config) {
         }, 3),
 
         sendToDoneTopic: function (message, callback) {
-            callback = callback || function () {};
+            callback = callback || function (err) {
+                log('info', '[sendToDoneTopic] message was sent', err);
+            };
 
+            log('info', '[sendToDoneTopic] about to send to done topic, connectionError: ', connectionError);
             if (connectionError) {
                 return;
             }

@@ -67,9 +67,18 @@ var getRequestSchema = function (schemaFile, callback) {
 };
 
 exports.addCallAsync = function (apicall, config, paramsFromQueue, apiconfig, callback) {
-    var pathObj = config.apicalls[apicall].path,
+    var apiCallDescriptor = config.apicalls[apicall];
+
+    var pathObj = apiCallDescriptor.path,
         path = "",
         placeHolders = placeholderHelper.getConfigPlaceholders(pathObj, paramsFromQueue);
+
+    var endpoint = (!apiCallDescriptor.endpoint) ?
+        apiconfig.endpoints.default : apiconfig.endpoints[apiCallDescriptor.endpoint];
+
+    console.log('[apiCallDescriptor.endpoint]', apiCallDescriptor.endpoint);
+
+    var apiconfig = _.merge({}, apiconfig.defaultValues, endpoint);
 
     if (placeHolders) {
         pathObj = placeholderHelper.replaceConfigPlaceholders(pathObj, placeHolders);
@@ -107,16 +116,16 @@ exports.addCallAsync = function (apicall, config, paramsFromQueue, apiconfig, ca
             resultCode: 200,
             viewParam: apicall, // key in viewContainer to hold data
             apiMessageKey: apiconfig.apiMessageKey, // unique key for message
-            apiCallDescriptor: config.apicalls[apicall]
+            apiCallDescriptor: apiCallDescriptor
         };
         callback(null, result);
     };
 
-    if (config.apicalls[apicall].requestSchema === undefined) {
+    if (apiCallDescriptor.requestSchema === undefined) {
         return next(null, paramsFromQueue, {});
     }
 
-    var schemaFile = config.apicalls[apicall].requestSchema.substr(2);
+    var schemaFile = apiCallDescriptor.requestSchema.substr(2);
 
 
     getRequestSchema(schemaFile, function (err, paramsSchema) {
@@ -128,13 +137,13 @@ exports.addCallAsync = function (apicall, config, paramsFromQueue, apiconfig, ca
         _.each(paramsSchema.properties, function (value, param) {
             if (paramsFromQueue[param] !== undefined) {
                 urlParams[param] = paramsFromQueue[param];
-            } else if (config.apicalls[apicall].defaults &&
-                config.apicalls[apicall].defaults[param] != undefined) {
+            } else if (apiCallDescriptor.defaults &&
+                apiCallDescriptor.defaults[param] != undefined) {
 
-                if (config.apicalls[apicall].defaults[param] === "{pageNum}" && paramsFromQueue.pageNum) {
+                if (apiCallDescriptor.defaults[param] === "{pageNum}" && paramsFromQueue.pageNum) {
                     urlParams[param] = paramsFromQueue.pageNum;
                 } else {
-                    urlParams[param] = config.apicalls[apicall].defaults[param];
+                    urlParams[param] = apiCallDescriptor.defaults[param];
                 }
             }
 

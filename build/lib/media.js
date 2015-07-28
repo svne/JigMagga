@@ -115,8 +115,11 @@ var extractFilePath = function (buildOptions, callback) {
         }
 
         var domain = _.last(buildOptions.domain.split('/'));
+        var parentDomain = _.first(buildOptions.domain.split('/'));
+
         descriptor.from = descriptor.from
             .replace('<%= domain %>', domain)
+            .replace('<%= parentDomain %>', parentDomain)
             .replace('<%= domainPath %>', buildOptions.domain);
 
         exactFilePath = path.join(buildOptions.namespacePath, descriptor.from);
@@ -162,16 +165,18 @@ module.exports = {
 
             if (_.isString(data.data.assetdomain) && data.data.assetdomain.length) {
                 var result = _.cloneDeep(data);
-                result.build.package.mediaSource = [];
+                result.build.package.mediaSource = config.media.assetdomain || [];
                 that.emit('data', result);
                 return;
             }
 
             if (data.build.uploadmedia === true) {
-                return _.each(config.media, function (source) {
-                    var result = _.cloneDeep(data);
-                    result.build.package.mediaSource = source;
-                    that.emit('data', result);
+                return _.each(config.media, function (source, sourceName) {
+                    if (sourceName !== 'assetdomain') {
+                        var result = _.cloneDeep(data);
+                        result.build.package.mediaSource = source;
+                        that.emit('data', result);
+                    }
                 });
             }
             if (!config.media[data.build.uploadmedia]) {

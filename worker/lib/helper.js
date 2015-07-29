@@ -209,17 +209,39 @@ module.exports = {
     generateBucketName: function (data, program, config) {
         var domainNames = data.message.basedomain.split('/');
 
+        var parentDomain = domainNames[0];
         var baseDomain = domainNames.length === 1 ? domainNames[0] : domainNames.reverse()[0];
+
         var buckets = config.buckets;
+
+        var generateLiveName = function (baseDomain, parentDomain, buckets) {
+            if (!buckets) {
+                return 'www.' + baseDomain;
+            }
+            var isSatellite = _.first(parentDomain.split('.')) === 'satellites';
+
+            var satellites = buckets.satellites;
+
+
+            if (isSatellite && satellites && satellites['www-prefixed'] &&
+                satellites['www-prefixed'].indexOf(parentDomain) === -1) {
+                return baseDomain;
+            }
+
+            return 'www.' + baseDomain;
+        };
+
         if (config.S3_BUCKET) {
             return config.S3_BUCKET;
         }
 
         if (program.live || program.liveuncached) {
-            return buckets && buckets.live && buckets.live[baseDomain] ? buckets.live[baseDomain] : 'www.' + baseDomain;
+            return buckets && buckets.live && buckets.live[baseDomain] ? buckets.live[baseDomain]
+                : generateLiveName(baseDomain, parentDomain, buckets);
         }
 
-        return buckets && buckets.stage && buckets.stage[baseDomain] ? buckets.stage[baseDomain] : 'stage.' + baseDomain;
+        return buckets && buckets.stage && buckets.stage[baseDomain] ? buckets.stage[baseDomain]
+            : 'stage.' + baseDomain;
     },
 
     isDomainInSkipList: function (domain, skipDomains) {

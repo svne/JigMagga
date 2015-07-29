@@ -27,9 +27,11 @@ function setupStealconfig(steal, item, cb) {
             encoding: "utf8"
         });
     };
+
     global.window = {};
     global.window = global;
     steal.config({
+        namespace: item.namespace,
         root: item.build.jigMaggaPath,
         pathToBuild: "/" + helper.getRelativePathFromStealRootPath(item.build.pageHTMLPath, item.build.jigMaggaPath),
         isBuild: true,

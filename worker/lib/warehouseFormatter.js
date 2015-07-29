@@ -39,7 +39,7 @@ module.exports = {
         if (!message.basedomain || !message.page) {
             return callback('wrong message format');
         }
-        var bucket = args.bucket || helper.generateBucketName({message: message}, args, projectConfig);
+        var bucket = args.bucket || helper.generateBucketName({message: message}, args, projectConfig.main.knox);
 
         configMerge.getPageConfig(basePath, message.basedomain, null, function (err, config) {
             if (err) {

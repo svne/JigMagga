@@ -606,7 +606,9 @@
                                     return callback();
                                 }
                                 var request = require("request");
-                                var url = "http://config-store-api.service.ens-staging.dcs.takeaway.com:8080/api/config";
+                                var projectConfig = require("../../" + steal.config("namespace") + "/config/main.json");
+
+                                var url = projectConfig.configStoreApiEndpoint;
 
                                 var configName = path.split('/').reverse()[0].replace(/\.conf/, '');
                                 if (!isDomain(configName)) {

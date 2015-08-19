@@ -93,6 +93,25 @@ var isDomainInDB = function (url, basedomain, callback) {
 };
 
 /**
+ * if url is null and basedomain consists slashes put to the url
+ * the last part of basedomain
+ *
+ * @param  {{url: string, basedomain: string}} message incoming message
+ * @return {{url: string, basedomain: string}}
+ */
+var adjustMessageForDoneQueue = function (message) {
+    if (message.url !== null || message.basedomain.indexOf('/') === -1) {
+        return message;
+    }
+
+    var basedomain = message.basedomain.split('/');
+
+    message.basedomain = _.first(basedomain);
+    message.url = _.last(basedomain);
+    return message;
+};
+
+/**
  * look for domain folder based on base domain and exact domain
  *
  *
@@ -247,7 +266,7 @@ module.exports = {
                 //by some service(backend, api or salesforce) and we have to publish it to done queue in order
                 //to notify them about page generation
                 if (_.isString(message.origin)) {
-                    queuePool.send('publish:amqpDoneQueue', message);
+                    queuePool.send('publish:amqpDoneQueue', adjustMessageForDoneQueue(message));
                 }
 
                 log('info', '[onDone] message done', message);

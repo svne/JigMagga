@@ -1,6 +1,7 @@
 'use strict';
 
 var hgl = require('highland'),
+    STATUS_CODES = require('./error').STATUS_CODES,
     WorkerError = require('./error').WorkerError,
     _ = require('lodash'),
     configMerge = require('jmUtil').configMerge,
@@ -27,6 +28,7 @@ var isDomain = function (name) {
     return regex.test(name);
 };
 
+
 var onEnoent = function (page, callback) {
     var configName = _.last(page.split('/')).replace(/\.conf$/, '');
 
@@ -42,7 +44,7 @@ var onEnoent = function (page, callback) {
             return callback(err);
         }
         if (!res.body[0]) {
-            return callback('no config in DB for domain ' + configName);
+            return callback({name: 'NoConfigInDB', message: 'no config in DB for domain ' + configName});
         }
 
         callback(null, res.body[0].config);
@@ -85,6 +87,10 @@ module.exports = {
                 if (_.isFunction(data.queueShift)) {
                     data.queueShift();
                 }
+                if (err.name === 'NoConfigInDB') {
+                    return callback(new WorkerError(err.message || err, data.message, data.key, STATUS_CODES.NO_SUCH_DOMAIN));
+                }
+
                 return callback(new WorkerError(err.message || err, data.message, data.key));
             }
 

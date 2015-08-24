@@ -27,6 +27,18 @@ module.exports = {
     },
 
     /**
+     * check correctness of URL
+     *
+     * @param  {string} url
+     * @return {boolean}
+     */
+    isDomainCorrect: function (url) {
+        var regexp = new RegExp('[^a-zA-Z0-9-_//./]+', 'i');
+
+        return !regexp.test(url);
+    },
+
+    /**
      * returns a an object with main queue and error queue names
      * based on program priority keys, basedomain and prefix
      *

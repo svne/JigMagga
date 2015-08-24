@@ -471,10 +471,13 @@ module.exports = {
                 return next();
             }
 
-            if(!data.message.url && data.message.basedomain.indexOf('/') !== -1 &&
-                helper.isDomainCorrect(_.last(data.message.basedomain.split('/')))) {
+            var basedomain = data.message.basedomain;
+
+            if(!data.message.url && basedomain.indexOf('/') !== -1 &&
+                !helper.isDomainCorrect(_.last(basedomain.split('/')))) {
 
                 if (_.isFunction(data.queueShift)) {
+
                     data.queueShift();
                 }
                 push(new WorkerError('something wrong with message url', data.message));

@@ -161,7 +161,13 @@ var lookForDomain = function (basePath, message, callback) {
             });
         }
 
-        domainCache[cacheKey] = path.join(result, domain);
+        var res = path.join(result, domain);
+
+        if (res.indexOf('premium') !== -1) {
+            return callback(new WorkerError('Do not generate premium', message, null, STATUS_CODES.NO_SUCH_DOMAIN));
+        }
+
+        domainCache[cacheKey] = res;
         callback(null, domainCache[cacheKey]);
     });
 };
@@ -459,6 +465,19 @@ module.exports = {
 
             if (data.message.url && !helper.isUrlCorrect(data.message.url)) {
                 if (_.isFunction(data.queueShift)) {
+                    data.queueShift();
+                }
+                push(new WorkerError('something wrong with message url', data.message));
+                return next();
+            }
+
+            var basedomain = data.message.basedomain;
+
+            if(!data.message.url && basedomain.indexOf('/') !== -1 &&
+                !helper.isDomainCorrect(_.last(basedomain.split('/')))) {
+
+                if (_.isFunction(data.queueShift)) {
+
                     data.queueShift();
                 }
                 push(new WorkerError('something wrong with message url', data.message));

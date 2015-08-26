@@ -6,6 +6,7 @@ var path = require('path'),
     es = require('event-stream'),
     extend = require('deep-extend'),
     archiver = require('archiver'),
+    _ = require('lodash'),
     Uploader = require('jmUtil').ydUploader,
     configMerger = require('./configMerger'),
     originalFs = require('fs'),
@@ -107,7 +108,7 @@ module.exports = {
             return uploaderInstances[domain];
         }
 
-        var knoxOptions = config.main.knox;
+        var knoxOptions = _.clone(config.main.knox);
 
         // you can set a --bucket argument
         if(buildOptions.bucket){

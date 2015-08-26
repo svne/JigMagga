@@ -67,6 +67,14 @@ function makeBuild(options, callback) {
     if (callback) {
         var isError;
 
+        var info = {};
+
+        stream.on('data', function (data) {
+            var parts = data.build.domain.split('/');
+            info.url = parts[parts.length - 1];
+            info.domain = parts[0];
+        });
+
         stream.on('error', function (err) {
             isError = true;
             callback(err);
@@ -74,7 +82,7 @@ function makeBuild(options, callback) {
 
         stream.on('end', function () {
             if (!isError) {
-                callback(null);
+                callback(null, info);
             }
         });
 

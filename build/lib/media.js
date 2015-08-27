@@ -235,14 +235,14 @@ module.exports = {
                     if (err.code === 'ENOENT' && !data.build.package.mediaSource.required) {
                         console.log('meida file is absent but it is not required');
                         ps.resume();
-                        return callback();
+                        return callback(null, data);
                     }
                     return callback(err);
                 }
 
                 console.log(res || 'all files uploaded');
                 ps.resume();
-                callback();
+                callback(null, data);
             };
 
             console.log('Start uploading files from media by mask:', data.build.package.mediaSource);

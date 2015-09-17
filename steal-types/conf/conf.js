@@ -219,8 +219,11 @@
             var key,
                 pageconfig,
                 domainconfig;
-            if (config["domain-pages"] && config["domain-pages"][config["domain"]]) {
-                domainconfig = config["domain-pages"][config["domain"]];
+
+            if (config["domain-pages"] && 
+                (config["domain-pages"][config.domain] || config["domain-pages"][config.groupedDomain] )) {
+
+                domainconfig = config["domain-pages"][config.domain] || config["domain-pages"][config.groupedDomain];
                 if (domainconfig.includes && domainconfig.includes.length) {
                     if (config.includes && config.includes.length) {
                         config.includes = config.includes.concat(domainconfig.includes);
@@ -415,7 +418,7 @@
             steal.config(namespace, config);
             options.text = "if(typeof window === 'undefined'){ window = {};};\n" +
                 "window." + namespace + " = window." + namespace + " || {};\n" +
-                namespace + " = window." + namespace + ";\n" +
+                namespace + " = window." + namespace + ";\n" +  
                 "window." + namespace + ".predefined = window." + namespace + ".predefined || {};\n" +
                 "window." + namespace + ".request = window." + namespace + ".request || {};\n" +
                 "window." + namespace + ".config = " + JSON.stringify(config) + ";\n" +

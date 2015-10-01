@@ -25,8 +25,7 @@ var _ = require('lodash'),
 var config = require('./config');
 
 
-var amqpWrapper = require('./lib/amqpWrapper'),
-    logger = require('./lib/logger'),
+var logger = require('./lib/logger'),
     ProcessRouter = require('./lib/router'),
     mainStream = require('./lib/mainStream'),
     helper = require('./lib/helper'),

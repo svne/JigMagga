@@ -78,11 +78,7 @@ var publishMessages = function (queue, callback) {
 
     async.eachSeries(_.range(args.times), function (time, cb) {
         async.eachSeries(fixtures, function (message, next) {
-            setTimeout(function () {
-                queue.publish(message, amqpPublishOptions);
-                next();
-            }, 50);
-
+            queue.publish(message, amqpPublishOptions, {}, next);
         }, cb);
     }, callback);
 };
@@ -105,7 +101,7 @@ amqpConnection.on('ready', function () {
         console.log('finish... exiting');
         setTimeout(function () {
             process.exit();
-        }, 200);
+        }, 2000);
     });
 });
 

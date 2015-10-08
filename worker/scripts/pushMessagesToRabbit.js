@@ -6,7 +6,7 @@ var args = require('commander'),
     fs = require('fs'),
     path = require('path');
 
-var amqp = require('../lib/amqp');
+var amqp = require('../lib/amqplib');
 
 args
     .option('-f, --fixture <n>', 'define the relative path to file with fixtures')
@@ -78,7 +78,7 @@ var publishMessages = function (queue, callback) {
 
     async.eachSeries(_.range(args.times), function (time, cb) {
         async.eachSeries(fixtures, function (message, next) {
-            queue.publish(message, amqpPublishOptions, {}, next);
+            queue.publish(message, amqpPublishOptions, next);
         }, cb);
     }, callback);
 };
@@ -91,18 +91,16 @@ console.log('queue obtained');
 var amqpConnection = amqp.getConnection(config.amqp);
 
 
-amqpConnection.on('ready', function () {
-    var pool = new amqp.QueuePool({queue: queueName}, amqpConnection);
+var pool = new amqp.QueuePool({queue: queueName}, amqpConnection);
 
-    publishMessages(pool.queue, function(err) {
-        if (err) {
-            return console.log('amqp err', err);
-        }
-        console.log('finish... exiting');
-        setTimeout(function () {
-            process.exit();
-        }, 2000);
-    });
+publishMessages(pool.queue, function(err) {
+    if (err) {
+        return console.log('amqp err', err);
+    }
+    console.log('finish... exiting');
+    setTimeout(function () {
+        process.exit();
+    }, 2000);
 });
 
 

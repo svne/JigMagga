@@ -457,7 +457,7 @@ function makeStealPackage(moduleOptions, dependencies, cssPackage, buildOptions)
         lineNum += linesCount;
     });
 
-    var jsCode = code.join(";") + ";steal.popPending();";
+    var jsCode = code.join(";\n") + ";steal.popPending();";
     var stealConfig = fs.readFileSync(__dirname + '/../../stealconfig.js', 'utf8');
 
 

@@ -221,6 +221,10 @@ module.exports = {
     },
 
     isDomainInSkipList: function (domain, skipDomains) {
+        if (!skipDomains) {
+            return false;
+        }
+
         return skipDomains.indexOf(domain) >= 0;
     },
 

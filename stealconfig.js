@@ -1,8 +1,9 @@
+var msieOld = typeof window !== "undefined" && window.navigator ? new RegExp("MSIE [789].0").test(navigator.userAgent) : false;
 steal.config({
     jmENV : "development",
     map: {
         "*": {
-            "jquery/jquery.js": steal.config("browser") && steal.config("browser").msie  && steal.config("browser").version < 10? "bower_components/jquery-old/dist/jquery.min.js" :  "bower_components/jquery-new/dist/jquery.min.js",
+            "jquery/jquery.js": (steal.config("browser") && steal.config("browser").msie && steal.config("browser").version < 10) || msieOld ? "bower_components/jquery-old/dist/jquery.min.js" :  "bower_components/jquery-new/dist/jquery.min.js",
             "jquery/jstorage": "bower_components/jstorage",
             "funcunit" : "bower_components/funcunit/dist/"
         }

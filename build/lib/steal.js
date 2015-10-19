@@ -30,7 +30,6 @@ function setupStealconfig(steal, item, cb) {
             text: function (options, success) {
                 options.text = loadFile(options);
 
-                console.log( options.src ? options.src :  options.src.path);
                 success();
             },
             "ejs js": function (options, success) {
@@ -42,7 +41,6 @@ function setupStealconfig(steal, item, cb) {
                     options.text = loadFile(options);
                 }
                 var stealInFile = /steal\(/.test(options.text);
-                console.log( options.src ? options.src :  options.src.path);
                 if (stealInFile || options.id.path.indexOf("steal-types") !== -1) {
                     eval(options.text);
                 }

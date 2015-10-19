@@ -49,6 +49,7 @@ steal.config({
     },
     ext: {
         scss: "steal-types/sass/sass.js",
+        "scss!": "steal-types/sass/sass.js",
         less: "steal-types/less/less.js",
         ejs: "can/view/ejs/ejs.js",
         mustache: "can/view/mustache/mustache.js",

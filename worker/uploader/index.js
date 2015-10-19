@@ -110,7 +110,7 @@ var uploadItem = function (data, callback) {
         callback();
     };
 
-    log('info', 'start uploading new file', helper.getMeta(data));
+    log('error', 'start uploading new file', helper.getMeta(data));
 
     var url = (data.url === '/') ? 'index' : data.url;
 

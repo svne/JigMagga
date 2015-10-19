@@ -246,7 +246,7 @@ module.exports = function (data, workerConfig, callback) {
             if (message.version) {
                 return next(null, null);
             }
-            fs.readFile(path.join(data.basePath, 'version.json'), next);
+            fs.readFile(path.join(data.basePath, 'package.json'), next);
         },
         function (result, next) {
             viewContainer.version = message.version || JSON.parse(result).version;

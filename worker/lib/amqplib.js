@@ -154,7 +154,7 @@ var publish = exports.publish = function (message, options, callback) {
         var ok = channel.assertQueue(queue, {durable: true});
         return ok.then(function () {
             message = new Buffer(message);
-            channel.sendToQueue(queue, message, options);
+            return channel.sendToQueue(queue, message, options);
         }).then(function (res) {
             callback(null, res);
         }, function (err) {

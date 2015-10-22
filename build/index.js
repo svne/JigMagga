@@ -15,7 +15,7 @@
  */
 
 var es = require('event-stream'),
-    configMerger = require('./lib/configMerger.js'),
+    configMerger = require('./list -g -lib/configMerger.js'),
     helper = require('./lib/helper.js'),
     media = require('./lib/media'),
     steal = require('./lib/steal.js'),

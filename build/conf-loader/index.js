@@ -1,8 +1,30 @@
 "use strict";
 
 var JIG_CONFIG_FIELDS = ['controller','template','options','path','includes','render'],
+	PAGE_CONFIG_FIELDS = ['domain','locales','pages','crosslinks','companyinfo'],
 	maggaMerge = require('magga-merge'),
-	path = require('path');
+
+	fs = require('fs'),
+	path = require('path'),
+	_ = require('lodash');
+
+function PageConfig (confObject) {
+	var self = this;
+	PAGE_CONFIG_FIELDS.forEach(function(key){
+		self[key] = confObject[key];
+	});
+	// gathering information about jigs
+	self.jigConfigs = [];
+	if (confObject.jigs) {
+		Object.keys(confObject.jigs).forEach(function(jigName){
+			var newJig = new JigConfig(jigName, confObject.jigs[jigName]);
+			newJig.print();
+			self.jigConfigs.push(newJig);
+		});
+	}
+	console.log(self);
+}
+
 
 
 function JigConfig(name, options) {
@@ -50,11 +72,12 @@ JigConfig.prototype.process = function(addDependencyCb){
 module.exports = function(source) {
 	var callback = this.async(),
 		callbackStrings = [],
-		jigConfigs = [];
+		pageConfig,
+		domainCfg = null,
+		config = null;
+
 
 	if (this.resourcePath.search(/(\.conf)$/) !== -1)  {
-
-		var config = null;
 
 		//TODO config-merge module luisa (maybe extra loader module)
 		//TODO steal-type/conf implementation
@@ -74,16 +97,29 @@ module.exports = function(source) {
 			return;
 		}
 
-		// gathering information about jigs
-		if (config.jigs) {
-			Object.keys(config.jigs).forEach(function(jigName){
-				var newJig = new JigConfig(jigName, config.jigs[jigName]);
-				newJig.print();
-				jigConfigs.push(newJig);
-			});
+		//TODO: delete it after fixing magga-merge
+		// loading configuration of lieferando.de domain
+		try{
+			domainCfg = fs.readFileSync(path.join(this.resourcePath,'../../lieferando.de.conf'),"utf8");
+			domainCfg = JSON.parse(domainCfg);
+		}catch(e){
+			callback(new Error("Config parse error:" + this.resourcePath));
+			return;
 		}
+		_.assign(domainCfg.jigs,config.jigs);
+		Object.keys(domainCfg).forEach(function(key){
+			config[key] = domainCfg[key];
+		});
+		// ----------- delete before here here
 
-		jigConfigs.forEach(function(jigConfig){
+
+
+		pageConfig = new PageConfig(config);
+
+
+
+
+		pageConfig.jigConfigs.forEach(function(jigConfig){
 			jigConfig.process(function(dep){
 				callbackStrings.push("require('" + process.cwd() +"/"+ dep+"');");
 			});

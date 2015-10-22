@@ -1,12 +1,34 @@
 "use strict";
 
-var JIG_CONFIG_FIELDS = ['controller','template','options','path','includes','render'],
+var JIG_CONFIG_FIELDS = ['controller','template','options','path','includes','render','prerender'],
 	PAGE_CONFIG_FIELDS = ['domain','locales','pages','crosslinks','companyinfo'],
 	maggaMerge = require('magga-merge'),
+	loaderUtils = require("loader-utils"),
+	incapsulateCode = require('./incapsulate.js'),
 
 	fs = require('fs'),
 	path = require('path'),
 	_ = require('lodash');
+
+
+// Utiling functions from conf.js
+
+var readCookie = function (name) {
+	var ck,
+		cv,
+		i;
+//	if (document && document.cookie) {
+//		ck = document.cookie.split('; ');
+//		for (i = ck.length - 1; i >= 0; i--) {
+//			cv = ck[i].split('=');
+//			if (cv[0] === name) {
+//				return cv[1];
+//			}
+//		}
+//	}
+	return undefined;
+};
+
 
 function PageConfig (confObject) {
 	var self = this;
@@ -22,9 +44,20 @@ function PageConfig (confObject) {
 			self.jigConfigs.push(newJig);
 		});
 	}
-	console.log(self);
 }
 
+
+PageConfig.prototype.printJigs = function (){
+	this.jigConfigs.forEach(function(jig){
+		console.log(jig.name);
+	});
+};
+
+PageConfig.prototype.setLocale = function(){
+	this._locale = readCookie("reace")|| 'default';
+
+	console.log('PageConfig setLocale',this._locale);
+};
 
 
 function JigConfig(name, options) {
@@ -106,7 +139,8 @@ module.exports = function(source) {
 			callback(new Error("Config parse error:" + this.resourcePath));
 			return;
 		}
-		_.assign(domainCfg.jigs,config.jigs);
+		domainCfg.jigs = _.assign({},domainCfg.jigs,config.jigs);
+
 		Object.keys(domainCfg).forEach(function(key){
 			config[key] = domainCfg[key];
 		});
@@ -117,14 +151,29 @@ module.exports = function(source) {
 		pageConfig = new PageConfig(config);
 
 
+		pageConfig.printJigs();
 
 
+		// set locales
+		pageConfig.setLocale();
+
+
+		// load all includes
+		// load all jigs
 		pageConfig.jigConfigs.forEach(function(jigConfig){
 			jigConfig.process(function(dep){
 				callbackStrings.push("require('" + process.cwd() +"/"+ dep+"');");
 			});
 
 		});
+
+		// check if jigs should be rendered
+		// instantiate jigs
+
+
+
+		this.addDependency(path.resolve('./incapsulate.js'));
+//		callbackStrings.push("require('" + loaderUtils.stringifyRequest(this, incapsulateCode)+"');");
 		console.log('[CONF_LOADER] Going to require files:\n%s',callbackStrings.join('\n'));
 		callback(null,callbackStrings.join('\n'));
 

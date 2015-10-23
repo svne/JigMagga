@@ -13,12 +13,14 @@ var webpack = require("webpack"),
 
 module.exports = {
   resolve: {
-    root: __dirname,
+//    root: __dirname,
+    modulesDirectories: ["node_modules","bower_components",'./'],
     alias: {
       // This way we can steal("can") even though what we actually have in
       // node_modules is canjs
 //      "can": "canjs",
-      "jquery/jstorage": __dirname + "/bower_components/jstorage",
+//      "can-cjs": __dirname+"/node_modules/can/dist/cjs/can.js",
+      "jquery/jstorage": "jstorage",
       "can": __dirname + "/bower_components/canjs/steal/canjs",
       "jquery": __dirname + "/bower_components/jquerypp",
       "core": __dirname + "/core"
@@ -33,16 +35,18 @@ module.exports = {
     new webpack.ContextReplacementPlugin(/canjs/, /^$/),
     new webpack.ProvidePlugin({
       $: "jquery",
-      jQuery: "jquery"
+      jQuery: "jquery",
+      "window.$": "jquery" //NOTE this is for jStorage. maybe it is possible to make it with imports-loader
     })
   ],
   module: {
     loaders: [{
+//      test: /yd(?:jig|page).*\.js$/,
       test: /\.js$/,
       loader: "destealify"
     }, {
       test: /(\.conf)$/,
-      loaders: ["conf"]
+      loaders: ["parse-conf","merge-conf"]
     }, {
       test: /(\.stache|\.ejs|\.mustache)$/,
       loaders: ['canjs-template']

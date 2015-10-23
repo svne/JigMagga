@@ -11,7 +11,8 @@ module.exports = function(source) {
 
 		compiler.compile(options, function(err, output) {
 			if(err) return callback(err);
-			callback(null, output);
+			callback(null,
+				"steal('can/view/ejs','can/view/mustache',function(can){"+output+"});\n");
 		});
 
 	} 

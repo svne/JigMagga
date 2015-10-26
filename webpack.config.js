@@ -23,7 +23,8 @@ module.exports = {
       "jquery/jstorage": "jstorage",
       "can": __dirname + "/bower_components/canjs/steal/canjs",
       "jquery": __dirname + "/bower_components/jquerypp",
-      "core": __dirname + "/core"
+      "core": __dirname + "/core",
+//      "steal": __dirname+"/steal/steal.js"
 
     }
   },
@@ -37,19 +38,26 @@ module.exports = {
       $: "jquery",
       jQuery: "jquery",
       "window.$": "jquery" //NOTE this is for jStorage. maybe it is possible to make it with imports-loader
+//      "steal": "steal"
     })
   ],
   module: {
     loaders: [{
 //      test: /yd(?:jig|page).*\.js$/,
       test: /\.js$/,
-      loader: "destealify"
+      loaders: ["regexp","destealify"],
+      rules: [
+        {
+          'for': new RegExp('^\\s*\/\/!steal-remove-start(\\n|.)*?\/\/!steal-remove-end.*$', 'gm'),
+          'do': ''
+        }
+      ]
     }, {
       test: /(\.conf)$/,
       loaders: ["parse-conf","merge-conf"]
     }, {
       test: /(\.stache|\.ejs|\.mustache)$/,
-      loaders: ['canjs-template']
+      loaders: ['destealify','canjs-template']
     }, {
       test: /\.scss$/,
       loaders: ['style', 'css', 'sass','jsontosass?'+SassVars]

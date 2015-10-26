@@ -28,14 +28,14 @@ module.exports = function(source) {
 
 
 		//TODO when it will work,...
-//		maggaMerge(
-//			path.resolve(this.resourcePath),
-//
-//			function (err, data) {
-//				config = data;
-//				console.log('@@@@@@@@@@@@@@@',data);
-//			}
-//		);
+		maggaMerge(
+			'yd/page/lieferando.de/index/index.conf',
+
+			function (err, data) {
+				config = data;
+				console.log('@@@@@@@@@@@@@@@',self.resourcePath,data);
+			}
+		);
 
 
 		//TODO: delete it after fixing magga-merge

@@ -13,6 +13,7 @@ module.exports = function(source) {
 			if(err) return callback(err);
 			callback(null,
 				"steal('can/view/ejs','can/view/mustache',function(can){"+output+"});\n");
+//			"require('can/view/ejs'); require('can/view/mustache');\n"+output+"\n");
 		});
 
 	} 

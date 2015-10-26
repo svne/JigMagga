@@ -22,9 +22,14 @@ module.exports = function(input, options) {
 //    if (typeof options.singleton === "undefined") options.singleton = true;
 
     window['_'] = function(str) {return str;};
+    window.steal = {
+        config: function () {return {};}
+    };
 
     somethingInBrowser();
     pageConfig = new PageConfig(input.config);
+
+
 
     pageConfig.prepareNamespace();
     pageConfig.setLocale();

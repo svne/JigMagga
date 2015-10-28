@@ -29,55 +29,50 @@ module.exports = function(source) {
 
 		//TODO when it will work,...
 		maggaMerge(
-			'yd/page/lieferando.de/index/index.conf',
-
+			self.resourcePath,
 			function (err, data) {
 				config = data;
 				console.log('@@@@@@@@@@@@@@@',self.resourcePath,data);
-			}
-		);
 
 
 		//TODO: delete it after fixing magga-merge
-
-
-
-		try{
-			config = JSON.parse(source);
-		}catch(e){
-			callback(new Error("Config parse error:" + this.resourcePath));
-			return;
-		}
-
-		// loading configuration of lieferando.de domain
-		try{
-			pageCfg = fs.readFileSync(path.join(this.resourcePath,'../../../page.conf'),"utf8");
-			pageCfg = JSON.parse(pageCfg);
-		}catch(e){
-			callback(new Error("pageCfg parse error:" + this.resourcePath));
-			return;
-		}
-
-		pageCfg.jigs = _.assign({},pageCfg.jigs,config.jigs);
-
-		Object.keys(pageCfg).forEach(function(key){
-			config[key] = pageCfg[key];
-		});
-
-		// loading configuration of lieferando.de domain
-		try{
-			domainCfg = fs.readFileSync(path.join(this.resourcePath,'../../lieferando.de.conf'),"utf8");
-			domainCfg = JSON.parse(domainCfg);
-		}catch(e){
-			callback(new Error("Config parse error:" + this.resourcePath));
-			return;
-		}
-
-		domainCfg.jigs = _.assign({},domainCfg.jigs,config.jigs);
-
-		Object.keys(domainCfg).forEach(function(key){
-			config[key] = domainCfg[key];
-		});
+//
+//		try{
+//			config = JSON.parse(source);
+//		}catch(e){
+//			callback(new Error("Config parse error:" + this.resourcePath));
+//			return;
+//		}
+//
+//		// loading configuration of lieferando.de domain
+//		try{
+//			pageCfg = fs.readFileSync(path.join(this.resourcePath,'../../../page.conf'),"utf8");
+//			pageCfg = JSON.parse(pageCfg);
+//		}catch(e){
+//			callback(new Error("pageCfg parse error:" + this.resourcePath));
+//			return;
+//		}
+//
+//		pageCfg.jigs = _.assign({},pageCfg.jigs,config.jigs);
+//
+//		Object.keys(pageCfg).forEach(function(key){
+//			config[key] = pageCfg[key];
+//		});
+//
+//		// loading configuration of lieferando.de domain
+//		try{
+//			domainCfg = fs.readFileSync(path.join(this.resourcePath,'../../lieferando.de.conf'),"utf8");
+//			domainCfg = JSON.parse(domainCfg);
+//		}catch(e){
+//			callback(new Error("Config parse error:" + this.resourcePath));
+//			return;
+//		}
+//
+//		domainCfg.jigs = _.assign({},domainCfg.jigs,config.jigs);
+//
+//		Object.keys(domainCfg).forEach(function(key){
+//			config[key] = domainCfg[key];
+//		});
 		// ----------- delete before here here
 
 		pageConfig = new PageConfig(config);
@@ -106,7 +101,12 @@ module.exports = function(source) {
 //		callback(null,);
 		callback(null, "exports = module.exports = {\n"+
 			"config:" + JSON.stringify(config)+",\n"+
-			"requirePageDeps: function(){\n"+ callbackStrings.join('\n')+"\n}\n}"
+			"requirePageDeps: function(){\n"+ callbackStrings.join('\n')+"\n},\n"+
+			"addCanRoutes: function(){\n"+ pageConfig.getCanRoutesText()+"\n},\n"+
+			"allocateJigs: function(){\n"+ pageConfig.getAllocateJigsText()+"\n}\n}"
+
+		);
+			}
 		);
 
 	}

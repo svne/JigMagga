@@ -9,6 +9,48 @@ function somethingInBrowser(){
 
 }
 
+var contentLoaded =function (win, fn) {
+    var done = false, top = true,
+        doc = win.document, root = doc.documentElement,
+        add = doc.addEventListener ? 'addEventListener' : 'attachEvent',
+        rem = doc.addEventListener ? 'removeEventListener' : 'detachEvent',
+        pre = doc.addEventListener ? '' : 'on',
+        init = function (e) {
+            if (e.type === 'readystatechange' && doc.readyState !== 'complete') return;
+            (e.type === 'load' ? win : doc
+            )[rem](pre + e.type, init, false);
+            if (!done && (done = true
+                )) {
+                fn.call(win, e.type || e);
+            }
+        },
+        poll = function () {
+            try {
+                root.doScroll('left');
+            } catch (e) {
+                setTimeout(poll, 50);
+                return;
+            }
+            init('poll');
+        };
+    if (doc.readyState === 'complete') {
+        fn.call(win, 'lazy');
+    }
+    else {
+        if (doc.createEventObject && root.doScroll) {
+            try {
+                top = !win.frameElement;
+            } catch (e) {
+            }
+            if (top) {
+                poll();
+            }
+        }
+        doc[add](pre + 'DOMContentLoaded', init, false);
+        doc[add](pre + 'readystatechange', init, false);
+        win[add](pre + 'load', init, false);
+    }
+};
 
 module.exports = function(input, options) {
     var pageConfig;
@@ -21,19 +63,52 @@ module.exports = function(input, options) {
     // tags it will allow on a page
 //    if (typeof options.singleton === "undefined") options.singleton = true;
 
+
+    // Some stubing stuff, that should be deleted
+    // Made temporary to make the prototype page work
     window['_'] = function(str) {return str;};
-    window.steal = {
-        config: function () {return {};}
-    };
+    steal.dev = {
+        log: console.log,
+        err: console.error
+    }
+    window.win = window;
+    // delete up to here
 
-    somethingInBrowser();
-    pageConfig = new PageConfig(input.config);
+    contentLoaded(window, function(){
+        var routeInit = false;
+
+        somethingInBrowser(); //this is sparta
+        pageConfig = new PageConfig(input.config);
+        pageConfig.prepareNamespace();
+
+//        steal.config("namespace", pageConfig.namespace);
+        steal.config("namespace", "Yd");
+//        steal.config(pageConfig.namespace, pageConfig);
+        steal.config("Yd", pageConfig);
+
+        pageConfig.setLocale();
+        pageConfig.includeJigsTemplates();
+        document.body.className = document.body.className.replace(/\byd-onload\b/, '');
+        input.requirePageDeps();
+
+
+        can.support.cors = true;
+        if (routeInit) {
+            return false;
+        }
+        routeInit = true;
+        can.route.ydReady = can.Deferred();
+
+        input.addCanRoutes();
+        pageConfig.allocateJigs();
+
+        can.route.ready();
+        can.route.ydReady.resolve();
+
+    });
 
 
 
-    pageConfig.prepareNamespace();
-    pageConfig.setLocale();
-    input.requirePageDeps();
 
     return function update(conf) {
         if(conf) {

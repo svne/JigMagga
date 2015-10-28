@@ -22,8 +22,9 @@ module.exports = {
 //      "can-cjs": __dirname+"/node_modules/can/dist/cjs/can.js",
       "jquery/jstorage": "jstorage",
       "can": __dirname + "/bower_components/canjs/steal/canjs",
+      "cancjs": __dirname + "/node_modules/can/dist/cjs/can.js",
       "jquery": __dirname + "/bower_components/jquerypp",
-      "core": __dirname + "/core",
+      "core": __dirname + "/core"
 //      "steal": __dirname+"/steal/steal.js"
 
     }
@@ -37,7 +38,8 @@ module.exports = {
     new webpack.ProvidePlugin({
       $: "jquery",
       jQuery: "jquery",
-      "window.$": "jquery" //NOTE this is for jStorage. maybe it is possible to make it with imports-loader
+      "window.$": "jquery", //NOTE this is for jStorage. maybe it is possible to make it with imports-loader
+//      "can": "cancjs"
 //      "steal": "steal"
     })
   ],

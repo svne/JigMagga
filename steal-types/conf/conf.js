@@ -867,7 +867,7 @@
             }
 
             // set local
-            mergedConfig.locale = steal.config("init-locale") || steal.config().env === 'development' && !steal.config("isBuild") && readCookie("reace") || mergedConfig["init-locale"] || (mergedConfig.locales && mergedConfig.locales[0]) || "default";
+            mergedConfig.locale = steal.config("init-locale") || steal.config().env === 'development' && !steal.config("isBuild") && readCookie("locale") || mergedConfig["init-locale"] || (mergedConfig.locales && mergedConfig.locales[0]) || "default";
 
             var messagePOFile = (mergedConfig.namespace || "") + "/locales/" + mergedConfig.domain + "/" + mergedConfig.locale + "/messages.po";
             mergedConfig.localePath = messagePOFile;

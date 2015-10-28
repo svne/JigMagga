@@ -1,6 +1,9 @@
 "use strict";
 
-var JIG_CONFIG_FIELDS = ['controller','template','options','path','includes','render','prerender','slot','disabled'];
+var JIG_CONFIG_FIELDS = ['controller','template','options','path','includes','render','prerender','slot',
+    'disabled',
+    'browser' // Yd.Jig.Noscript
+];
 
 function controllerToPath(ctrl){
     // Yd.Jig.Socialmedia -> yd/jig/socialmedia/socialmedia.js

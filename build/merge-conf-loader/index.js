@@ -35,7 +35,7 @@ module.exports = function(source) {
 				console.log('@@@@@@@@@@@@@@@',self.resourcePath,data);
 
 
-		//TODO: delete it after fixing magga-merge
+				//TODO: delete it after fixing magga-merge
 //
 //		try{
 //			config = JSON.parse(source);
@@ -73,39 +73,49 @@ module.exports = function(source) {
 //		Object.keys(domainCfg).forEach(function(key){
 //			config[key] = domainCfg[key];
 //		});
-		// ----------- delete before here here
+				// ----------- delete before here here
 
-		pageConfig = new PageConfig(config);
+				pageConfig = new PageConfig(config);
 
-		pageConfig.printJigs();
+				pageConfig.printJigs();
 
-		// load all includes
-		// load all jigs
-		pageConfig.jigConfigs.forEach(function(jigConfig){
-			jigConfig.process(function(dep){
-				callbackStrings.push("require('" + path.resolve(dep)+"');");
-				// TODO: add watch and hop swat functionality somewhere here
+				// load all includes
+				// load all jigs
+				pageConfig.jigConfigs.forEach(function(jigConfig){
+					jigConfig.process(function(dep){
+						callbackStrings.push("require('" + path.resolve(dep)+"');");
+						// TODO: add watch and hop swat functionality somewhere here
 //				self.addDependency(path.resolve(dep));
-			});
-		});
+					});
+				});
+
+				callbackStrings.push('require("lib/lib.js");');
+
+				pageConfig.includes.forEach(function(item){
+					var uri;
+					//TODO undestand how urls of the type '//yd/fixtures/fixtures.js' work
+					uri = (typeof item.id === 'string') ? item.id : item;
+					uri = uri.replace('//','');
+					callbackStrings.push('require("'+uri+'");');
+				});
+
 
 //		// add export of the configuration object
 //		callbackStrings.push();
 
-		// just for some control
-		['namespace','locales'].forEach(function(key){
-			console.log(key+" is ",config[key]);
-		});
+				// just for some control
+				['namespace','locales'].forEach(function(key){
+					console.log(key+" is ",config[key]);
+				});
 
 //		console.log('[CONF_LOADER] sending to callback:\n%s',callbackStrings.join('\n'));
 //		callback(null,);
-		callback(null, "exports = module.exports = {\n"+
-			"config:" + JSON.stringify(config)+",\n"+
-			"requirePageDeps: function(){\n"+ callbackStrings.join('\n')+"\n},\n"+
-			"addCanRoutes: function(){\n"+ pageConfig.getCanRoutesText()+"\n},\n"+
-			"allocateJigs: function(){\n"+ pageConfig.getAllocateJigsText()+"\n}\n}"
-
-		);
+				callback(null, "exports = module.exports = {\n"+
+					"config:" + JSON.stringify(config)+",\n"+
+					"requirePageDeps: function(){\n"+ callbackStrings.join('\n')+"\n},\n"+
+					"addCanRoutes: function(){\n"+ pageConfig.getCanRoutesText()+"\n},\n"+
+					"allocateJigs: function(){\n"+ pageConfig.getAllocateJigsText()+"\n}\n}"
+				);
 			}
 		);
 

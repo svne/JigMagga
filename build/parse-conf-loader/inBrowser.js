@@ -67,10 +67,7 @@ module.exports = function(input, options) {
     // Some stubing stuff, that should be deleted
     // Made temporary to make the prototype page work
     window['_'] = function(str) {return str;};
-    steal.dev = {
-        log: console.log,
-        err: console.error
-    }
+    steal.dev = console;
     window.win = window;
     // delete up to here
 
@@ -81,12 +78,13 @@ module.exports = function(input, options) {
         pageConfig = new PageConfig(input.config);
         pageConfig.prepareNamespace();
 
-//        steal.config("namespace", pageConfig.namespace);
-        steal.config("namespace", "Yd");
-//        steal.config(pageConfig.namespace, pageConfig);
-        steal.config("Yd", pageConfig);
+        steal.config("namespace", pageConfig.namespace);
+//        steal.config("namespace", "Yd");
+        steal.config(pageConfig.namespace, pageConfig);
+//        steal.config("Yd", pageConfig);
 
         pageConfig.setLocale();
+
         pageConfig.includeJigsTemplates();
         document.body.className = document.body.className.replace(/\byd-onload\b/, '');
         input.requirePageDeps();
@@ -104,6 +102,7 @@ module.exports = function(input, options) {
 
         can.route.ready();
         can.route.ydReady.resolve();
+
 
     });
 

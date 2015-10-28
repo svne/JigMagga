@@ -8,6 +8,10 @@ var JigConfig = require('./jig-config.js'),
         'tracking', // can.Control.extend('Yd.Tracking',
         'configdomain',  //Yd.Liveconfig.load = function(func, error)
         'appTracking', // getAppTrackLink: function (system, component) {
+        'version', // url: Yd.config.api + Yd.config.version + "/customer/resetpassword",
+        'fb','fbDev', //   Yd.config.fb = Yd.config.fbDev;
+        'includes',  // steal.apply(steal, config.includes);
+        'api', //  can.fixture("GET " + Yd.config.api + Yd
         'services' // _("yd-jig-plz-check-count-of-partners", typeof servicescount !== "undefined" ? servicescount : Yd.config.services.count)
 
     ], //+jigs
@@ -51,6 +55,10 @@ function PageConfig (confObject) {
             self.jigConfigs.push(newJig);
         });
     }
+
+    // conf.js mergedConfig.groupedDomain = domain;
+    this.groupedDomain = this.domain;
+
 }
 
 
@@ -87,7 +95,7 @@ PageConfig.prototype.prepareNamespace = function (){
 
     if (window && typeof namespace === 'string') {
         window[namespace] =  window[namespace]||{};
-//        this.namespace = namespace;
+        this.namespace = namespace;
         window[namespace].predefined = window[namespace].predefined || {};
         window[namespace].request = window[namespace].request || {};
         window[namespace].config = self;

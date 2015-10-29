@@ -2,7 +2,7 @@
 
 var maggaMerge = require('magga-merge'),
 	loaderUtils = require("loader-utils"),
-	PageConfig = require('../loader-libs/page-config.js'),
+	PageConfig = require('loader-libs/page-config'),
 
 	fs = require('fs'),
 	path = require('path'),
@@ -33,50 +33,7 @@ module.exports = function(source) {
 			function (err, data) {
 				config = data;
 				console.log('@@@@@@@@@@@@@@@',self.resourcePath,data);
-
-
-				//TODO: delete it after fixing magga-merge
-//
-//		try{
-//			config = JSON.parse(source);
-//		}catch(e){
-//			callback(new Error("Config parse error:" + this.resourcePath));
-//			return;
-//		}
-//
-//		// loading configuration of lieferando.de domain
-//		try{
-//			pageCfg = fs.readFileSync(path.join(this.resourcePath,'../../../page.conf'),"utf8");
-//			pageCfg = JSON.parse(pageCfg);
-//		}catch(e){
-//			callback(new Error("pageCfg parse error:" + this.resourcePath));
-//			return;
-//		}
-//
-//		pageCfg.jigs = _.assign({},pageCfg.jigs,config.jigs);
-//
-//		Object.keys(pageCfg).forEach(function(key){
-//			config[key] = pageCfg[key];
-//		});
-//
-//		// loading configuration of lieferando.de domain
-//		try{
-//			domainCfg = fs.readFileSync(path.join(this.resourcePath,'../../lieferando.de.conf'),"utf8");
-//			domainCfg = JSON.parse(domainCfg);
-//		}catch(e){
-//			callback(new Error("Config parse error:" + this.resourcePath));
-//			return;
-//		}
-//
-//		domainCfg.jigs = _.assign({},domainCfg.jigs,config.jigs);
-//
-//		Object.keys(domainCfg).forEach(function(key){
-//			config[key] = domainCfg[key];
-//		});
-				// ----------- delete before here here
-
 				pageConfig = new PageConfig(config);
-
 				pageConfig.printJigs();
 
 				// load all includes
@@ -89,15 +46,12 @@ module.exports = function(source) {
 					});
 				});
 
+				// add legacy staff
 				callbackStrings.push('require("lib/lib.js");');
 
-				pageConfig.includes.forEach(function(item){
-					var uri;
-					//TODO undestand how urls of the type '//yd/fixtures/fixtures.js' work
-					uri = (typeof item.id === 'string') ? item.id : item;
-					uri = uri.replace('//','');
-					callbackStrings.push('require("'+uri+'");');
-				});
+//				pageConfig.getIncludes().forEach(function(uri){
+//					callbackStrings.push('require("'+uri+'");');
+//				});
 
 
 //		// add export of the configuration object
@@ -112,6 +66,7 @@ module.exports = function(source) {
 //		callback(null,);
 				callback(null, "exports = module.exports = {\n"+
 					"config:" + JSON.stringify(config)+",\n"+
+					"requireIncludes: function(){\n"+ pageConfig.getIncludesText()+"\n},\n"+
 					"requirePageDeps: function(){\n"+ callbackStrings.join('\n')+"\n},\n"+
 					"addCanRoutes: function(){\n"+ pageConfig.getCanRoutesText()+"\n},\n"+
 					"allocateJigs: function(){\n"+ pageConfig.getAllocateJigsText()+"\n}\n}"

@@ -1,6 +1,6 @@
 "use strict";
 
-var PageConfig = require('../loader-libs/page-config.js');
+var PageConfig = require('loader-libs/page-config.js');
 
 function somethingInBrowser(){
     var el = document.createElement("h3");
@@ -75,22 +75,28 @@ module.exports = function(input, options) {
         var routeInit = false;
 
         somethingInBrowser(); //this is sparta
+
         pageConfig = new PageConfig(input.config);
         pageConfig.prepareNamespace();
 
+        // put the configuration into steal
         steal.config("namespace", pageConfig.namespace);
-//        steal.config("namespace", "Yd");
         steal.config(pageConfig.namespace, pageConfig);
-//        steal.config("Yd", pageConfig);
 
         pageConfig.setLocale();
 
         pageConfig.includeJigsTemplates();
+
+
         document.body.className = document.body.className.replace(/\byd-onload\b/, '');
+
+        // TODO do some mechanism of sorting
+        input.requireIncludes();
         input.requirePageDeps();
 
-
         can.support.cors = true;
+
+        // TODO understand why do we need routeInit
         if (routeInit) {
             return false;
         }
@@ -98,6 +104,7 @@ module.exports = function(input, options) {
         can.route.ydReady = can.Deferred();
 
         input.addCanRoutes();
+
         pageConfig.allocateJigs();
 
         can.route.ready();

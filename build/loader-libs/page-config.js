@@ -1,6 +1,6 @@
 "use strict";
 
-var JigConfig = require('./jig-config.js'),
+var JigConfig = require('loader-libs/jig-config.js'),
 
 // in comments parts of the text where this field is needed
     PAGE_CONFIG_FIELDS = ['namespace','domain','locales','pages','crosslinks','companyinfo',
@@ -69,7 +69,7 @@ PageConfig.prototype.printJigs = function (){
 };
 
 PageConfig.prototype.setLocale = function(){
-//	this._locale = readCookie("reace")|| 'default';
+//	this._locale = readCookie("locale")|| 'default';
     var self = this;
     // set local
     self.locale = self["init-locale"] ||
@@ -95,12 +95,12 @@ PageConfig.prototype.prepareNamespace = function (){
 
     if (window && typeof namespace === 'string') {
         window[namespace] =  window[namespace]||{};
-        this.namespace = namespace;
         window[namespace].predefined = window[namespace].predefined || {};
         window[namespace].request = window[namespace].request || {};
         window[namespace].config = self;
     }
 
+    this.namespace = namespace;
 };
 
 PageConfig.prototype.getAllocateJigsText = function (){
@@ -123,7 +123,7 @@ PageConfig.prototype.allocateJigs = function (){
 
 PageConfig.prototype.getCanRoutesText = function () {
     var routes;
-    this.jigConfigs.map(function(jig){
+    return this.jigConfigs.map(function(jig){
         if (jig.options && jig.options.routes) {
             routes = jig.options.routes;
             return Object.keys(routes).map(function(route){
@@ -136,5 +136,25 @@ PageConfig.prototype.getCanRoutesText = function () {
 
 };
 
+PageConfig.prototype.getIncludes = function() {
+    var result = [];
+    if (this.includes && this.includes.length > 0) {
+        this.includes.forEach(function(item){
+            var uri;
+            //TODO undestand how urls of the type '//yd/fixtures/fixtures.js' work
+            // for now its pretty dirty, cause I don't know how steal does this stuff
+            uri = (typeof item.id === 'string') ? item.id : item;
+            uri = uri.replace('//','');
+            result.push(uri);
+        });
+    }
+    return result;
+};
+
+PageConfig.prototype.getIncludesText = function() {
+    return this.getIncludes().map(function(uri){
+        return 'require("'+uri+'");';
+    }).join('\n');
+};
 
 module.exports = PageConfig;

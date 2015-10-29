@@ -16,6 +16,8 @@ var JigConfig = require('loader-libs/jig-config.js'),
 
     ], //+jigs
 
+    IGNORED_JIGS = ['.yd-jig-tabs'],
+
 // utils, used in steal-types/conf.js
     upperSizeFirstLetter = function (string) {
         return string.toString()[0].toUpperCase() + string.toString().slice(1);
@@ -105,7 +107,7 @@ PageConfig.prototype.prepareNamespace = function (){
 
 PageConfig.prototype.getAllocateJigsText = function (){
     return this.jigConfigs.map(function(jig){
-        if (jig.controller) {
+        if (IGNORED_JIGS.indexOf(jig)===-1 && jig.controller) {
             return '\n new ' + jig.controller +
                 '("' + jig.key + '",' + JSON.stringify(jig.options || {}) +');';
         } else {
@@ -122,17 +124,17 @@ PageConfig.prototype.allocateJigs = function (){
 };
 
 PageConfig.prototype.getCanRoutesText = function () {
-    var routes;
-    return this.jigConfigs.map(function(jig){
+    var canRoutes=[];
+    this.jigConfigs.forEach(function(jig){
+        var routes;
         if (jig.options && jig.options.routes) {
             routes = jig.options.routes;
-            return Object.keys(routes).map(function(route){
-                return 'can.route(\''+route+'\','+ JSON.stringify(routes[route])+');';
-            }).join('\n');
-        } else {
-            return '';
+            Object.keys(routes).forEach(function(route){
+                canRoutes.push('can.route(\''+route+'\','+ JSON.stringify(routes[route])+');');
+            });
         }
-    }).join('\n');
+    });
+    return canRoutes.join('\n');
 
 };
 

@@ -30,6 +30,10 @@ module.exports = function(source) {
 		//TODO when it will work,...
 		maggaMerge(
 			self.resourcePath,
+			{
+				basePath: "/home/jaroslav/repos/JigMagga/yd",
+				defaultPath: "/home/jaroslav/repos/JigMagga/yd/page/default/index"
+			},
 			function (err, data) {
 				config = data;
 				console.log('@@@@@@@@@@@@@@@',self.resourcePath,data);
@@ -61,6 +65,10 @@ module.exports = function(source) {
 				['namespace','locales'].forEach(function(key){
 					console.log(key+" is ",config[key]);
 				});
+
+				console.log('CanRoutes:\n',pageConfig.getCanRoutesText());
+
+				console.log('AllocateJigs:\n',pageConfig.getAllocateJigsText());
 
 //		console.log('[CONF_LOADER] sending to callback:\n%s',callbackStrings.join('\n'));
 //		callback(null,);

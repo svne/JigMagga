@@ -1,6 +1,7 @@
 "use strict";
 
-var PageConfig = require('loader-libs/page-config.js');
+var PageConfig = require('loader-libs/page-config.js'),
+    STEAL_DEPRECATION_MSG = "[DEPRECATED] Using Steal.js is deprecated. Please refactor your code to not using steal.js";
 
 function somethingInBrowser(){
     var el = document.createElement("h3");
@@ -53,7 +54,8 @@ var contentLoaded =function (win, fn) {
 };
 
 module.exports = function(input, options) {
-    var pageConfig;
+    var pageConfig,
+        stealConfigFn = steal.config;
     if(typeof DEBUG !== "undefined" && DEBUG) {
         if(typeof document !== "object") throw new Error("The parse-loader cannot be used in a non-browser environment");
     }
@@ -66,9 +68,19 @@ module.exports = function(input, options) {
 
     // Some stubing stuff, that should be deleted
     // Made temporary to make the prototype page work
+    // gettextxt stuff
     window['_'] = function(str) {return str;};
+    window['_n'] = function(str) {return str;};
+    // dev
     steal.dev = console;
     window.win = window;
+
+    //steal deprecation message
+    steal.config = function(){
+        console.warn(STEAL_DEPRECATION_MSG,arguments);
+        return stealConfigFn.apply(this, arguments);
+    };
+
     // delete up to here
 
     contentLoaded(window, function(){
@@ -85,7 +97,13 @@ module.exports = function(input, options) {
 
         pageConfig.setLocale();
 
-        pageConfig.includeJigsTemplates();
+        pageConfig.includeTemplatesInJigs();
+
+        // Due to jigs = steal.config(steal.config("namespace")).jigs;
+        // in renderJig
+        pageConfig.copyJigsConfiguration();
+
+        pageConfig.browserSupport();
 
 
         document.body.className = document.body.className.replace(/\byd-onload\b/, '');

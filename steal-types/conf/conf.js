@@ -307,6 +307,7 @@
          */
         hasJigControllerAndIsNotDisabled = function (jig) {
             return !!(jig.controller && !jig.disabled && !(jig.includeController && !jig.render) && !(steal.config("isBuild") && !jig.render));
+
         },
         /**
          * returns a string of all routes that must be include

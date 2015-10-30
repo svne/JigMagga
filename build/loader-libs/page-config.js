@@ -14,9 +14,9 @@ var JigConfig = require('loader-libs/jig-config.js'),
         'api', //  can.fixture("GET " + Yd.config.api + Yd
         'services' // _("yd-jig-plz-check-count-of-partners", typeof servicescount !== "undefined" ? servicescount : Yd.config.services.count)
 
+
     ], //+jigs
 
-    IGNORED_JIGS = ['.yd-jig-tabs'],
 
 // utils, used in steal-types/conf.js
     upperSizeFirstLetter = function (string) {
@@ -81,7 +81,7 @@ PageConfig.prototype.setLocale = function(){
 //	console.log('PageConfig setLocale',this._locale);
 };
 
-PageConfig.prototype.includeJigsTemplates = function() {
+PageConfig.prototype.includeTemplatesInJigs = function() {
     var self = this,
         FALLBACK_LOCALE = 'de_DE';
     self.jigConfigs.forEach(function(jig) {
@@ -106,9 +106,22 @@ PageConfig.prototype.prepareNamespace = function (){
 };
 
 PageConfig.prototype.getAllocateJigsText = function (){
-    return this.jigConfigs.map(function(jig){
-        if (IGNORED_JIGS.indexOf(jig)===-1 && jig.controller) {
-            return '\n new ' + jig.controller +
+    var result = this.jigConfigs;
+
+    // Filter nonrendered jigs
+    // modified this rule (can cause problems)
+    // return !!(jig.controller && !jig.disabled && !(jig.includeController && !jig.render)
+    // && !(steal.config("isBuild") && !jig.render));
+    result = result.filter(function(jig){
+        // TODO fix the function to proper filtering
+        return jig.key !==".yd-jig-tabs";
+        //return (!(jig.disabled === true)) && (jig.render);
+    });
+
+    console.log('%s jigs will be rendered',result.length);
+    return result.map(function(jig){
+        if (jig.controller) {
+            return 'new ' + jig.controller +
                 '("' + jig.key + '",' + JSON.stringify(jig.options || {}) +');';
         } else {
             return '';
@@ -119,6 +132,7 @@ PageConfig.prototype.getAllocateJigsText = function (){
 
 PageConfig.prototype.allocateJigs = function (){
     // quick hack
+    //TODO rewrite PageConfig.allocateJigs
     eval(this.getAllocateJigsText());
 
 };
@@ -158,5 +172,18 @@ PageConfig.prototype.getIncludesText = function() {
         return 'require("'+uri+'");';
     }).join('\n');
 };
+
+
+PageConfig.prototype.copyJigsConfiguration = function () {
+    this.jigs =  this.jigConfigs.reduce(function(result ,jig){
+        result[jig.key] = jig.getConfig();
+        return result;
+    },{});
+};
+
+PageConfig.prototype.browserSupport = function () {
+    console.log('[TBD] Browser support stuff is not implemented')
+};
+
 
 module.exports = PageConfig;

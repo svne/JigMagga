@@ -2,6 +2,7 @@
 
 var JIG_CONFIG_FIELDS = ['controller','template','options','path','includes','render','prerender','slot',
     'disabled',
+    'includeController', // [renderJig]  if (jig.includeController ||
     'browser' // Yd.Jig.Noscript
 ];
 
@@ -10,6 +11,16 @@ function controllerToPath(ctrl){
     var path = ctrl.toLowerCase().split('.');
     path.push(path.slice(-1)[0]);
     return path.join('/')+'.js';
+}
+
+function pathToCss(ctrl) {
+    // Yd.Jig.Indextext -> yd/jig/indextext/css/socialmedia.sass
+    var path = ctrl.toLowerCase().split('.');
+    path.push('css',path.slice(-1)[0]);
+    return path.join('/')+'.scss';
+
+
+//    return  path + "/css/" + path.split("/").pop(-1) + ".scss";
 }
 
 function JigConfig(key, options) {
@@ -23,12 +34,6 @@ function JigConfig(key, options) {
             console.warn('[new JigConfig()] Unknown option "%s". Ignoring',key);
         }
     });
-    if (!jig.disabled) {
-        if (!jig.path && jig.controller) {
-            jig.path = controllerToPath(jig.controller);
-        }
-//	self.children = [];
-    }
     jig.options = jig.options || {};
 }
 
@@ -41,29 +46,67 @@ JigConfig.prototype.print = function(){
         }});
 };
 
-JigConfig.prototype.process = function(addDependencyCb){
-    var includes = this.includes;
-    if (this.path) {
-        addDependencyCb(this.path);
+JigConfig.prototype.getResourceList = function(isBuild){
+    var result = [],
+        includes = this.includes,
+        jig = this,
+        path;
+
+    // Functionality from conf.js renderJig
+    if (jig.render === false && jig.key !== "head") {
+        path = controllerToPath(jig.controller);
+        if (jig.css !== false) {
+            jig.css = pathToCss(jig.controller)
+        }
+        if (jig.includeController || isBuild) {
+            result.push(path);
+        }
+    } else {
+        jig.render = true;
     }
 
-    if (this.template) {
-        addDependencyCb(this.template);
-    }
 
-    if (includes) {
-        switch (typeof includes) {
-            case 'string':
-                addDependencyCb(includes);
-                break;
-            case 'object':
-                if (includes.length > 0) {
-                    includes.forEach(function(include){
-                        addDependencyCb(include);
-                    });
-                }
+    if (!jig.disabled) {
+
+        if (!jig.path && jig.controller) {
+            jig.path = controllerToPath(jig.controller);
+        }
+
+        if (jig.path) {
+            result.push(jig.path);
+        }
+
+        if (jig.css) {
+            result.push(jig.css);
+        }
+
+        if (jig.template) {
+            result.push(jig.template);
+        }
+        if (includes) {
+            switch (typeof includes) {
+                case 'string':
+                    result.push(includes);
+                    break;
+                case 'object':
+                    if (includes.length > 0) {
+                        includes.forEach(function(include){
+                            result.push(include);
+                        });
+                    }
+            }
         }
     }
+    console.log('Includes for "%s" jig:\n',this.key,result);
+    return result;
+};
+
+JigConfig.prototype.getConfig = function() {
+    var self = this;
+    return JIG_CONFIG_FIELDS.map(function(key){
+        return self[key];
+    });
+
 };
 
 JigConfig.prototype.includeTemplate = function (locale) {
@@ -87,5 +130,6 @@ JigConfig.prototype.includeTemplate = function (locale) {
         console.warn("Missing template for Controller: ", jig.controller);
     }
 };
+
 
 module.exports = JigConfig;

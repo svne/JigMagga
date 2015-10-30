@@ -31,8 +31,9 @@ module.exports = function(source) {
 		maggaMerge(
 			self.resourcePath,
 			{
-				basePath: "/home/jaroslav/repos/JigMagga/yd",
-				defaultPath: "/home/jaroslav/repos/JigMagga/yd/page/default/index"
+				basePath: path.resolve('yd'),
+				// TODO make the process universal
+				defaultPath: path.resolve('yd/page/default/index')
 			},
 			function (err, data) {
 				config = data;
@@ -43,15 +44,16 @@ module.exports = function(source) {
 				// load all includes
 				// load all jigs
 				pageConfig.jigConfigs.forEach(function(jigConfig){
-					jigConfig.process(function(dep){
-						callbackStrings.push("require('" + path.resolve(dep)+"');");
-						// TODO: add watch and hop swat functionality somewhere here
+					callbackStrings = callbackStrings.concat(jigConfig.getResourceList(pageConfig.isBuild)
+						.map(function(resource){
+							return "require('" + path.resolve(resource)+"');";
+						}));
+					// TODO: add watch and hop swat functionality somewhere here
 //				self.addDependency(path.resolve(dep));
-					});
 				});
 
 				// add legacy staff
-				callbackStrings.push('require("lib/lib.js");');
+				callbackStrings.push("require('"+path.resolve('lib/lib.js')+"');");
 
 //				pageConfig.getIncludes().forEach(function(uri){
 //					callbackStrings.push('require("'+uri+'");');

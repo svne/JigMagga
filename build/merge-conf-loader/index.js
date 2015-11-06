@@ -33,7 +33,7 @@ module.exports = function(source) {
 			{
 				basePath: path.resolve('yd'),
 				// TODO make the process universal
-				defaultPath: path.resolve('yd/page/default/index')
+				defaultPath: path.resolve('yd/page/default')
 			},
 			function (err, data) {
 				config = data;

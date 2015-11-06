@@ -151,6 +151,7 @@ function sprintf() {
 }
 sprintf.regex = /%%|%(\d+\$)?([-+#0 ]*)(\*\d+\$|\*|\d+)?(\.(\*\d+\$|\*|\d+))?([scboxXuidfegEG])/g;
 
+module.exports = sprintf;
 /**
  * Trival printf implementation, probably only useful during page-load.
  * Note: you may as well use "document.write(sprintf(....))" directly

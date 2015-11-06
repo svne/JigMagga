@@ -69,7 +69,7 @@ module.exports = function(input, options) {
     // Some stubing stuff, that should be deleted
     // Made temporary to make the prototype page work
     // gettextxt stuff
-    window['_'] = function(str) {return str;};
+    window['_'] = function(str) {return str.toUpperCase();};
     window['_n'] = function(str) {return str;};
     // dev
     steal.dev = console;

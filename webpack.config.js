@@ -1,12 +1,22 @@
 var webpack = require("webpack"),
+    locale = 'de_DE',
     SassVars = JSON.stringify({
       "yd-domain":"lieferando_de",
       "yd-assetdomain": "",
-      "yd-locale":"de_DE",
+      "yd-locale": locale,
       "yd-mobile":"false",
       "yd-dev":"false",
       "yd-pagetype": "default",
       "yd-satellites ":"false"
+    }),
+    mergeVars = JSON.stringify({
+      "base": "yd",
+      "default": "yd/page/default"
+    }),
+    localeVars = JSON.stringify({
+      "path": "yd/locales",
+      "domain": "lieferando.de",
+      "locale": locale
     });
 
 
@@ -24,7 +34,8 @@ module.exports = {
       "can": __dirname + "/bower_components/canjs/steal/canjs",
       "cancjs": __dirname + "/node_modules/can/dist/cjs/can.js",
       "jquery": __dirname + "/bower_components/jquerypp",
-      "core": __dirname + "/core"
+      "core": __dirname + "/core",
+      "sprintf": __dirname +"/steal-types/po/sprintf.js"
 //      "steal": __dirname+"/steal/steal.js"
 
     }
@@ -41,13 +52,14 @@ module.exports = {
       "window.$": "jquery", //NOTE this is for jStorage. maybe it is possible to make it with imports-loader
 //      "can": "cancjs"
 //      "steal": "steal"
+      sprintf: "sprintf",
     })
   ],
   module: {
     loaders: [{
 //      test: /yd(?:jig|page).*\.js$/,
       test: /\.js$/,
-      loaders: ["regexp","destealify"],
+      loaders: ["regexp","jig-translate?"+localeVars,"destealify"],
       rules: [
         {
           'for': new RegExp('^\\s*\/\/!steal-remove-start(\\n|.)*?\/\/!steal-remove-end.*$', 'gm'),
@@ -56,10 +68,10 @@ module.exports = {
       ]
     }, {
       test: /(\.conf)$/,
-      loaders: ["parse-conf","merge-conf"]
+      loaders: ["parse-conf","prepare-conf","merge-conf?"+mergeVars]
     }, {
       test: /(\.stache|\.ejs|\.mustache)$/,
-      loaders: ['destealify','canjs-template']
+      loaders: ['destealify',"jig-translate?"+localeVars,'canjs-template']
     }, {
       test: /\.scss$/,
       loaders: ['style', 'css', 'sass','jsontosass?'+SassVars]

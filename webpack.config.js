@@ -1,1 +1,0 @@
-module.exports = require("build-tools/webpack-config-project")(__dirname);

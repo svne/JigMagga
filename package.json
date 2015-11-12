@@ -46,7 +46,7 @@
     "test": "npm run unit && npm run integration",
     "install": "node node_modules/bower/bin/bower install --config.cwd=bower_components --config.directory=.",
     "prepublish": "node node_modules/bower/bin/bower install steal=git://github.com/bitovi/legacy-steal.git --config.directory=.",
-    "build-lieferando-index": "node_modules/.bin/webpack -c --progress --colors --display-error-details yd/page/lieferando.de/index/index.js yd/page/lieferando.de/index/bundle.js"
+    "build-lieferando-index": "node_modules/.bin/webpack -c --progress --colors --display-error-details --config=yd/webpack.config.js yd/page/lieferando.de/index/index.js yd/page/lieferando.de/index/bundle.js"
   },
   "devDependencies": {
     "bower": "1.3.9",

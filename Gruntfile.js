@@ -310,7 +310,7 @@ module.exports = function (grunt) {
                 options: {
                     keepalive: true,
                     open: true,
-                    hostname: "localhost",
+                    hostname: "10.10.12.201",
                     middleware: function (connect, options, middlewares) {
 
                         var generateDefaultBase = function (cwd, filename) {

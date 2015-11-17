@@ -13,6 +13,9 @@ var walker = createWalker('.', {
     filters: config.coreFolders
 });
 
+var webpack = require("webpack");
+var webpackConfig = require("./yd/webpack.config.js");
+
 module.exports = function (grunt) {
     var namespace;
 
@@ -430,7 +433,6 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-prompt');
     grunt.loadTasks('tasks');
 
-
     grunt.registerTask('generate',
         [
             'prompt:generate',
@@ -485,8 +487,9 @@ module.exports = function (grunt) {
      * TODO
      */
 
-    grunt.registerTask("build", "Will build css and js production files", function () {
+//    grunt.registerTask("build", "Will build css and js production files", function () {
+//
+//    });
 
-    });
 
 };

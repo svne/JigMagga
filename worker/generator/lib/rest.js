@@ -254,7 +254,14 @@ exports.doCall = function (options, callback) {
     var getOptions = {
         url: options.path + query,
         bufferType: "buffer",
-        headers: { "YD-X-Domain": options.db, "Accept-Language": options.language, 'User-Agent': 'ydFrontend_Worker' }
+        headers: {
+          "YD-X-Domain": options.db,
+          "Accept-Language": options.language,
+          "User-Agent": "ydFrontend_Worker",
+          "x-takeawayUserAgent": "html-worker",
+          "x-domain": options.db,
+          "x-device": "web"
+        }
     };
     if (useFixtures()) {
         getOptions.apiCallDescriptor = options.apiCallDescriptor;

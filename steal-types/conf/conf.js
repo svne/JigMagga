@@ -664,6 +664,10 @@
             setConfigs(defaultPath);
             setConfigs(path);
             setConfigs("/" + namespace.toLowerCase() + "/page/" + getDomain());
+            configs.forEach(function(conf){
+                console.log('configs from conf.js',conf);
+            });
+
             return configs;
         },
         /**

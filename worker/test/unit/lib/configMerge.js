@@ -5,6 +5,7 @@
 var expect = require('chai').expect;
 var sinon = require('sinon');
 var rewire = require('rewire');
+var hgl = require('highland');
 
 var WorkerError = require('../../../lib/error').WorkerError;
 
@@ -20,58 +21,73 @@ describe('configMerge', function () {
         var data;
         var config = {foo: 1};
 
+        var rs; // readable stream with data
+
         beforeEach(function () {
             data = {
                 message: message,
                 basePath: basePath
             };
+
+            rs = new require('stream').Readable({objectMode: true});
+            rs._read = function () {
+                rs.push(data);
+                rs.push(null);
+            };
+
             configMergeStub.getPageConfig = sinon.stub();
 
             configMerge.__set__('configMerge', configMergeStub);
         });
 
-        it('should create config if there is no isPageConfigLoaded flag and set this flag is there is page property in message', function (done) {
-            configMergeStub.getPageConfig.callsArgWithAsync(3, null, config);
-
-            var stream = configMerge.getConfigStream();
-            
-            stream.on('data', function (res) {
-                expect(res).to.include.keys('message', 'config', 'isPageConfigLoaded', 'basePath');
-                expect(configMergeStub.getPageConfig.called).to.eql(true);
-                var getPageConfig = configMergeStub.getPageConfig.getCall(0);
-
-                expect(getPageConfig.args).to.contain(basePath + '/page', message.basedomain, message.page);
-                done();
-            });
-
-            stream.write(data);
-        });
-
-        it('should not call getPageConfig if page config already loaded', function (done) {
-            data.isPageConfigLoaded = true;
-            var stream = configMerge.getConfigStream();
-            
-            stream.on('data', function (res) {
-                expect(res).to.include.keys('message', 'isPageConfigLoaded', 'basePath');
-                expect(configMergeStub.getPageConfig.called).to.eql(false);
-                done();
-            });
-
-            stream.write(data);
-        });
-
         it('should should emit err message with WorkerError if error in getPageConfig happened', function (done) {
+
             configMergeStub.getPageConfig.callsArgWithAsync(3, 'some error');
 
-            var stream = configMerge.getConfigStream();
-            
+            var stream = rs.pipe(hgl.pipeline(configMerge.getConfigStream()));
+
+            stream.on('data', function () {});
             stream.on('error', function (err) {
                 expect(err).to.be.an.instanceOf(WorkerError);
                 expect(err.originalMessage).to.eql(message);
                 done();
             });
-
-            stream.write(data);
         });
+
+
+        it('should create config if there is no isPageConfigLoaded flag and set this flag is there is page property in message', function (done) {
+
+            configMergeStub.getPageConfig.callsArgWithAsync(3, null, config);
+
+            var stream = rs.pipe(hgl.pipeline(configMerge.getConfigStream()));
+
+            stream.on('data', function (res) {
+
+                expect(res).to.include.keys('message', 'config', 'isPageConfigLoaded', 'basePath');
+
+                expect(configMergeStub.getPageConfig.called).to.eql(true);
+
+                var getPageConfig = configMergeStub.getPageConfig.getCall(0);
+
+                expect(getPageConfig.args).to.contain(basePath + '/page', message.basedomain, message.page);
+
+                done();
+            });
+        });
+
+        it('should not call getPageConfig if page config already loaded', function (done) {
+
+            data.isPageConfigLoaded = true;
+
+            var stream = rs.pipe(hgl.pipeline(configMerge.getConfigStream()));
+
+            stream.on('data', function (res) {
+                expect(res).to.include.keys('message', 'isPageConfigLoaded', 'basePath');
+                expect(configMergeStub.getPageConfig.called).to.eql(false);
+                done();
+            });
+        });
+
+
     });
 });

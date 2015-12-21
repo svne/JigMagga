@@ -10,7 +10,7 @@ var error = require('../../../lib/error');
 var WorkerError = error.WorkerError;
 
 describe('error', function () {
-    describe.skip('#getErrorHandler', function () {
+    describe('#getErrorHandler', function () {
         var _kill;
         before(function () {
             _kill = process.kill;
@@ -33,15 +33,21 @@ describe('error', function () {
             expect(process.kill.called).to.eql(false);
         });
 
-        it('should log error and kill the process in the case of uncaught error', function () {
+        it('should log error and kill the process in the case of uncaught error', function (done) {
+
             var callback = sinon.spy(),
                 log = sinon.spy();
-            
+
             var handler = error.getErrorHandler(log, callback);
             handler(new Error(errorMessage));
             expect(log.called).to.eql(true);
             expect(callback.called).to.eql(false);
-            expect(process.kill.called).to.eql(true);
+
+            setTimeout(function () {
+                expect(process.kill.called).to.eql(true);
+                done();
+            }, 200);    // process.kill command will be executed after 100ms delay
+
         });
     });
 });

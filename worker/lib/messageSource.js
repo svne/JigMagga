@@ -21,8 +21,8 @@ var error = require('../lib/error');
 module.exports = {
     /**
      * return a stream with messages from amqp queues. 
-     * Obtains a queue names using helper.getQueNames create an array
-     * of stream for each of queues in the list merge them in one stream
+     * Obtains a queue names using helper.getQueNames, create an array
+     * of stream for each of queues in the list, merge them in one stream
      * and pipe to the messageParser
      * 
      * @param  {object} program

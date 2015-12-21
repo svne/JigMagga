@@ -121,6 +121,7 @@ var removePropertyByPath = function (itemPath, object) {
 
 
 var getExcludedPredefinedFields = function (jigs) {
+
     var apiCallJigs = _.filter(_.keys(jigs), function (jigName) {
         return jigs[jigName].apicalls ;
     });

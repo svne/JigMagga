@@ -245,7 +245,8 @@ module.exports = {
         console.log('IS MSG FORMAT CORRECT', message, isEmptyError(message));
 
         return Boolean((message && !isEmptyError(message) && message.basedomain &&
-            !this.isDomainInSkipList(message.basedomain, config.main.skipDomains)));
+            !this.isDomainInSkipList(message.basedomain, config.main.skipDomains)) &&
+            ((!message.page && !message.url) || (message.page && message.url)));
     },
 
     /**

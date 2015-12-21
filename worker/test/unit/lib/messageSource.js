@@ -5,9 +5,11 @@ var path = require('path');
 var rewire = require('rewire');
 var streamHelper = require('../../../lib/streamHelper');
 var expect = require('chai').expect;
+var sinon = require('sinon');
 
 var messageSource = rewire('../../../lib/messageSource');
-var message = require('../../../testData/message.json'); 
+
+var message = require('../../../testData/message.json');
 
 describe('messageSource', function () {
     var log = function  () {};
@@ -32,29 +34,24 @@ describe('messageSource', function () {
     });
 
     describe('#getQueueSource', function () {
+
         var queuePool = {
-            amqpQueue: {}
-        };
-        var messageHelper = {
-            assignMessageMethods: function () {return streamHelper.duplex();}
+            addRoutes: sinon.spy(),
+            send: sinon.spy()
         };
 
-        messageSource.__set__({
-            messageHelper: messageHelper
-        });
+        var msg = {foo: 'bar'};
 
-        it('should proceed the messages throw the queue', function (done) {
-            var source = streamHelper.duplex();
-            queuePool.amqpQueue.getStream = function () {
-                return source;
-            };
-            var msg = {foo: 'bar'};
-            var stream = messageSource.getQueueSource({}, function (){}, queuePool);
-            stream.on('data', function (data) {
-                expect(data).to.eql(msg);
+        it('should pass the messages throw the queue', function (done) {
+
+
+            var s = messageSource.getQueueSource({}, function (){}, queuePool);
+            s.on('data', function (res) {
+                expect(res).to.equal(msg);
                 done();
             });
-            source.write(msg);
+
+            s.write(msg);
         });
 
         it('should throw error if there is no amwpQueue in pool', function () {
@@ -89,23 +86,26 @@ describe('messageSource', function () {
         it('should add to message values object', function (done) {
             var values = {foo: 'bar'};
             var stream = messageSource.getDefaultSource({values: JSON.stringify(values)}, function () {});
-            
+
             stream.on('data', function (msg) {
                 expect(msg.message).to.eql(values);
                 done();
             });
         });
-   
-        it('should add to message any field with Id postfix', function (done) {
-            var message = {fooId: 'bar', bar: 'bar'};
+
+        it('should add to message only certain keys', function (done) {
+
+            var message = {page: 'foo', locale: 'de_DE', uri: '/bar/foo'};
             var stream = messageSource.getDefaultSource(message, function () {});
-            
+
             stream.on('data', function (msg) {
-                expect(msg.message).to.have.property('fooId', 'bar');
-                expect(msg.message).to.not.have.property('bar');
+                console.log(msg);
+                expect(msg.message).to.have.property('page');
+                expect(msg.message).to.have.property('locale');
+                expect(msg.message).to.not.have.property('uri');
                 done();
             });
         });
-              
+
     });
 });

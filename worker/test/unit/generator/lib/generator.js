@@ -61,10 +61,10 @@ var jigs = {
 };
 
 var restaurants = [
-    {bla: 'foo', description: 'fooo bar'},
-    {bla: 'foo', description: 'fooo bar'},
-    {bla: 'foo', description: 'fooo bar'},
-    {bla: 'foo', description: 'fooo bar'},
+    {bla1: 'foo1', description: 'fooo bar 1'},
+    {bla2: 'foo2', description: 'fooo bar 2'},
+    {bla3: 'foo3', description: 'fooo bar 3'},
+    {bla4: 'foo4', description: 'fooo bar 4'}
 ];
 
 
@@ -73,10 +73,9 @@ describe('generator', function () {
 
         it('should return object with lists of excluded fields', function () {
             var result = getExcludedPredefinedFields(jigs);
-            console.log(result);
-            expect(result).to.be.an('object');
-            expect(Object.keys(result).length).to.eql(1);
 
+            expect(result).to.be.an('object');
+            expect(Object.keys(result).length).to.eql(2);
             expect(result.restaurants).to.be.an('array');
             expect(result.restaurants.length).to.eql(1);
             expect(result.restaurants[0]).to.eql('description');
@@ -87,16 +86,16 @@ describe('generator', function () {
     describe('excludePredefinedFields', function () {
         it('should exclude fields from predefined variable array', function () {
             var result = excludePredefinedFields(restaurants, ['description']);
-
-            expect(result[0]).to.include.keys('bla');
-            expect(result[0]).to.not.include.keys('description');
+            expect(result[0]).to.include.keys('bla1');
+            expect(result[0]).to.include.keys('description');
+            expect(result[0].description).to.equal(undefined);
         });
 
         it('should exclude fields from predefined variable object', function () {
             var result = excludePredefinedFields(restaurants[0], ['description']);
-
-            expect(result).to.include.keys('bla');
-            expect(result).to.not.include.keys('description');
+            expect(result).to.include.keys('bla1');
+            expect(result).to.include.keys('description');
+            expect(result.description).to.equal(undefined);
         });
 
     });

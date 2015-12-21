@@ -83,8 +83,6 @@ describe('helper', function () {
         });
     });
 
-
-
     describe('#createSubProcess', function () {
         var child;
         before(function () {
@@ -125,7 +123,7 @@ describe('helper', function () {
             var clock;
             before(function () {
                 clock = sinon.useFakeTimers();
-            });      
+            });
             it('should send an error if process will not send a message in 15000 msec', function (done) {
                 helper.createSubProcess(__dirname + '/../../../testData/asyncProcess.js', function (err) {
                     expect(err).to.be.a('string');
@@ -161,7 +159,7 @@ describe('helper', function () {
                expect(res).to.have.length(4);
                expect(res[0]).to.include.keys('path', 'name');
                done();
-            }); 
+            });
         });
 
         it('should return error if folderPath uncorrect', function (done) {
@@ -192,12 +190,15 @@ describe('helper', function () {
     });
 
     describe('#generateBucketName', function () {
-        var buckets = {
-            live: {
-                'lieferando.de': 'www.lieferando.de'
-            },
-            stage: {
-                'lieferando.de': 'stage.lieferando.de'
+
+        var config = {  // e.g. JigMagga/yd/config/main.json -> knox
+            buckets: {
+                live: {
+                    'lieferando.de': 'www.lieferando.de'
+                },
+                stage: {
+                    'lieferando.de': 'stage.lieferando.de'
+                }
             }
         };
 
@@ -205,10 +206,11 @@ describe('helper', function () {
             var data = {
                 message: message
             };
-            var name = helper.generateBucketName(data, {live: true}, buckets);
+
+            var name = helper.generateBucketName(data, {live: true}, config);
             expect(name).to.eql('www.lieferservice.de');
 
-            name = helper.generateBucketName(data, {}, buckets);
+            name = helper.generateBucketName(data, {}, config);
             expect(name).to.eql('stage.lieferservice.de');
         });
 
@@ -217,14 +219,16 @@ describe('helper', function () {
             var data = {
                 message: {basedomain: 'google.com'}
             };
-            var name = helper.generateBucketName(data, {live: true}, buckets);
+            var name = helper.generateBucketName(data, {live: true}, config);
             expect(name).to.eql('www.google.com');
 
-            name = helper.generateBucketName(data, {}, buckets);
+            name = helper.generateBucketName(data, {}, config);
             expect(name).to.eql('stage.google.com');
         });
     });
+
     describe('#isMessageFormatCorrect', function () {
+
         var config = {
             main: {
                 skipDomains: [

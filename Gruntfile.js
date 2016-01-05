@@ -343,15 +343,14 @@ module.exports = function (grunt) {
                             // compile scsss file on server side (testing phantom)
                             else if (req.url.indexOf("/sass/compile") !== -1) {
                                 sass.render({
-                                    data: req.body.scss,
-                                    success: function (css) {
-                                        res.end(css);
-                                    },
-                                    error: function (error) {
-                                        console.log(error);
-                                        res.end("");
+                                    data: req.body.scss
+                                }, function(err, result) { 
+                                    if(err){
+                                        console.log(err);
+                                    }else{
+                                        res.end(result.css);
                                     }
-                                });
+                                 });
                             }
                             // check default directory for html file
                             else if (req.url && req.url.search(/\.[s]{0,1}html/) !== -1) {

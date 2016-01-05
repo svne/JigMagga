@@ -90,7 +90,7 @@
     "longjohn": "~0.2.4",
     "mime": "~1.2.11",
     "mustache": "~0.8.2",
-    "node-sass": "~0.9.3",
+    "node-sass": "^3.3.3",
     "phridge": "^1.0.6",
     "q": "~1.0.1",
     "qretry": "^0.2.1",
@@ -103,7 +103,6 @@
     "uglify-js": "~2.4.15",
     "walk": "~2.3.3",
     "wd": "^0.3.11",
-    "winston": "~0.7.3",
-    "winston-posix-syslog": "0.0.7"
+    "winston": "~0.7.3"
   }
 }

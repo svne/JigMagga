@@ -46,7 +46,7 @@ There are two use cases for HTML-worker:
 - Listening on amqp queue and generating and uploading pages based on messages that are coming.
 - Generate and upload some pages based on parameters with what the worker was started.
 
-###Working with a Queue###
+### Working with a Queue###
 
 If you want to connect your worker to an amqp server you have to use -q (or --queue) flag and specify the credentials of your amqp
 server. For instance `node worker -n yournamespace -d domain -q`. After starting worker connects to three different queues:
@@ -92,7 +92,7 @@ Another useful parameter is a `versionnumber` if it exists and has some value ge
 For instance:
 `node worker -n yournamespace -q -H -d foo.com --versionnumber 2.7.2` 
 
-####Error flow
+#### Error flow
 
 If there is some error in worker it pushs the message that causes the error to error queue. After the issue is fixed you probably want to regenerate all messages in error queue for doing this you can connect your worker to error queue. For instance You had one worker for domain foo.com with high priority after some time it generated some error message and pushed them to `pages.generate.foo.com.error.high` To generate this pages you can start the same worker with additional -e flag:
 
@@ -103,7 +103,7 @@ If errors will appear again in error worker they will come to `pages.generate.fo
 And if there is again some errors they will go back to `pages.generate.foo.com.error.high`
 
 
-####Message parameters
+#### Message parameters
 Worker support two message content types: `text/plain` and `text/json`. But exact message has to be only in json format. Below you can find a list of fields that could present in message:
 - *basedomain* should be in each message. Means for what domain generated page belongs
 - *page* and *url*. Page is responsible for specifying page type that will be generated, url used for non static pages and value will be used for page url generation. Those parameters are not mandatory if there is no page and url in message. The worker will grab a list of pages from config that are not dependent on url parameter(static pages) and will generate all of them.
@@ -129,7 +129,7 @@ Here is some message example:
 }
 ```
 
-###Generating some page directly with worker without queue###
+### Generating some page directly with worker without queue###
 One of use cases of such usage of worker is the generation of static pages. Static page is a page with a URL that does not depend of data that is in this page.
 For instance the index and imprint pages are static.
 
@@ -152,7 +152,7 @@ Some time you have to generate some non static page for instance menu page for s
 
 As you see `-j` or `--values` it's a key that accept any json value and use it like a data for all api calls.
 
-###Worker Configuration###
+### Worker Configuration###
 
 All worker configuration files should be at the `config` folder that should be at the root of project inside JigMagga. If you have just
 generated a project you can find in this folder these files:

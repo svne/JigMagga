@@ -132,6 +132,10 @@ var builder = {
                         }
 
                     }, function (err, results) {
+                        if (err) {
+                            return callback(err);
+                        }
+
                         data.build.dependencies = results;
                         callback(null, data);
                     });
@@ -213,7 +217,7 @@ var builder = {
             return es.map(function (data, callback) {
                 if (data.build.jsgenerate) {
                     async.mapSeries(data.build.dependencies, function (item, cb) {
-                        if (item && item.buildType === "js") {
+                        if (item.buildType === "js") {
                             var fileString = item.text;
                             if (fileString) {
                                 if (data.build.live) {

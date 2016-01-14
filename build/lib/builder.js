@@ -113,19 +113,19 @@ var builder = {
                             } else {
                                 sass.render({
                                     data: sassImport + "\n" + item.text,
-                                    success: function (css) {
+                                    includePaths: [data.build.jigMaggaPath],
+                                    outputStyle: 'nested'
+                                  }, function(err, result) {
+                                      if (err) {
+                                         cb(new Error(error), null);
+                                      } else {
                                         internalCache[item.id.path] = {};
                                         internalCache[item.id.path].notcompiled = item.text;
                                         internalCache[item.id.path].sassImport = sassImport;
-                                        internalCache[item.id.path].text = item.text = css;
+                                        internalCache[item.id.path].text = item.text = result.css;
                                         cb(null, item);
-                                    },
-                                    error: function (error) {
-                                        throw new Error(error);
-                                    },
-                                    includePaths: [data.build.jigMaggaPath],
-                                    outputStyle: 'nested'
-                                });
+                                      }
+                                  });
                             }
                         } else {
                             cb(null, item);

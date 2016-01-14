@@ -213,7 +213,7 @@ var builder = {
             return es.map(function (data, callback) {
                 if (data.build.jsgenerate) {
                     async.mapSeries(data.build.dependencies, function (item, cb) {
-                        if (item.buildType === "js") {
+                        if (item && item.buildType === "js") {
                             var fileString = item.text;
                             if (fileString) {
                                 if (data.build.live) {

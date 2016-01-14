@@ -89,7 +89,7 @@ else  {
 
 process.on('uncaughtException', function (err) {
     process.stdout.write('error :' + err + err.stack);
-    process.kill();
+    process.exit(2);
 });
 
 function checkBucketEnv(){
@@ -100,5 +100,3 @@ function checkBucketEnv(){
         return false;
     }
 }
-
-

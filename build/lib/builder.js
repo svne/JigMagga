@@ -117,7 +117,7 @@ var builder = {
                                     outputStyle: 'nested'
                                   }, function(err, result) {
                                       if (err) {
-                                         cb(new Error(error), null);
+                                         cb(new Error(err), null);
                                       } else {
                                         internalCache[item.id.path] = {};
                                         internalCache[item.id.path].notcompiled = item.text;

@@ -343,12 +343,13 @@ module.exports = function (grunt) {
                             // compile scsss file on server side (testing phantom)
                             else if (req.url.indexOf("/sass/compile") !== -1) {
                                 sass.render({
-                                    data: req.body.scss
-                                }, function(err, result) { 
-                                    if(err){
+                                    data: req.body.scss || ""
+                                }, function(err, result) {
+                                    if (err) {
                                         console.log(err);
-                                    }else{
-                                        res.end(result.css);
+                                        res.end("");
+                                    } else {
+                                        res.end(result.css || "");
                                     }
                                  });
                             }

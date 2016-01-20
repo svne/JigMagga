@@ -59,7 +59,7 @@ if (program.uploadmedia) {
 
 else  {
     checkBucketEnv();
-    
+
     helper.createStreamWithSettings(program)
         .pipe(configMerger.getConfig())
         .pipe(configMerger.getPagesThatMatchThePageParam())
@@ -89,14 +89,14 @@ else  {
 
 process.on('uncaughtException', function (err) {
     process.stdout.write('error :' + err + err.stack);
-    process.kill();
+    process.exit(2);
 });
 
 function checkBucketEnv(){
-    if(program.bucket.indexOf('stage') !== -1 && !program.live) {
+    var isLiveBucket = program.bucket.indexOf('stage') === -1;
+
+    if(isLiveBucket && !program.live) {
         throw new Error('-x --live option is required');
         return false;
     }
 }
-
-

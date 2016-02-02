@@ -123,8 +123,17 @@ var generateStream = es.through(function (data) {
     ydGetText.setLocale(data.message.locale);
     generator.init(knox, ydGetText, saveDiskPath);
     // generate json and html files
-
     json = _.map(data.apiCallResult, generator.generateJsonPage);
+
+    // will return only the first item containing the last 20 ratings
+    var ensureOneItemForRatings = function (data) {
+        if(data[0][0].url.indexOf('mobile/ratings') !== -1){
+            return data[0];
+        }
+        return data;
+    };
+
+    json = ensureOneItemForRatings(json);
 
     if (data.config.uploadOnlyJson) {
         return this.emit('data', {data: data, json: json, html: []});

@@ -161,3 +161,7 @@ function printf() {
     while (i < args.length) args[i] = 'a[' + (i++) + ']';
     document.write(eval('sprintf(' + args + ')'));
 }
+
+if ( typeof module === "object" && typeof module.exports === "object" ) {
+  module.exports = sprintf;
+}

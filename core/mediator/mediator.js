@@ -79,6 +79,7 @@ steal("can/construct", "can/map", function () {
                 self.attr(queueName, {"subscribers": []});
                 self._addmonitorQueue(queueName);
             }
+            can.trigger.call(self, queueName, [value]);
             self[queueName].attr("publisher", publisher);
             self[queueName].attr("value", value);
             self[queueName].attr("time", new Date());

@@ -58,7 +58,9 @@ if (program.uploadmedia) {
  */
 
 else  {
-    checkBucketEnv();
+    if (program.upload) {
+        checkBucketEnv();
+    }
 
     helper.createStreamWithSettings(program)
         .pipe(configMerger.getConfig())
@@ -93,7 +95,7 @@ process.on('uncaughtException', function (err) {
 });
 
 function checkBucketEnv(){
-    var isLiveBucket = program.bucket.indexOf('stage') === -1;
+    var isLiveBucket = program.upload && program.bucket.indexOf('stage') === -1;
 
     if(isLiveBucket && !program.live) {
         throw new Error('-x --live option is required');

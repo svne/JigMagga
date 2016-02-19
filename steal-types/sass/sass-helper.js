@@ -7,7 +7,32 @@
      * @returns {string}
      */
     function sassImportFn(sassSteal, transform) {
+        var sassyJigConfig = false,
+            prefix,
+            suffix;
+
+        if (Yd.config && Yd.config.jigs) {
+            sassyJigConfig = JSON.stringify(Yd.config.jigs, null, 4);
+            prefix = "$config-jigs: ";
+            suffix = ";";
+
+            sassyJigConfig = sassyJigConfig.replace(/{/g, "(");
+            sassyJigConfig = sassyJigConfig.replace(/}/g, ")");
+            sassyJigConfig = sassyJigConfig.replace(/\[/g, "(");
+            sassyJigConfig = sassyJigConfig.replace(/]/g, ")");
+            sassyJigConfig = sassyJigConfig.replace(/"([^"']+)":/g, "$1: ");
+            sassyJigConfig = sassyJigConfig.replace(/"([^"']+(px|%))"/g, "$1");
+            sassyJigConfig = sassyJigConfig.replace(/"/g, "'");
+            sassyJigConfig = sassyJigConfig.replace(/\s*\B(\.)/g, " ");
+            sassyJigConfig = prefix + sassyJigConfig + suffix;
+        }
+
+        //console.log(prefix + sassyJigConfig + suffix);
         var sassText = "";
+
+        if(sassyJigConfig) {
+            sassText += sassyJigConfig;
+        }
 
         if (sassSteal) {
             // set normal variables as sass variables
@@ -18,6 +43,7 @@
                 sassText += transform(sassSteal, sassText);
             }
         }
+
         return sassText;
     }
 

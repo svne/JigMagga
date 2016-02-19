@@ -122,18 +122,16 @@ var generateStream = es.through(function (data) {
 
     ydGetText.setLocale(data.message.locale);
     generator.init(knox, ydGetText, saveDiskPath);
+
     // generate json and html files
     json = _.map(data.apiCallResult, generator.generateJsonPage);
 
-    // will return only the first item containing the last 20 ratings
-    var ensureOneItemForRatings = function (data) {
-        if(data[0][0].url.indexOf('mobile/ratings') !== -1){
-            return data[0];
-        }
-        return data;
-    };
-
-    json = ensureOneItemForRatings(json);
+    // Only the last 20 restaurant ratings should be shown on mobile devices. This ratings are in the first array element.
+    // Thus we return only the first array item containing the last 20 ratings.
+    // Besides, the generated json file with ratings is not valid. The limitation on the first item solves this problem es well.
+    if (json[0] && json[0][0] && json[0][0].url && json[0][0].url.indexOf('mobile/ratings') !== -1) {
+        json = json[0];
+    }
 
     if (data.config.uploadOnlyJson) {
         return this.emit('data', {data: data, json: json, html: []});

@@ -8,6 +8,7 @@ var fs = require("fs"),
 var createWalker = require('./generate/walker');
 var config = require('./grunt.config');
 
+
 var walker = createWalker('.', {
     followLinks: false,
     filters: config.coreFolders
@@ -15,7 +16,7 @@ var walker = createWalker('.', {
 
 module.exports = function (grunt) {
     var namespace;
-
+    var ownMiddleware = grunt.option("middleware")
 
     grunt.initConfig({
         prompt: {
@@ -309,10 +310,10 @@ module.exports = function (grunt) {
             server: {
                 options: {
                     keepalive: true,
-                    open: true,
+                    //open: true,
                     hostname: "localhost",
                     middleware: function (connect, options, middlewares) {
-
+                        var ownMiddlewareFn;
                         var generateDefaultBase = function (cwd, filename) {
                             var defaultBase = path.join(cwd, filename.replace(/\/[^\/]*\.[a-z]{2,5}\//, "/default/"));
                             return defaultBase.replace(/default(\/.*?)?\/[^\/]*\.[a-z]{2,5}\//, 'default/');
@@ -398,6 +399,21 @@ module.exports = function (grunt) {
                                 next();
                             }
                         });
+
+                        // get the own middleware module
+                        if(ownMiddleware){
+                           try {
+                             ownMiddlewareFn = require(ownMiddleware);
+                             if(typeof ownMiddlewareFn !== "function"){
+                               throw new Error("");
+                             }
+                             middlewares.unshift(ownMiddlewareFn);
+                           } catch (e) {
+                              console.log(e.stack);
+                              console.warn("Your middleware could not be found:", require.resolve(ownMiddleware));
+                           }
+                        }
+
                         middlewares.unshift(connect.bodyParser());
                         return middlewares;
                     }

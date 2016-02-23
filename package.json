@@ -56,6 +56,7 @@
     "grunt-lib-phantomjs": "~0.6.0",
     "grunt-prompt": "0.1.2",
     "marked": "0.3.2",
+    "md5": "^2.0.0",
     "mocha": "~1.20.1",
     "node-sass": "^3.3.3",
     "request": "~2.40.0",
@@ -67,7 +68,6 @@
     "url": "git://github.com/yourdelivery/JigMagga.git"
   },
   "dependencies": {
-    "MD5": "~1.2.1",
     "amqp": "~0.2.0",
     "amqplib": "~0.2.1",
     "archiver": "~0.11.0",

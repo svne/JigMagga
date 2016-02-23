@@ -75,7 +75,7 @@ if (!steal.config("isBuild")) {
                         }
                     },
                     startCompiling = function(sassTransform) {
-                        options.text = helper.sassImportFn(sassSteal, sassTransform) + options.text;
+                        options.text = helper.sassImportFn(sassSteal, sassTransform, [{'var': '$config-jigs', 'data': config.jigs}]) + options.text;
                         if (config.sassCompileBrowser) {
                             getImports(options.text, compileCallback);
                         } else {

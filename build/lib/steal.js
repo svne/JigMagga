@@ -41,7 +41,12 @@ function setupStealconfig(steal, item, cb) {
                 }
                 var stealInFile = /steal\(/.test(options.text);
                 if (stealInFile || options.id.path.indexOf("steal-types") !== -1) {
-                    eval(options.text);
+                    try {
+                        eval(options.text);
+                    } catch (e) {
+                        console.error(e);
+                        console.log(options);
+                    }
                 }
                 success();
             },

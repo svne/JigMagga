@@ -24,6 +24,7 @@ function setupStealconfig(steal, item, cb) {
         root: item.build.jigMaggaPath,
         pathToBuild: "/" + helper.getRelativePathFromStealRootPath(item.build.pageHTMLPath, item.build.jigMaggaPath),
         isBuild: true,
+        buildVersion: item.build.versionnumber,
         "init-locale": item.build.locale,
         browser: item.build.browser,
         types: {

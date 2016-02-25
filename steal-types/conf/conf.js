@@ -309,6 +309,16 @@
             return !!(jig.controller && !jig.disabled && !(jig.includeController && !jig.render) && !(steal.config("isBuild") && !jig.render));
         },
         /**
+         * This will set the current build version
+         * @param config {object}
+         * @returns config {object}
+         */
+        setAppVersion = function (config) {
+          var version = steal.config("appVersion") || null;
+          config.appVersion = version;
+          return config;
+        },
+        /**
          * returns a string of all routes that must be include
          * @param config
          * @returns {string}
@@ -471,10 +481,9 @@
             // include main lib
             config.includes.push("lib/lib.js");
 
-            // include all jigs that have IncludeController
+            setAppVersion(config);
 
             prepareNamespace(config, options);
-
 
             setPageNum(config, options);
 
@@ -894,4 +903,3 @@
     }
 
 }(this.window || {});
-

@@ -314,7 +314,7 @@
          * @returns config {object}
          */
         setAppVersion = function (config) {
-          var version = steal.config("buildVersion") || null;
+          var version = steal.config("appVersion") || null;
           config.appVersion = version;
           return config;
         },

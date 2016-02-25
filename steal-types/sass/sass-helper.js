@@ -41,7 +41,7 @@
                 sassMap = sassMap.replace(/}/g, ")");
                 sassMap = sassMap.replace(/\[/g, "(");
                 sassMap = sassMap.replace(/]/g, ")");
-                sassMap = sassMap.replace(/"([^"']+)":/g, "$1: ");
+                sassMap = sassMap.replace(/"([^\/"']+)":/g, "$1: ");
                 sassMap = sassMap.replace(/"([^"']+(px|%))"/g, "$1");
                 sassMap = sassMap.replace(/\s*\B(\.)/g, " ");
 

@@ -479,7 +479,7 @@
             browserIncludes(config);
 
             // include main lib
-            config.includes.push("lib/lib.js");
+            config.includes.unshift("lib/lib.js");
 
             setAppVersion(config);
 

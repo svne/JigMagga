@@ -24,6 +24,7 @@ function setupStealconfig(steal, item, cb) {
         root: item.build.jigMaggaPath,
         pathToBuild: "/" + helper.getRelativePathFromStealRootPath(item.build.pageHTMLPath, item.build.jigMaggaPath),
         isBuild: true,
+        appVersion: item.build.versionnumber,
         "init-locale": item.build.locale,
         browser: item.build.browser,
         types: {
@@ -41,7 +42,12 @@ function setupStealconfig(steal, item, cb) {
                 }
                 var stealInFile = /steal\(/.test(options.text);
                 if (stealInFile || options.id.path.indexOf("steal-types") !== -1) {
-                    eval(options.text);
+                    try {
+                        eval(options.text);
+                    } catch (e) {
+                        console.error(e);
+                        console.log(options);
+                    }
                 }
                 success();
             },

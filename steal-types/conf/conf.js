@@ -469,7 +469,7 @@
             browserIncludes(config);
 
             // include main lib
-            config.includes.push("lib/lib.js");
+            config.includes.unshift("lib/lib.js");
 
             // include all jigs that have IncludeController
 

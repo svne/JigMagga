@@ -52,13 +52,13 @@ steal("can/construct", "can/map", function () {
          * @param {string} subscriber - the subscriber
          */
         unsubscribe: function (queueName, subscriber) {
-            if (this.constructor.handlers[subscriber] && this[queueName]) {
-                this[queueName].unbind("time", this.constructor.handlers[subscriber]);
+            if (this.constructor.handlers[subscriber]) {
+                if (this[queueName]) {
+                    this[queueName].unbind("time", this.constructor.handlers[subscriber]);
+                }
                 delete this.constructor.handlers[subscriber];
-            } else if (!this.constructor.handlers[subscriber]) {
-                throw new Error("No handler found for this subscriber");
             } else {
-                delete this.constructor.handlers[subscriber];
+//                throw new Error("No handler found for this subscriber");
             }
         },
         /**

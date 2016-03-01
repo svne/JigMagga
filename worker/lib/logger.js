@@ -4,14 +4,14 @@ var _ = require('lodash'),
     gelfStream = require('gelf-stream'),
     konphyg = require('konphyg'),
     bunyan = require('bunyan'),
-    bsyslog = require('bunyan-syslog'),
+    bunyanLogstash = require('bunyan-logstash'),
     path = require('path'),
     config = require('../config'),
     program = require('../parseArguments')(process.argv);
 
 
 /**
- * Logger works with stdout, graylog or syslog.
+ * Logger works with stdout, graylog or/and logstash.
  *
  * <code>
  * var log = logger('worker',  {basedomain: program.basedomain}, program);
@@ -53,7 +53,6 @@ module.exports = function (component, metadata, processArguments) {
     } else if (config.main.logger.graylog) {
 
         // graylog settings from config file
-
         /*
             An example of the graylog setting in the config file
 
@@ -73,13 +72,14 @@ module.exports = function (component, metadata, processArguments) {
     }
 
     var logger = bunyan.createLogger({
-            name:    config.main.logger.name || 'html-worker',
+            name:    config.main.logger.name || 'htmlWorker',
             streams: [
                 {
-                    level: 'debug',
+                    level: config.main.logger.defaultLogLevel,
                     type: 'raw',
-                    stream: bsyslog.createBunyanStream({
-                        type: 'sys'    // 'sys', 'udp' or 'tcp
+                    stream: bunyanLogstash.createStream({
+                        host: config.main.logger.logstash.host,
+                        port: config.main.logger.logstash.port
                     })
                 }
                 ,
@@ -143,10 +143,10 @@ module.exports = function (component, metadata, processArguments) {
 
         // will be called
         var func;
-        if (logLevels.indexOf(args[0]) !== -1) {
+        if (logLevels.indexOf(args[0]) !== -1) {        // log level is known
             func = args.shift();
         } else {
-            func = config.main.logger.defaultLogLevel;
+            func = config.main.logger.defaultLogLevel;  // unknown log level
         }
 
         logger[func].apply(logger, args);

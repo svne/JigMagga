@@ -726,13 +726,14 @@ var apiCalls = function (configs, emitter, callback, readyConfigs, dontCheckPlac
         configPlaceholders,
         callbackContainer = [],
         childUrl = "",
+
         apiconfig = {
-            "version": config.version,
-            "hostname": config.apiConfig.hostname,
-            "port": config.apiConfig.port,
-            "base": config.apiConfig.base,
-            "db":  config.domain,
-            "apiMessageKey": config.apiMessageKey
+            defaultValues: {
+                version: config.version,
+                db: config.domain,
+                apiMessageKey: config.apiMessageKey
+            },
+            endpoints: config.apiConfig
         };
 
     if (typeof emitter === 'function') {

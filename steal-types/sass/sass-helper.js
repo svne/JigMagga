@@ -6,8 +6,12 @@
      * @param sassSteal
      * @returns {string}
      */
-    function sassImportFn(sassSteal, transform) {
+    function sassImportFn(sassSteal, transform, additionalData) {
         var sassText = "";
+
+        if (additionalData) {
+            sassText += jsonToSass(additionalData);
+        }
 
         if (sassSteal) {
             // set normal variables as sass variables
@@ -18,7 +22,33 @@
                 sassText += transform(sassSteal, sassText);
             }
         }
+
         return sassText;
+    }
+
+    function jsonToSass(data) {
+        var sass = "",
+            sassMap,
+            prefix,
+            suffix = ";\n";
+
+        if (data.length) {
+            for (var i=0; i < data.length; i++) {
+                prefix = (data[i].var ? data[i].var : "$json-sass") + ": ";
+                sassMap = JSON.stringify(data[i].data, null, 4);
+
+                sassMap = sassMap.replace(/{/g, "(");
+                sassMap = sassMap.replace(/}/g, ")");
+                sassMap = sassMap.replace(/\[/g, "(");
+                sassMap = sassMap.replace(/]/g, ")");
+                sassMap = sassMap.replace(/"([^\/"']+)":/g, "$1: ");
+                sassMap = sassMap.replace(/"([^"']+(px|%))"/g, "$1");
+                sassMap = sassMap.replace(/\s*\B(\.)/g, " ");
+
+                sass += prefix + sassMap + suffix;
+            }
+        }
+        return sass;
     }
 
     //steal export

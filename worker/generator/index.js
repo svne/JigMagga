@@ -128,7 +128,7 @@ var generateStream = es.through(function (data) {
 
     // Only the last 20 restaurant ratings should be shown on mobile devices. This ratings are in the first array element.
     // Thus we return only the first array item containing the last 20 ratings.
-    // Besides, the generated json file with ratings is not valid. The limitation on the first item solves this problem es well.
+    // Besides, the generated json file with ratings is not valid. The limitation on the first item solves this problem as well.
     if (json[0] && json[0][0] && json[0][0].url && json[0][0].url.indexOf('mobile/ratings') !== -1) {
         json = json[0];
     }

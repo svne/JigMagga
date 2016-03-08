@@ -106,7 +106,7 @@ var builder = {
                 if (data.build.cssgenerate) {
                     async.mapSeries(data.build.dependencies, function (item, cb) {
                         if (item.type === "scss") {
-                            var sassImport = sassHelper.sassImportFn(data.sass);
+                            var sassImport = sassHelper.sassImportFn(data.sass, false, [{'var': '$config-jigs', 'data': data.jigs}]);
                             if (internalCache[item.id.path] && internalCache[item.id.path].notcompiled === item.text && JSON.stringify(internalCache[item.id.path].sassImport) === JSON.stringify(sassImport)) {
                                 item.text = internalCache[item.id.path].text;
                                 cb(null, item);

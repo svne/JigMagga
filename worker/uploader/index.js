@@ -12,7 +12,6 @@ var fs = require('fs'),
     _ = require('lodash'),
     async = require('async'),
     domain = require('domain'),
-    request = require('request'),
     Uploader = require('jmUtil').ydUploader,
     es = require('event-stream');
 
@@ -67,87 +66,13 @@ var writeStream = function (message) {
     });
 };
 
-var uploadToColinCache = function (data, callback) {
-    var colinConf = _.cloneDeep(config.colin);
-
-    var base = colinConf.protocol + '://' + colinConf.hostname + ':' + colinConf.port;
-    var endpoint = [base, data.domain, data.url].join('/').replace(/\.json$/, '');
-    var requestOptions = {
-        uri: endpoint,
-        method: 'PUT',
-        headers: {
-            'content-type': 'application/json'
-        },
-        body: new Buffer(data.content)
-    };
-
-    var colin = function colin(next) {
-        request(requestOptions, function (err, result, body) {
-            if (err || result.statusCode >= 300) {
-                if (body) {
-                    log('warn', body);
-                }
-                return next(err || new Error('COLIN cache: Bad status code ' + result.statusCode));
-            }
-
-            next(null, endpoint);
-        });
-    };
-
-    async.retry({ times: 5, interval: 200 }, colin, callback);
-};
-
-var colinStream = function (meta) {
-    return es.map(function (data, callback) {
-        var next = function (err, res) {
-            if (err) {
-                log('warn', 'Couldn\'t write to COLIN cache', err, {});
-            }
-            callback(null, res);
-        };
-
-        if (!args.colin) {
-            return next();
-        }
-
-        if (_.isArray(data)) {
-            log('new data to cache type: array length:', data.length);
-            return async.each(data, uploadToColinCache, next);
-        }
-
-        log('new data to cache type: string');
-
-        data = _.assign({}, meta, data, { domain: args.basedomain });
-
-        uploadToColinCache(data, next);
-    });
-};
-
-var colinStats = es.wait(function (err, body) {
-    log(err ? 'warn' : 'info', 'Finished caching to COLIN', err ? err : body, {});
-});
-
 router.addRoutes({
     pipe: function (message) {
-        var jsonFiles;
-
         message = helper.parsePipeMessage(message);
 
-        jsonFiles = message.pages.filter(function (page) {
-            return page.url.indexOf('json') !== -1;
-        });
+        archiver.bulkArchive(message.pages)
+            .pipe(writeStream(message));
 
-        es.readArray(jsonFiles)
-            .pipe(colinStream(message.metadata))
-            .pipe(colinStats)
-            .on('error', function (err) {
-                log('error', err);
-                this.emit('end');
-            })
-            .on('end', function () {
-                archiver.bulkArchive(message.pages)
-                    .pipe(writeStream(message));
-            });
     },
     'new:zip': function (data) {
         messageStream.write(data);

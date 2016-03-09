@@ -122,20 +122,20 @@ module.exports = function (component, metadata, processArguments) {
             return;
         }
 
-        if (_.isPlainObject(meta)) {
-            meta = _.assign(meta, metadata);
-            args.push(meta);
-        } else {
-            args.push(meta);
-            args.push(metadata);
-        }
-
         if (logLevels.indexOf(args[0]) !== -1) {
             // log level is known
             func = args.shift();
         } else {
             // unknown log level
             func = config.main.logger.defaultLogLevel;
+        }
+
+        if (_.isPlainObject(meta)) {
+            meta = _.assign(meta, metadata);
+            args.unshift(meta);
+        } else {
+            args.push(meta);
+            args.unshift(metadata);
         }
 
         childLogger[func].apply(logger, args);

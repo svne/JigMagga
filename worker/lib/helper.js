@@ -242,8 +242,6 @@ module.exports = {
             return !message.page && !message.url && message.error && message.status === 300
         };
 
-        console.log('IS MSG FORMAT CORRECT', message, isEmptyError(message));
-
         return Boolean((message && !isEmptyError(message) && message.basedomain &&
             !this.isDomainInSkipList(message.basedomain, config.main.skipDomains)));
     },

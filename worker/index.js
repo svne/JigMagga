@@ -120,13 +120,9 @@ helper.createChildProcesses(args, function (err, result) {
     main.on('error:message', workerErrorHandler);
     var exitHandler = error.getExitHandler(log, [uploader, amqpProcess]);
 
+    process.on('exit', exitHandler);
     process.on('SIGTERM', exitHandler);
     process.on('SIGHUP', exitHandler);
-    uploader.on('exit', exitHandler);
-
-    if (amqpProcess) {
-        amqpProcess.on('exit', exitHandler);
-    }
 });
 
 process.on('uncaughtException', error.getErrorHandler(log, workerErrorHandler));

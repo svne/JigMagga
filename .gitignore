@@ -27,5 +27,5 @@ worker/logs/*.log
 worker/logs/*.heapsnapshot
 coverage
 npm-debug.log
-ta
-sw
+db
+bus

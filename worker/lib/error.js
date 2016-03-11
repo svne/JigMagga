@@ -12,7 +12,7 @@ var STATUS_CODES = exports.STATUS_CODES = {
 };
 
 var WorkerError = function (message, originalMessage, messageKey, status) {
-    this.name = 'WorkerError';  
+    this.name = 'WorkerError';
 
     this.originalMessage = originalMessage || {};
     this.messageKey = messageKey;
@@ -56,7 +56,15 @@ exports.getErrorHandler = function (log, callback) {
  * @return {Function}
  */
 exports.getExitHandler = function (log, childProcesses) {
-   return function () {
+    childProcesses.forEach(function (child) {
+        if (!child) {
+            return;
+        }
+
+        child.on('exit', process.exit.bind(process));
+    });
+
+    return function () {
        log('warn', 'process terminated', {exit: true});
        childProcesses.forEach(function (child) {
            if (child && _.isFunction(child.kill)) {

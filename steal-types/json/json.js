@@ -1,4 +1,4 @@
-steal('can/util', function () {
+steal('can/util', function (can) {
     'use strict';
 
     var stealJson = function (json) {

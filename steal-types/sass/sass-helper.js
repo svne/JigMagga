@@ -27,6 +27,17 @@
     }
 
     function jsonToSass(data) {
+        function deepDelete(target, context) {
+            context = context || {};
+            var targets = target.split('|');
+
+            if (targets.length > 1) {
+                deepDelete(targets.slice(1).join('|'), context[targets[0]]);
+            } else {
+                delete context[target];
+            }
+        }
+
         var sass = "",
             sassMap,
             prefix,
@@ -34,18 +45,22 @@
 
         if (data.length) {
             for (var i=0; i < data.length; i++) {
+                deepDelete('data|.yd-jig-map|options|extras|topoJSON', data[i]);
                 prefix = (data[i].var ? data[i].var : "$json-sass") + ": ";
-                sassMap = JSON.stringify(data[i].data, null, 4);
 
-                sassMap = sassMap.replace(/{/g, "(");
-                sassMap = sassMap.replace(/}/g, ")");
-                sassMap = sassMap.replace(/\[/g, "(");
-                sassMap = sassMap.replace(/]/g, ")");
-                sassMap = sassMap.replace(/"([^"']+)":/g, "$1: ");
-                sassMap = sassMap.replace(/"([^"']+(px|%))"/g, "$1");
-                sassMap = sassMap.replace(/\s*\B(\.)/g, " ");
+                if(data[i].data) {
+                    sassMap = JSON.stringify(data[i].data, null, 4);
 
-                sass += prefix + sassMap + suffix;
+                    sassMap = sassMap.replace(/{/g, "(");
+                    sassMap = sassMap.replace(/}/g, ")");
+                    sassMap = sassMap.replace(/\[/g, "(");
+                    sassMap = sassMap.replace(/]/g, ")");
+                    sassMap = sassMap.replace(/"([^\/"']+)":/g, "$1: ");
+                    sassMap = sassMap.replace(/"([^"']+(px|%))"/g, "$1");
+                    sassMap = sassMap.replace(/\s*\B(\.)/g, " ");
+
+                    sass += prefix + sassMap + suffix;
+                }
             }
         }
         return sass;

@@ -310,7 +310,7 @@ module.exports = function (grunt) {
             server: {
                 options: {
                     keepalive: true,
-                    //open: true,
+                    open: true,
                     hostname: "localhost",
                     middleware: function (connect, options, middlewares) {
                         var ownMiddlewareFn;
@@ -405,7 +405,7 @@ module.exports = function (grunt) {
                            try {
                              ownMiddlewareFn = require(ownMiddleware);
                              if(typeof ownMiddlewareFn !== "function"){
-                               throw new Error("");
+                               throw new Error("Middleware must export function: " + require.resolve(ownMiddleware));
                              }
                              middlewares.unshift(ownMiddlewareFn);
                            } catch (e) {

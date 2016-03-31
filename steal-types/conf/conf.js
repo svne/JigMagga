@@ -648,9 +648,9 @@
          */
         getConfigPaths = function (path) {
             var configs = [],
-                namespace = getNamespace()
+                namespace = getNamespace();
             // get all configs that are in folders - we can bubble up the path (default and domain)
-            setConfigs = function (path) {
+            function setConfigs(path) {
                 var dirs = path.split("/"),
                     confPath;
                 for (var i = 0, dir = "", tempPath = "", len = dirs.length; i < len; i++, dir = dirs[i]) {

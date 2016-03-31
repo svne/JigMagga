@@ -1,7 +1,7 @@
 {
   "name": "JigMagga",
   "description": "JigMagga is a widget based JavaScript MVC framework based on bitovis canJS that was build for large SEO sites",
-  "version": "0.7.2",
+  "version": "0.7.4",
   "author": {
     "name": "yd. yourdelivery GmbH",
     "email": "naie@lieferando.de",
@@ -56,6 +56,7 @@
     "grunt-lib-phantomjs": "~0.6.0",
     "grunt-prompt": "0.1.2",
     "marked": "0.3.2",
+    "md5": "^2.0.0",
     "mocha": "~1.20.1",
     "node-sass": "^3.3.3",
     "request": "~2.40.0",
@@ -67,7 +68,6 @@
     "url": "git://github.com/yourdelivery/JigMagga.git"
   },
   "dependencies": {
-    "MD5": "~1.2.1",
     "amqp": "~0.2.0",
     "amqplib": "~0.2.1",
     "archiver": "~0.11.0",
@@ -107,7 +107,6 @@
     "uglify-js": "~2.4.15",
     "walk": "~2.3.3",
     "wd": "^0.3.11",
-    "winston": "~0.7.3",
-    "winston-posix-syslog": "0.0.7"
+    "winston": "~0.7.3"
   }
 }

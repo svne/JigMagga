@@ -1201,7 +1201,7 @@ If you want to use JigMagga and want to make bug fixes and improvements, we are 
 Coding conventions
 ------------------
 You can find our code conventions on [NPMJS](https://www.npmjs.com/package/eslint-config-takeaway).  
-JigMagga is not yet fully converted to these new, modern guidelines yet/
+JigMagga is not yet fully converted to these new, modern guidelines yet.
 
 License
 =======

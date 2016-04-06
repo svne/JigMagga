@@ -1200,9 +1200,8 @@ If you want to use JigMagga and want to make bug fixes and improvements, we are 
 
 Coding conventions
 ------------------
-* Use 4 spaces instead of tabs.
-* Commas last.
-* Use double quotes instead of single quotes where possible.
+You can find our code conventions on [NPMJS](https://www.npmjs.com/package/eslint-config-takeaway).  
+JigMagga is not yet fully converted to these new, modern guidelines yet/
 
 License
 =======

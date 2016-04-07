@@ -22,7 +22,7 @@ var placeholderHelper = require("./placeholders.js");
 var slots = require('./slots');
 var _ = require('lodash');
 var Q = require('q');
-var md5 = require('MD5');
+var md5 = require('md5');
 var gt;
 var knoxConfig;
 var saveDiskPath;

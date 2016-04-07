@@ -4,7 +4,7 @@ var es = require('event-stream'),
     fs = require('fs'),
     path = require('path'),
     walk = require('walk'),
-    md5 = require('MD5'),
+    md5 = require('md5'),
     async = require('async'),
     _ = require('lodash');
 

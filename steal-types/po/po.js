@@ -56,6 +56,7 @@ steal({id: './gettext.js', ignore: true}, "./sprintf.js",
                 };
 
                 win.replaceGettextUnderscore = function (string) {
+                    console.log(string)
                     return string
                         .replace(/can\.Mustache\.txt\(\n\{scope:scope,options:options\},\nnull,\{get:"_"\},"([^"]+)"\)/mg, function (_match, msgid, quote) {
                             return '"' + win.gettext.gettext(msgid).replace('"', '\\"') + '"';

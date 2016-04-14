@@ -10,7 +10,7 @@
     "rules": {
         // disable requiring trailing commas because it might be nice to revert to
         // being JSON at some point, and I don't want to make big changes now.
-        "indent": [2, 4,{"SwitchCase":1}],
+        "indent": [0, 2,{"SwitchCase":1}],
         "func-names": 0,
         "default-case": 0,
         "no-unused-expressions": [1,{ "allowShortCircuit": true }],

@@ -1,0 +1,27 @@
+{
+    "extends": "airbnb/legacy",
+    "env": {
+        "jquery": true
+    },
+    "globals": {
+        "can": true,
+        "steal": true
+    },
+    "rules": {
+        // disable requiring trailing commas because it might be nice to revert to
+        // being JSON at some point, and I don't want to make big changes now.
+        "indent": [2, 4,{"SwitchCase":1}],
+        "func-names": 0,
+        "default-case": 0,
+        "no-unused-expressions": [1,{ "allowShortCircuit": true }],
+        "semi": [2, "never"],
+        "no-unreachable": "error",
+        "space-before-function-paren": ["error", "never"],
+        "no-unused-vars": "warn",
+        "no-param-reassign": "warn",
+        "vars-on-top": 0,
+        "no-loop-func": 0,
+        "max-len": 0,
+        "radix": 0
+    }
+}

@@ -1,9 +1,0 @@
-steal("<%= namespace %>/config/fixtures.json", "can/util/fixture", function (fixtures) {
-
-    can.each(fixtures, function (fixture) {
-        can.fixture(fixture.method + " " + fixture.uri, fixture.data);
-    });
-
-    // Example fixture for GET path api/<%= name %>
-    // can.fixture("GET api/<%= name %>", "//<%= namespace %>/fixture/data/<%= name %>.json");
-});
